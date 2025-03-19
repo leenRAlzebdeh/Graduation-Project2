@@ -21,7 +21,7 @@ public class NotificationService
         // };
 
         // _context.Notifications.Add(notification);
-        await _context.SaveChangesAsync();
+       // await _context.SaveChangesAsync();
     }
 
     // Send email notification
