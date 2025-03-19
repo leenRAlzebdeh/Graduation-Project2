@@ -10,7 +10,7 @@ public class AdminService : IAdminService
     {
         this.admin = admin;
     }
-
+    //emas
     public void AssignCabinet(Department dept)
     {
         throw new NotImplementedException();
@@ -25,7 +25,7 @@ public class AdminService : IAdminService
     {
         throw new NotImplementedException();
     }
-
+    //emas 
     public void Login()
     {
         throw new NotImplementedException();
