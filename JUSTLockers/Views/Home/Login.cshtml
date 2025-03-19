@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="~/css/loginpage.css" rel="stylesheet" />
+     
+    <title>JUST Locker</title>
+
+    
+
+
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Help</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <img src="~/photos/images/uni-logo-r.png" alt="JUSTlogo">
+
+    <div class="login">
+        <form asp-controller="Account" asp-action="Login" method="post">
+            <label for="idNumber">ID Number </label>
+            <input type="text" id="idNumber" name="id" required>
+            <br>
+            <label for="password">Password </label>
+            <input type="password" id="password" name="password" required>
+            <button>LOGIN</button>
+
+            @if (ViewBag.Error != null)
+            {
+                <p style="color: #38000A;">@ViewBag.Error</p>
+            }
+        </form>
+    </div>
+  
+    <div class="university-text">
+        <div class="arabic">جامعة العلوم والتكنولوجيا الأردنية</div>
+        <div class="english">Jordan University of Science & Technology</div>
+    </div>
+
+
+    <footer>
+
+        <p>
+            Jordan University of Science and Technology, All Rights Reserved © n
+        </p>
+    </footer>
+</body>
+
+</html>
