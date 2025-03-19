@@ -13,12 +13,13 @@ public class HomeController : Controller
         _logger = logger;
     }
 
-    public IActionResult Index()
-    {
-        return View();
-    }
 
-    public IActionResult Privacy()
+    public IActionResult Login()
+    {
+        // IEnumerable<Student> Student = _db.Student.ToList();
+        return View("Login");
+    }
+    public IActionResult Index()
     {
         return View();
     }
