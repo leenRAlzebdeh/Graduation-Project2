@@ -7,8 +7,8 @@ public class Admin : User
     public List<Report> ReportList { get; set; }
     public HashSet<Supervisor> Supervisors { get; set; }
 
-    public Admin(string id, string name, string email, string password)
-        : base(id, name, email, password)
+    public Admin(int id, string name, string email)
+        : base(id, name, email)
     {
         ReallocationRequests = new List<Reallocation>();
         ReportList = new List<Report>();

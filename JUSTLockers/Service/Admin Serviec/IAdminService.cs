@@ -11,6 +11,6 @@ public interface IAdminService : IUserActions
     void AssignCovenant(Supervisor supervisor);
     void ViewSupervisorInfo(Supervisor supervisor);
     void ViewAllCabinetsInfo();
-    void ViewForwardedReports();
+    Task<List<Report>> ViewForwardedReports();
     void RespondForwardedReport(string respond);
 }

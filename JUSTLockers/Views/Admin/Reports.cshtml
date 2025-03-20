@@ -1,0 +1,64 @@
+﻿@model IEnumerable<JUSTLockers.Classes.Report>
+@using JUSTLockers.Classes
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<div class="container mt-4">
+    <h2 class="mb-4">Locker Issues</h2>
+    <table class="table table-hover table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th>Locker Number</th>
+                <th>Problem Description</th>
+                <th>Status</th>
+                <th>Reported On</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var report in Model)
+            {
+                <tr>
+                    <td>@report.Locker.LockerId</td>
+                    <td>@report.Statement</td>
+                    <td>
+                        <span class="badge @GetStatusBadgeClass(report.Status)">
+                            @report.Status
+                        </span>
+                    </td>
+                    <td>@report.ReportDate.ToString("MM/dd/yyyy hh:mm tt")</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" title="Solve">
+                            <i class="fas fa-check"></i> Solve
+                        </button>
+                        <button class="btn btn-sm btn-danger" title="Delete">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@functions {
+    // Helper function to get the Bootstrap badge class based on report status
+    public string GetStatusBadgeClass(ReportStatus status)
+    {
+        switch (status)
+        {
+            case ReportStatus.REPORTED:
+                return "badge-warning";
+            case ReportStatus.IN_REVIEW:
+                return "badge-info";
+            case ReportStatus.ESCALATED:
+                return "badge-danger";
+            case ReportStatus.RESOLVED:
+                return "badge-success";
+            case ReportStatus.REJECTED:
+                return "badge-secondary";
+            default:
+                return "badge-light";
+        }
+    }
+}

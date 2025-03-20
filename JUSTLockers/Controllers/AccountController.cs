@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using JUSTLockers.DataBase;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using MySqlConnector;
 
@@ -8,10 +9,11 @@ namespace WebApplication5.Controllers
     {
 
         private readonly IConfiguration _configuration;
-
+        private readonly IDbConnectionFactory _connectionFactory;
         public AccountController(IConfiguration configuration)
         {
             _configuration = configuration;
+
         }
 
         [HttpPost]
@@ -20,7 +22,8 @@ namespace WebApplication5.Controllers
 
             if (IsValidUser(id, password))
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("LockerIssues", "Admin");
+                //return RedirectToAction("Index", "Home");
 
             }
             else

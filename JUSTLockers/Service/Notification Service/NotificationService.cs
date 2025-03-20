@@ -2,10 +2,10 @@ namespace JUSTLockers.Services;
 using JUSTLockers.DataBase;
 public class NotificationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly DbConnectionFactory _context;
     private readonly EmailService _emailService;
 
-    public NotificationService(ApplicationDbContext context, EmailService emailService)
+    public NotificationService(DbConnectionFactory context, EmailService emailService)
     {
         _context = context;
         _emailService = emailService;

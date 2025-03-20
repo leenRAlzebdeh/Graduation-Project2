@@ -1,7 +1,17 @@
+using JUSTLockers.DataBase;
+using Microsoft.Extensions.Configuration;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Add the database connection factory
+builder.Services.AddSingleton<IDbConnectionFactory>(provider =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new Exception("There is no connection");
+    return new DbConnectionFactory(connectionString);
+});
 
 var app = builder.Build();
 
@@ -24,6 +34,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Login}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

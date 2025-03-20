@@ -6,12 +6,18 @@ public class Student : User
     public int LockerId { get; set; }
     public Reservation? Reservation { get; set; }
     public HashSet<Report> Reports { get; set; }
-    public Department Department { get; set; }
+    public string Department { get; set; }
 
-    public Student(string id, string name, string email, string password, int lockerId, Department department)
-        : base(id, name, email, password)
+    //public Student(string id, string name, string email, string password, int lockerId, Department department)
+    //    : base(id, name, email, password)
+    //{
+    //    LockerId = lockerId;
+    //    Reports = new HashSet<Report>();
+    //}
+
+    public Student(int id, string name, string email/*, string password*/, string department)
+        : base(id, name, email/*, password*/)
     {
-        LockerId = lockerId;
         Department = department;
         Reports = new HashSet<Report>();
     }

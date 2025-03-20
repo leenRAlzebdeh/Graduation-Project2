@@ -7,8 +7,8 @@ public class Supervisor : User
     public List<Report> ReportList { get; set; }
     public List<Cabinet> Covenant { get; set; }
 
-    public Supervisor(string id, string name, string email, string password, Department department)
-        : base(id, name, email, password)
+    public Supervisor(int id, string name, string email, Department department)
+        : base(id, name, email)
     {
         SupervisedDepartment = department;
         ReservationList = new List<Reservation>();

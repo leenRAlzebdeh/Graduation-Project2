@@ -2,7 +2,7 @@ namespace JUSTLockers.Classes;
 
 public class Report
 {
-    public required string Id { get; set; }
+    public required int ReportId { get; set; }
     public required Student Reporter { get; set; }
     public required Locker Locker { get; set; }
     public ReportType Type { get; set; }
