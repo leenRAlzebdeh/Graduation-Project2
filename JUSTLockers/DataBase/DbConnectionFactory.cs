@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace JUSTLockers.DataBase
 {
+    /*
     public interface IDbConnectionFactory
     {
         public Task<MySqlConnection> CreateConnectionAsync(CancellationToken token = default);
@@ -16,6 +17,7 @@ namespace JUSTLockers.DataBase
         {
             _config = config;
         }
+        public DbSet<Department> Departments { get; set; }
         public async Task<MySqlConnection> CreateConnectionAsync(CancellationToken token = default)
         {
             var connection = new MySqlConnection(_config);
@@ -23,4 +25,21 @@ namespace JUSTLockers.DataBase
             return connection;
         }
     }
+    */
+
+    public class DbConnectionFactory : DbContext
+    {
+        public DbConnectionFactory(DbContextOptions options) : base(options)
+        {
+
+        }
+
+        public DbSet<Student> Student { get; set; }
+        public DbSet<Department> Departments { get; set; }
+
+
+    }
+
+
+
 }

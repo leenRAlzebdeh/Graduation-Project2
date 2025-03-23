@@ -1,15 +1,18 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using JUSTLockers.Models;
+using JUSTLockers.DataBase;
 
 namespace JUSTLockers.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly DbConnectionFactory _db;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, DbConnectionFactory db)
     {
+        _db = db;
         _logger = logger;
     }
 

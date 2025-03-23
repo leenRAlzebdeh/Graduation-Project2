@@ -1,10 +1,22 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
 namespace JUSTLockers.Classes;
 
+[Table("Departments")]
 public class Department
 {
-    public required string Id { get; set; }
-    public required string Name { get; set; }
-    public HashSet<Student> Students { get; set; } = new();
-    public HashSet<Locker> Lockers { get; set; } = new();
-    public Supervisor? Supervisor { get; set; }
+
+
+
+    [Key]
+    [Required]
+    public string Name { get; set; }
+
+    [Required]
+    public int Total_Wings { get; set; }
+
+    [Required]
+    public string Location { get; set; }
+
 }

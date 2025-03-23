@@ -1,5 +1,6 @@
 using JUSTLockers.Classes;
 using JUSTLockers.DataBase;
+using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System.ComponentModel;
 namespace JUSTLockers.Services;
@@ -7,19 +8,81 @@ namespace JUSTLockers.Services;
 public class AdminService : IAdminService
 {
    
-    private readonly IDbConnectionFactory _connectionFactory;
+   // private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IConfiguration _configuration;
+
+    public AdminService(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
+/*
     public AdminService( IDbConnectionFactory db)
     {
         //this.admin = admin;
         _connectionFactory = db;
 
-    }
+    }*/
     //emas
-    public void AssignCabinet(Department dept)
+    public string AssignCabinet(Cabinet model)
     {
-        throw new NotImplementedException();
-    }
+        try
+        {
+            string query = @"
+        INSERT INTO Cabinets 
+        (number_cab, wing, level, location, department_name, supervisor_id, Capacity) 
+        VALUES 
+        (@NumberCab, @Wing, @Level, @Location, @DepartmentName, @SupervisorId, @Capacity)";
 
+          //  string query2 = @"update Supervisors SET  supervised_department =@DepartmentName WHERE id=@SupervisorId";
+
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@NumberCab", model.CabinetNumber);
+                    command.Parameters.AddWithValue("@Wing", model.Wing);
+                    command.Parameters.AddWithValue("@Level", model.Level);
+                    command.Parameters.AddWithValue("@Location", model.Location);
+                    command.Parameters.AddWithValue("@DepartmentName", model.Department);
+                    command.Parameters.AddWithValue("@SupervisorId", model.EmployeeId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Capacity", model.Capacity);
+
+                    int rowsAffected = command.ExecuteNonQuery(); // Executes the insertion and returns the number of rows affected
+                    /*
+                                        using (var command2 = new MySqlCommand(query2, connection))
+                                        {
+                                            command2.Parameters.AddWithValue("@DepartmentName", model.Department); // Dynamically set the department
+                                            command2.Parameters.AddWithValue("@SupervisorId", model.EmployeeId ?? (object)DBNull.Value); // Pass supervisor ID
+                                            command2.ExecuteNonQuery(); // Executes the update
+                                        }
+                    */
+
+                    if (rowsAffected > 0)
+                    {
+                        return "Cabinet added successfully!";
+                    }
+                    else
+                    {
+                        return "Failed to add cabinet. Please try again.";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database error: {ex.Message}");
+            if (ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
+            {
+                return "Cabinet Number already exists";
+            }
+            return "Error adding cabinet: " + ex.Message;
+
+        }
+    }
     public void AssignCovenant(Supervisor supervisor)
     {
         throw new NotImplementedException();
@@ -63,8 +126,9 @@ public class AdminService : IAdminService
     {
         var reports = new List<Report>();
 
-        using (var connection = await _connectionFactory.CreateConnectionAsync())
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
+            connection.Open();
             var query = @"
             SELECT 
                 r.Id AS ReportId,

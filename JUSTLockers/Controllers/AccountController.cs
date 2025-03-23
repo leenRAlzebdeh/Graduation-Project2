@@ -9,7 +9,7 @@ namespace WebApplication5.Controllers
     {
 
         private readonly IConfiguration _configuration;
-        private readonly IDbConnectionFactory _connectionFactory;
+      //  private readonly IDbConnectionFactory _connectionFactory;
         public AccountController(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -22,10 +22,12 @@ namespace WebApplication5.Controllers
 
             if (IsValidUser(id, password))
             {
-                return RedirectToAction("LockerIssues", "Admin");
-                //return RedirectToAction("Index", "Home");
-
-            }
+                // return RedirectToAction("LockerIssues", "Admin");
+                // return RedirectToAction("~/Views/Admin/AddCabinet.cshtml");
+                //  return View("~/Views/Admin/AddCabinet.cshtml");
+                return View("~/Views/Home/AdminDashboard.cshtml");
+              //  return RedirectToAction("AdminDashboard", "Admin");
+            } 
             else
             {
                 ViewBag.Error = "Invalid ID or password.";

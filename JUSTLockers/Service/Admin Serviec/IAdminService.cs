@@ -6,7 +6,7 @@ public interface IAdminService : IUserActions
     void RespondReallocation(string respond);
     void NotifyStudents();
     void DeleteCovenant(Supervisor supervisor);
-    void AssignCabinet(Department dept);
+    public string AssignCabinet(Cabinet model);
     void SignCabinet();
     void AssignCovenant(Supervisor supervisor);
     void ViewSupervisorInfo(Supervisor supervisor);

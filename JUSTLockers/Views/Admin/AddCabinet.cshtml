@@ -1,0 +1,292 @@
+﻿<!--
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <link href="~/css/StyleSheet.css" rel="stylesheet" />
+
+    <title>Add New Cabinet</title>
+
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Add New Cabinet</h2>
+        <form id="cabinetForm">
+            <label>Cabinet Number</label>
+            <input type="text" id="cabinetNumber" placeholder="Enter Cabinet No" required>
+
+
+            <label>Location</label>
+            <select id="Location">
+                <option>Engineering</option>
+                <option>Medicine</option>
+
+            </select>
+
+            <label>Department</label>
+            <select id="department">
+                <option>A</option>
+                <option>B</option>
+                <option>C</option>
+            </select>
+
+            <label>Wing</label>
+            <select id="wing">
+                <option>A1</option>
+                <option>A2</option>
+                <option>A3</option>
+            </select>
+
+            <label>Level</label>
+            <select id="level">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+            </select>
+
+            <label>Assigned Employee</label>
+            <input type="text" id="employeeId" placeholder="Enter Assigned Employee id" required>
+
+            <label>Capacity</label>
+            <input type="number" id="capacity" placeholder="Enter Cabinet Capacity" required>
+
+            <button type="submit">Add Cabinet</button>
+        </form>
+    </div>
+
+
+
+</body>
+
+</html>
+
+      -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="~/css/StyleSheet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
+    <title>Add New Cabinet</title>
+
+
+
+ 
+</head>
+
+<body>
+
+   
+
+    <div class="container">
+        <h2>Add New Cabinet</h2>
+        <!-- Success or Error message -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <script>
+                alert('@TempData["SuccessMessage"]');
+            </script>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <script>
+                alert('@TempData["ErrorMessage"]');
+            </script>
+        }
+
+
+        <form asp-controller="Admin" asp-action="AssignCabinet" method="post">
+            <label>Cabinet Number</label> <!-- <span id="lastcab" name="lastCab">*</span> -->
+            <input type="text" id="cabinetNumber" name="CabinetNumber" placeholder="Enter Cabinet No" required readonly>
+
+            <label for="location">Location</label>
+            <select id="location" name="Location" class="form-control">
+                <option value="Engineering">Engineering</option>
+                <option value="Medicine">Medicine</option>
+            </select>
+
+            <label for="department">Department</label>
+            <select id="department" name="Department" class="form-control"></select>
+
+            <label for="wing">Wing</label>
+            <select id="wing" name="Wing" class="form-control"></select>
+
+            <label>Level</label>
+            <select id="level" name="Level">
+                <option>0</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+            </select>
+
+            <label>Capacity</label>
+            <input type="number" id="capacity" name="Capacity" placeholder="Enter Cabinet Capacity" required min="0">
+
+            <label> Employee ID </label>
+            <input type="text" id="assignedEmployeeId" name="EmployeeId" placeholder="Enter Assigned Employee ID" required readonly>
+
+            <label>Name of Employee</label>
+            <input type="text" id="employeeName" name="EmployeeName" readonly required>
+
+
+
+
+            <button type="submit">Add Cabinet</button>
+
+            <div style="text-align: left;">
+                <a href="@Url.Action("AdminDashboard", "Admin")" class="btn btn-primary w-100">Back</a>
+            </div>
+
+        </form>
+
+        
+        
+    </div>
+
+
+
+
+
+    <script>
+                       document.addEventListener("DOMContentLoaded", function () {
+            // Fetch the last cabinet number from the CabinetController when the page loads
+            fetch('/Cabinet/GetLastCabinetNumberJson')  // Call the CabinetController action
+                .then(response => response.json())  // Parse the JSON response
+                .then(data => {
+                    const cabinetNumberInput = document.getElementById("cabinetNumber"); // Get the input element
+                    if (cabinetNumberInput) {
+                        // Increment the last cabinet number by 1 and set it as the value
+                        const lastCabinetNumber = parseInt(data) + 1; // Increment the number
+                        cabinetNumberInput.value = lastCabinetNumber || "1"; // Set the value to incremented last number
+                    }
+                })
+                .catch(() => {
+                    // Handle error if fetch fails
+                    const cabinetNumberInput = document.getElementById("cabinetNumber");
+                    if (cabinetNumberInput) {
+                        cabinetNumberInput.value = "Error fetching cabinet number"; // Show error message if the request fails
+                    }
+                });
+        });
+
+                document.getElementById("department").addEventListener("change", function () {
+            const department = this.value;
+            const supervisorInput = document.getElementById("employeeName"); // Input field for supervisor name
+           const location=  document.getElementById("location").value;
+            fetch(`/Cabinet/GetSupervisor?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "Success") {
+                        supervisorInput.value = data.supervisor;
+                    } else {
+                        supervisorInput.value = "unassigned";
+                    }
+                })
+                .catch(() => {
+                    supervisorInput.value = "Error fetching supervisor";
+                });
+        });
+
+         document.getElementById("department").addEventListener("change", function () {
+            const department = this.value;
+            const supervisorInput = document.getElementById("assignedEmployeeId"); // Input field for supervisor name
+             const location=  document.getElementById("location").value;
+            fetch(`/Cabinet/GetID?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "Success") {
+                        supervisorInput.value = data.supervisor;
+                    } else {
+                        supervisorInput.value = "unassigned";
+                    }
+                })
+                .catch(() => {
+                    supervisorInput.value = "Error fetching supervisor";
+                });
+        });
+
+
+
+
+        /*
+
+                     document.getElementById("department").addEventListener("change", function () {
+                     const department = this.value;
+                    const employeeNameInput = document.getElementById("employeeName");
+
+
+                fetch(`/Cabinet/GetEmployeeName?department=${encodeURIComponent(department)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        employeeNameInput.value = data !== "Not Found" ? data : "Employee not found";
+                    })
+                    .catch(() => {
+                        employeeNameInput.value = "Error fetching employee data";
+                    });
+
+        });
+
+            */
+
+
+
+
+
+               document.getElementById("location").addEventListener("change", function () {
+            const selectedLocation = this.value;
+            const departmentSelect = document.getElementById("department");
+
+            fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+                .then(response => response.json())
+                .then(data => {
+                    departmentSelect.innerHTML = "";
+                    data.forEach(dept => {
+                        const option = document.createElement("option");
+                        option.value = dept;
+                        option.textContent = dept;
+                        departmentSelect.appendChild(option);
+                    });
+
+                    // Trigger department change to auto-load wings
+                    departmentSelect.dispatchEvent(new Event("change"));
+                });
+        });
+
+        document.getElementById("department").addEventListener("change", function () {
+            const selectedDepartment = this.value;
+            const wingSelect = document.getElementById("wing");
+
+            fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(selectedDepartment)}`)
+                .then(response => response.json())
+                .then(data => {
+                    wingSelect.innerHTML = "";
+                    data.forEach(wing => {
+                        const option = document.createElement("option");
+                        option.value = wing;
+                        option.textContent = wing;
+                        wingSelect.appendChild(option);
+                    });
+                });
+        });
+
+
+
+
+
+
+        // Trigger initial load
+        document.getElementById("location").dispatchEvent(new Event("change"));
+
+    </script>
+</body>
+</html>

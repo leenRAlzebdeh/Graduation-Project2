@@ -1,10 +1,17 @@
 ﻿@model IEnumerable<JUSTLockers.Classes.Report>
 @using JUSTLockers.Classes
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <title>Locker Issues</title>
+</head>
 
 <div class="container mt-4">
     <h2 class="mb-4">Locker Issues</h2>
+    <a href="@Url.Action("AdminDashboard", "Admin")" class="btn btn-primary">Back to Home</a>
+
     <table class="table table-hover table-striped">
         <thead class="thead-dark">
             <tr>
@@ -39,6 +46,9 @@
             }
         </tbody>
     </table>
+   
+
+
 </div>
 
 @functions {
@@ -48,9 +58,9 @@
         switch (status)
         {
             case ReportStatus.REPORTED:
-                return "badge-warning";
+                return "badge-warning text-dark";
             case ReportStatus.IN_REVIEW:
-                return "badge-info";
+                return "badge-info text-dark";
             case ReportStatus.ESCALATED:
                 return "badge-danger";
             case ReportStatus.RESOLVED:
@@ -58,7 +68,7 @@
             case ReportStatus.REJECTED:
                 return "badge-secondary";
             default:
-                return "badge-light";
+                return "badge-light text-dark";
         }
     }
 }
