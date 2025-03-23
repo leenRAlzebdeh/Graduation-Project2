@@ -1,5 +1,6 @@
 using JUSTLockers.Classes;
 using JUSTLockers.DataBase;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System.ComponentModel;
@@ -16,13 +17,6 @@ public class AdminService : IAdminService
         _configuration = configuration;
     }
 
-/*
-    public AdminService( IDbConnectionFactory db)
-    {
-        //this.admin = admin;
-        _connectionFactory = db;
-
-    }*/
     //emas
     public string AssignCabinet(Cabinet model)
     {
@@ -83,15 +77,119 @@ public class AdminService : IAdminService
 
         }
     }
-    public void AssignCovenant(Supervisor supervisor)
+    public async Task<string> AssignCovenant(Supervisor supervisor, string departmentName)
     {
-        throw new NotImplementedException();
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            connection.Open();
+            // Check if the supervisor already has a covenant
+            var checkQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId AND supervised_department IS NOT NULL";
+            using (var checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
+                var count = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+
+                if (count > 0)
+                {
+                    return "Supervisor already has a covenant assigned.";
+                }
+            }
+
+            // Assign the covenant (update the supervisor's supervised_department)
+            var updateQuery = "UPDATE Supervisors SET supervised_department = @DepartmentName WHERE id = @SupervisorId";
+            using (var updateCommand = new MySqlCommand(updateQuery, connection))
+            {
+                updateCommand.Parameters.AddWithValue("@DepartmentName", departmentName);
+                updateCommand.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
+
+                int rowsAffected = await updateCommand.ExecuteNonQueryAsync();
+
+                if (rowsAffected > 0)
+                {
+                    return "Covenant assigned successfully.";
+                }
+                else
+                {
+                    return "Failed to assign covenant.";
+                }
+            }
+        }
     }
 
-    public void DeleteCovenant(Supervisor supervisor)
+    public async Task<string> DeleteCovenant(Supervisor supervisor)
     {
-        throw new NotImplementedException();
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        {
+            connection.Open();
+            // Remove the covenant (set supervised_department to NULL)
+            var query = "UPDATE Supervisors SET supervised_department = NULL WHERE id = @SupervisorId";
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
+
+                int rowsAffected = await command.ExecuteNonQueryAsync();
+
+                if (rowsAffected > 0)
+                {
+                    return "Covenant deleted successfully.";
+                }
+                else
+                {
+                    return "Failed to delete covenant.";
+                }
+            }
+        }
+    
     }
+
+    public async Task<Supervisor> GetSupervisorById(int supervisorId)
+    {
+
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        {
+            connection.Open();
+            var query = @"
+                SELECT s.id, s.name, s.email, d.name AS department_name, d.total_wings, d.Location 
+                FROM Supervisors s
+                LEFT JOIN Departments d ON s.supervised_department = d.name
+                WHERE s.id = @SupervisorId";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@SupervisorId", supervisorId);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        // Fetch the supervised department (if assigned)
+                        Department supervisedDepartment = null;
+                        if (!reader.IsDBNull(reader.GetOrdinal("department_name")))
+                        {
+                            supervisedDepartment = new Department
+                            {
+                                Name = reader.GetString("department_name"),
+                                Total_Wings = reader.GetInt32("total_wings"),
+                                Location = reader.GetString("Location")
+                            };
+                        }
+
+                        // Create and return the Supervisor object
+                        return new Supervisor(
+                            id: reader.GetInt32("id"),
+                            name: reader.GetString("name"),
+                            email: reader.GetString("email"),
+                            department: supervisedDepartment
+                        );
+                    }
+                }
+            }
+        }
+
+        return null; // Return null if no supervisor is found
+    }
+
+
     //emas 
     public void Login()
     {
@@ -113,7 +211,7 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-    public void SignCabinet()
+    public void SignCabinetToNewSupervisour()
     {
         throw new NotImplementedException();
     }

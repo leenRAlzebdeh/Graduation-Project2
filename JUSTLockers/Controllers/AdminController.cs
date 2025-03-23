@@ -23,11 +23,21 @@ namespace JUSTLockers.Controllers
         {
             _adminService = adminService;
         }
+
+        [HttpGet]
+        public IActionResult SignCovenant()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult DeleteCovenant()
+        {
+            return View();
+        }
         [HttpGet]
         public IActionResult AddCabinet()
         {
-            // Logic to show the Assign Cabinet page
-            // return View();
             return View();
         }
         [HttpGet]
@@ -73,6 +83,43 @@ namespace JUSTLockers.Controllers
            // var adminService = new AdminService(_context);
             var reports = await _adminService.ViewForwardedReports();
             return View("~/Views/Admin/Reports.cshtml", reports);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName)
+        {
+            Supervisor supervisor = await _adminService.GetSupervisorById(supervisorId);
+            var result = await _adminService.AssignCovenant(supervisor, departmentName);
+
+            if (result.StartsWith("Covenant assigned"))
+            {
+                TempData["SuccessMessage"] = result;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result;
+            }
+            return View("~/Views/Admin/SignCovenant.cshtml");
+        }
+
+        // Delete a covenant from a supervisor
+        [HttpPost]
+        public async Task<IActionResult> DeleteCovenant(int supervisorId)
+        {
+            Supervisor supervisor= await _adminService.GetSupervisorById(supervisorId);
+            var result = await _adminService.DeleteCovenant(supervisor);
+
+            if (result.StartsWith("Covenant deleted"))
+            {
+                TempData["SuccessMessage"] = result;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result;
+            }
+            return View("~/Views/Admin/DeleteCovenant.cshtml");
+
+
         }
     }
 }
