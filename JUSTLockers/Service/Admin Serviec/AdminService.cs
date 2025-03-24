@@ -292,8 +292,54 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-    public void ViewSupervisorInfo(Supervisor supervisor)
+    public async Task<List<Supervisor>> ViewSupervisorInfo(string filter = "All")
     {
-        throw new NotImplementedException();
+        var supervisors = new List<Supervisor>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            // Base query
+            var query = "SELECT id, name, email, supervised_department, location FROM Supervisors";
+
+            // Add filtering condition
+            if (filter != "All")
+            {
+                query += " WHERE location = @filter";
+            }
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                if (filter != "All")
+                {
+                    command.Parameters.AddWithValue("@filter", filter);
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var supervisor = new Supervisor(
+                            reader.GetInt32("id"),
+                            reader.GetString("name"),
+                            reader.GetString("email"),
+                            new Department
+                            {
+                                Name = reader.IsDBNull(reader.GetOrdinal("supervised_department"))? null: reader.GetString("supervised_department")
+                            }
+                        )
+                        {
+                            Location = reader.GetString("location")
+                        };
+
+                        supervisors.Add(supervisor);
+                    }
+                }
+            }
+        }
+
+        return supervisors;
     }
+
 }

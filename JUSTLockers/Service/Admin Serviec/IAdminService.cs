@@ -9,7 +9,7 @@ public interface IAdminService : IUserActions
     public string AssignCabinet(Cabinet model);
     void SignCabinetToNewSupervisour();
     public Task<string> AssignCovenant(Supervisor supervisor, string departmentName);
-    void ViewSupervisorInfo(Supervisor supervisor);
+    Task<List<Supervisor>> ViewSupervisorInfo(string filter = "All");
     void ViewAllCabinetsInfo();
     Task<List<Report>> ViewForwardedReports();
     public Task<Supervisor> GetSupervisorById(int supervisorId);
