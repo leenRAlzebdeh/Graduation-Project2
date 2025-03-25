@@ -29,6 +29,8 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> SignCovenant()
         {
             var supervisors = await _adminService.ViewAllSupervisorInfo();
+            var departments = await _adminService.GetDepartments();
+            ViewBag.Departments = departments;
             return View(supervisors);
         }
 
@@ -81,7 +83,9 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<IActionResult> ViewSupervisorInfo(string filter = "All")
         {
-            var supervisors = await _adminService.ViewSupervisorInfo(filter);
+            //sorry emas 
+            // var supervisors = await _adminService.ViewAllSupervisorInfo(filter);
+             var supervisors = await _adminService.ViewAllSupervisorInfo();
             ViewData["Filter"] = filter; 
             return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
         }

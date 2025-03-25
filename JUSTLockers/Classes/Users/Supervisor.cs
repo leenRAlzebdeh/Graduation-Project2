@@ -10,7 +10,7 @@ public class Supervisor : User
     public List<Reservation> ReservationList { get; set; }
     public List<Report> ReportList { get; set; }
     public List<Cabinet> Covenant { get; set; }
-    public string Location { get; set; }
+   
 
     public Supervisor(int id, string name, string email, Department department)
         : base(id, name, email)
