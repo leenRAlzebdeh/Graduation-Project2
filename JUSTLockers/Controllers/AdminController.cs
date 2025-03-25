@@ -78,6 +78,14 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
+        [HttpGet]
+        public async Task<IActionResult> ViewSupervisorInfo(string filter = "All")
+        {
+            var supervisors = await _adminService.ViewSupervisorInfo(filter);
+            ViewData["Filter"] = filter; 
+            return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
+        }
+
 
         [HttpGet]
         public async Task<IActionResult> LockerIssues()
