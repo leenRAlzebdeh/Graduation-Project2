@@ -77,69 +77,109 @@ public class AdminService : IAdminService
 
         }
     }
-    public async Task<string> AssignCovenant(Supervisor supervisor, string departmentName)
+    public async Task<string> AssignCovenant(int supervisorId, string departmentName)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             connection.Open();
-            // Check if the supervisor already has a covenant
-            var checkQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId AND supervised_department IS NOT NULL";
-            using (var checkCommand = new MySqlCommand(checkQuery, connection))
+            // Verify department exists
+            var departmentCheckQuery = "SELECT COUNT(*) FROM Departments WHERE name = @DepartmentName";
+            using (var departmentCheckCmd = new MySqlCommand(departmentCheckQuery, connection))
             {
-                checkCommand.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
-                var count = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+                departmentCheckCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
+                var departmentExists = Convert.ToInt32(await departmentCheckCmd.ExecuteScalarAsync()) > 0;
 
-                if (count > 0)
+                if (!departmentExists)
+                {
+                    return "Department does not exist.";
+                }
+            }
+
+            // Check if supervisor exists
+            var supervisorCheckQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId";
+            using (var supervisorCheckCmd = new MySqlCommand(supervisorCheckQuery, connection))
+            {
+                supervisorCheckCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                var supervisorExists = Convert.ToInt32(await supervisorCheckCmd.ExecuteScalarAsync()) > 0;
+
+                if (!supervisorExists)
+                {
+                    return "Supervisor does not exist.";
+                }
+            }
+
+            // Check if supervisor already has a covenant
+            var covenantCheckQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId AND supervised_department IS NOT NULL";
+            using (var covenantCheckCmd = new MySqlCommand(covenantCheckQuery, connection))
+            {
+                covenantCheckCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                var hasCovenant = Convert.ToInt32(await covenantCheckCmd.ExecuteScalarAsync()) > 0;
+
+                if (hasCovenant)
                 {
                     return "Supervisor already has a covenant assigned.";
                 }
             }
 
-            // Assign the covenant (update the supervisor's supervised_department)
+            // Assign the covenant
             var updateQuery = "UPDATE Supervisors SET supervised_department = @DepartmentName WHERE id = @SupervisorId";
-            using (var updateCommand = new MySqlCommand(updateQuery, connection))
+            using (var updateCmd = new MySqlCommand(updateQuery, connection))
             {
-                updateCommand.Parameters.AddWithValue("@DepartmentName", departmentName);
-                updateCommand.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
+                updateCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
+                updateCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
 
-                int rowsAffected = await updateCommand.ExecuteNonQueryAsync();
+                int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
 
-                if (rowsAffected > 0)
-                {
-                    return "Covenant assigned successfully.";
-                }
-                else
-                {
-                    return "Failed to assign covenant.";
-                }
+                return rowsAffected > 0
+                    ? "Covenant assigned successfully."
+                    : "Failed to assign covenant.";
             }
         }
     }
 
-    public async Task<string> DeleteCovenant(Supervisor supervisor)
+    public async Task<string> DeleteCovenant(int supervisorId)
     {
-        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
+            // First check if supervisor exists
             connection.Open();
-            // Remove the covenant (set supervised_department to NULL)
-            var query = "UPDATE Supervisors SET supervised_department = NULL WHERE id = @SupervisorId";
-            using (var command = new MySqlCommand(query, connection))
+            var checkQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId";
+            using (var checkCommand = new MySqlCommand(checkQuery, connection))
             {
-                command.Parameters.AddWithValue("@SupervisorId", supervisor.Id);
+                checkCommand.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
 
-                int rowsAffected = await command.ExecuteNonQueryAsync();
-
-                if (rowsAffected > 0)
+                if (!exists)
                 {
-                    return "Covenant deleted successfully.";
-                }
-                else
-                {
-                    return "Failed to delete covenant.";
+                    return "Supervisor not found.";
                 }
             }
+
+            // Check if supervisor actually has a covenant to delete
+            var covenantCheckQuery = "SELECT COUNT(*) FROM Supervisors WHERE id = @SupervisorId AND supervised_department IS NOT NULL";
+            using (var covenantCheckCmd = new MySqlCommand(covenantCheckQuery, connection))
+            {
+                covenantCheckCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                var hasCovenant = Convert.ToInt32(await covenantCheckCmd.ExecuteScalarAsync()) > 0;
+
+                if (!hasCovenant)
+                {
+                    return "Supervisor doesn't have a covenant assigned.";
+                }
+            }
+
+            // Perform the deletion
+            var updateQuery = "UPDATE Supervisors SET supervised_department = NULL WHERE id = @SupervisorId";
+            using (var updateCmd = new MySqlCommand(updateQuery, connection))
+            {
+                updateCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+
+                return rowsAffected > 0
+                    ? "Covenant deleted successfully."
+                    : "Failed to delete covenant.";
+            }
         }
-    
     }
 
     public async Task<Supervisor> GetSupervisorById(int supervisorId)
@@ -292,8 +332,60 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-    public void ViewSupervisorInfo(Supervisor supervisor)
+    public async Task<List<Supervisor>> ViewAllSupervisorInfo()
     {
-        throw new NotImplementedException();
+        var supervisors = new List<Supervisor>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            connection.Open();
+            var query = @"
+            SELECT DISTINCT
+                s.id, 
+                s.name, 
+                s.email, 
+                s.location,
+                s.supervised_department,
+                d.name AS department_name,
+                d.total_wings,
+                d.Location AS department_location
+            FROM 
+                Supervisors s
+            LEFT JOIN 
+                Departments d ON s.supervised_department = d.name
+            GROUP BY s.id";
+
+            using (var command = new MySqlCommand(query, connection))
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    Department supervisedDepartment = null;
+
+                    // Only create department object if supervisor has one assigned
+                    if (!reader.IsDBNull(reader.GetOrdinal("supervised_department")))
+                    {
+                        supervisedDepartment = new Department
+                        {
+                            Name = reader.GetString("department_name"),
+                            Total_Wings = reader.GetInt32("total_wings"),
+                            Location = reader.GetString("department_location")
+                        };
+                    }
+
+                    supervisors.Add(new Supervisor(
+                        id: reader.GetInt32("id"),
+                        name: reader.GetString("name"),
+                        email: reader.GetString("email"),
+                        department: supervisedDepartment
+                    )
+                    {
+                        Location = reader.GetString("location")
+                    });
+                }
+            }
+        }
+
+        return supervisors;
     }
 }

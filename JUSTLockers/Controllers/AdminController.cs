@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using JUSTLockers.Classes;
 using MySqlConnector;
 using JUSTLockers.Services;
+using System.Threading.Tasks;
 
 namespace JUSTLockers.Controllers
 {
@@ -25,9 +26,10 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
-        public IActionResult SignCovenant()
+        public async Task<IActionResult> SignCovenant()
         {
-            return View();
+            var supervisors = await _adminService.ViewAllSupervisorInfo();
+            return View(supervisors);
         }
 
         [HttpGet]
@@ -88,8 +90,20 @@ namespace JUSTLockers.Controllers
         [HttpPost]
         public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName)
         {
-            Supervisor supervisor = await _adminService.GetSupervisorById(supervisorId);
-            var result = await _adminService.AssignCovenant(supervisor, departmentName);
+            //Supervisor supervisor = await _adminService.GetSupervisorById(supervisorId);
+            //var result = await _adminService.AssignCovenant(supervisor, departmentName);
+
+            //if (result.StartsWith("Covenant assigned"))
+            //{
+            //    TempData["SuccessMessage"] = result;
+            //}
+            //else
+            //{
+            //    TempData["ErrorMessage"] = result;
+            //}
+            //return RedirectToAction("SignCovenant");
+
+            var result = await _adminService.AssignCovenant(supervisorId, departmentName);
 
             if (result.StartsWith("Covenant assigned"))
             {
@@ -99,15 +113,15 @@ namespace JUSTLockers.Controllers
             {
                 TempData["ErrorMessage"] = result;
             }
-            return View("~/Views/Admin/SignCovenant.cshtml");
+
+            return RedirectToAction("SignCovenant");
         }
 
         // Delete a covenant from a supervisor
         [HttpPost]
         public async Task<IActionResult> DeleteCovenant(int supervisorId)
         {
-            Supervisor supervisor= await _adminService.GetSupervisorById(supervisorId);
-            var result = await _adminService.DeleteCovenant(supervisor);
+            var result = await _adminService.DeleteCovenant(supervisorId);
 
             if (result.StartsWith("Covenant deleted"))
             {
@@ -117,7 +131,7 @@ namespace JUSTLockers.Controllers
             {
                 TempData["ErrorMessage"] = result;
             }
-            return View("~/Views/Admin/DeleteCovenant.cshtml");
+            return RedirectToAction("SignCovenant");
 
 
         }
