@@ -76,32 +76,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .clickable-row {
-            cursor: pointer;
-            transition: background-color 0.2s;
+        cursor: pointer;
+        transition: background-color 0.2s;
         }
 
-            .clickable-row:hover {
-                background-color: #f8f9fa;
-            }
+        .clickable-row:hover {
+        background-color: #f8f9fa;
+        }
 
         .filter-btn.active {
+        font-weight: bold;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.5);
+        }
+
+        .filter-btn.notactive {
             font-weight: bold;
-            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.5);
+            box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.5); /* Changed color to red */
         }
 
         .badge-custom {
-            font-size: 0.9em;
-            padding: 0.5em 0.75em;
+        font-size: 0.9em;
+        padding: 0.5em 0.75em;
         }
 
         .modal-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
         }
 
         .detail-label {
-            font-weight: 600;
-            color: #495057;
+        font-weight: 600;
+        color: #495057;
         }
     </style>
 </head>
@@ -115,15 +120,15 @@
                 <!-- Filtering Buttons -->
                 <div class="d-flex justify-content-center flex-wrap mb-4">
                     <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "All" })"
-                       class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "All" ? "active" : "")">
+                    class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "All" ? "active" : "")">
                         <i class="fas fa-users me-1"></i> All Supervisors
                     </a>
                     <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Engineering" })"
-                       class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Engineering" ? "active" : "")">
+                    class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Engineering" ? "active" : "")">
                         <i class="fas fa-cogs me-1"></i> Engineering
                     </a>
                     <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Medicine" })"
-                       class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Medicine" ? "active" : "")">
+                    class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Medicine" ? "active" : "")">
                         <i class="fas fa-briefcase-medical me-1"></i> Medicine
                     </a>
                 </div>
@@ -170,7 +175,13 @@
                                         </td>
                                         <td>@supervisor.Location</td>
                                         <td>
-                                            <span class="badge bg-success badge-custom">Active</span>
+                                            @if (supervisor.SupervisedDepartment != null)
+                                            {
+                                                <span class="badge bg-success badge-custom">Active</span>
+                                            }else
+                                            {
+                                                <span class="badge bg-danger badge-custom">Not Active</span>         
+                                            }
                                         </td>
                                     </tr>
 
@@ -216,10 +227,7 @@
                                                                 <span class="detail-label"><i class="fas fa-layer-group me-2"></i>Total Wings:</span>
                                                                 <span>@(supervisor.SupervisedDepartment?.Total_Wings ?? 0)</span>
                                                             </div>
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-calendar-alt me-2"></i>Last Activity:</span>
-                                                                <span>Today</span>
-                                                            </div>
+                                                            
                                                         </div>
                                                     </div>
                                                     <hr>
