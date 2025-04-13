@@ -69,10 +69,10 @@ public class AdminService : IAdminService
         catch (Exception ex)
         {
             Console.WriteLine($"Database error: {ex.Message}");
-            if (ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
-            {
-                return "Cabinet Number already exists";
-            }
+           // if (ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
+           // {
+           //     return "Cabinet Number already exists";
+           // }
             return "Error adding cabinet: " + ex.Message;
 
         }

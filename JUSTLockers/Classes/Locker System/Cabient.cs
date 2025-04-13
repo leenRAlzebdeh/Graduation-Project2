@@ -13,6 +13,8 @@ public class Cabinet
     public string EmployeeName { get; set; }
     public int Capacity { get; set; }
 
+
+
     public CabinetStatus Status { get; set; }
 }
 

@@ -1,292 +1,377 @@
-﻿<!--
-
+﻿
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <link href="~/css/StyleSheet.css" rel="stylesheet" />
-
-    <title>Add New Cabinet</title>
-
-</head>
-
-<body>
-
-    <div class="container">
-        <h2>Add New Cabinet</h2>
-        <form id="cabinetForm">
-            <label>Cabinet Number</label>
-            <input type="text" id="cabinetNumber" placeholder="Enter Cabinet No" required>
-
-
-            <label>Location</label>
-            <select id="Location">
-                <option>Engineering</option>
-                <option>Medicine</option>
-
-            </select>
-
-            <label>Department</label>
-            <select id="department">
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-            </select>
-
-            <label>Wing</label>
-            <select id="wing">
-                <option>A1</option>
-                <option>A2</option>
-                <option>A3</option>
-            </select>
-
-            <label>Level</label>
-            <select id="level">
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-            </select>
-
-            <label>Assigned Employee</label>
-            <input type="text" id="employeeId" placeholder="Enter Assigned Employee id" required>
-
-            <label>Capacity</label>
-            <input type="number" id="capacity" placeholder="Enter Cabinet Capacity" required>
-
-            <button type="submit">Add Cabinet</button>
-        </form>
-    </div>
-
-
-
-</body>
-
-</html>
-
-      -->
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="~/css/StyleSheet.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-
-    <title>Add New Cabinet</title>
-
-
-
- 
-</head>
-
-<body>
-
-   
-
-    <div class="container">
-        <h2>Add New Cabinet</h2>
-        <!-- Success or Error message -->
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <script>
-                alert('@TempData["SuccessMessage"]');
-            </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Cabinet - JUSTLocker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css"/>
+    <style>
+        .form-section {
+            background: #fff;
+            margin: 20px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
 
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <script>
-                alert('@TempData["ErrorMessage"]');
-            </script>
+            .form-section h2 {
+                margin-bottom: 20px;
+            }
+
+        .cabinet-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
 
-        <form asp-controller="Admin" asp-action="AssignCabinet" method="post">
-            <label>Cabinet Number</label> <!-- <span id="lastcab" name="lastCab">*</span> -->
-            <input type="text" id="cabinetNumber" name="CabinetNumber" placeholder="Enter Cabinet No" required readonly>
+            .form-group label {
+                margin-bottom: 8px;
+                font-weight: 600;
+            }
 
-            <label for="location">Location</label>
-            <select id="location" name="Location" class="form-control">
-                <option value="Engineering">Engineering</option>
-                <option value="Medicine">Medicine</option>
-            </select>
+            .form-group input,
+            .form-group select {
+                padding: 10px 15px;
+                border-radius: 25px;
+                border: 1px solid #ccc;
+                font-family: "Poppins", sans-serif;
+                font-size: 0.95rem;
+            }
 
-            <label for="department">Department</label>
-            <select id="department" name="Department" class="form-control"></select>
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: #3b5998;
+                }
 
-            <label for="wing">Wing</label>
-            <select id="wing" name="Wing" class="form-control"></select>
+        .submit-btn {
+            grid-column: span 2;
+            text-align: center;
+        }
 
-            <label>Level</label>
-            <select id="level" name="Level">
-                <option>0</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-            </select>
+            .submit-btn button {
+                background: linear-gradient(to right, #00c6ff, #0072ff);
+                color: white;
+                padding: 14px 40px;
+                border: none;
+                border-radius: 30px;
+                font-weight: bold;
+                font-size: 1rem;
+                cursor: pointer;
+            }
 
-            <label>Capacity</label>
-            <input type="number" id="capacity" name="Capacity" placeholder="Enter Cabinet Capacity" required min="0">
+                .submit-btn button:hover {
+                    opacity: 0.9;
+                }
 
-            <label> Employee ID </label>
-            <input type="text" id="assignedEmployeeId" name="EmployeeId" placeholder="Enter Assigned Employee ID" required readonly>
+        .cabinet-table {
+            margin-top: 40px;
+        }
 
-            <label>Name of Employee</label>
-            <input type="text" id="employeeName" name="EmployeeName" readonly required>
+            .cabinet-table table {
+                width: 100%;
+                border-collapse: collapse;
+                border-radius: 15px;
+                overflow: hidden;
+            }
 
+            .cabinet-table th, .cabinet-table td {
+                padding: 12px;
+                text-align: center;
+                border-bottom: 1px solid #ddd;
+            }
 
+            .cabinet-table th {
+                background-color: #f5f5f5;
+            }
 
+        body.dark-mode .form-section,
+        body.dark-mode .cabinet-table {
+            background: #2e2e2e;
+            color: #ccc;
+        }
 
-            <button type="submit">Add Cabinet</button>
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group select {
+            background: #3a3a3a;
+            color: #eee;
+            border-color: #555;
+        }
 
-            <div style="text-align: left;">
-                <a href="@Url.Action("AdminDashboard", "Admin")" class="btn btn-primary w-100">Back</a>
+        a {
+            text-decoration: none;
+            color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a  href="@Url.Action("AdminDashboard", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle" id="cabinet-management-toggle">
+                    <i class="fas fa-archive"></i> Cabinet Management
+                </div>
+            </li>
+            <ul class="pretty-submenu" id="cabinet-submenu">
+                <li><a href="add-cabinet.html">Add Cabinet</a></li>
+                <li><a href="sign-covenant.html">Sign Covenant</a></li>
+                <li><a href="delete-covenant.html">Delete Covenant</a></li>
+            </ul>
+            <li><i class="fas fa-users"></i> Employee Management</li>
+            <li><i class="fas fa-exclamation-circle"></i> Reports</li>
+            <li><i class="fas fa-cog"></i> Settings</li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Add Cabinet</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Loading...</span>
+                    </div>
+                </div>
             </div>
+        </header>
 
-        </form>
+        <!-- Form Section -->
+        <section class="form-section">
+            <h2>Add New Cabinet</h2>
 
-        
-        
-    </div>
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
 
 
+            <form class="cabinet-form" asp-controller="Admin" asp-action="AssignCabinet" method="post">
+                <div class="form-group">
+                    <label>Cabinet Number</label>
+                    <input type="text" id="cabinetNumber" name="CabinetNumber" readonly />
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <select id="location" name="Location">
+                        <option value="">Select</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Medicine">Medicine</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <select id="department" name="Department">
+                        <option value="">Select Location First</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Wing</label>
+                    <select id="wing" name="Wing">
+                       
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Level</label>
+                    <select id="level" name="Level">
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="number" id="capacity" name="Capacity" placeholder="e.g. 20" required />
+                </div>
+                <div class="form-group">
+                    <label>Employee ID</label>
+                    <input type="text" id="assignedEmployeeId" name="EmployeeId"  readonly />
+                </div>
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <input type="text" id="employeeName" name="EmployeeName"  readonly />
+                </div>
+                <div class="submit-btn">
+                    <button type="submit">Add Cabinet</button>
+                </div>
+            </form>
 
-
-
+           
+        </section>
+    </main>
     <script>
-                       document.addEventListener("DOMContentLoaded", function () {
-            // Fetch the last cabinet number from the CabinetController when the page loads
-            fetch('/Cabinet/GetLastCabinetNumberJson')  // Call the CabinetController action
-                .then(response => response.json())  // Parse the JSON response
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // Auto-increment cabinet number on page load
+            fetch('/Cabinet/GetLastCabinetNumberJson')
+                .then(response => response.json())
                 .then(data => {
-                    const cabinetNumberInput = document.getElementById("cabinetNumber"); // Get the input element
-                    if (cabinetNumberInput) {
-                        // Increment the last cabinet number by 1 and set it as the value
-                        const lastCabinetNumber = parseInt(data) + 1; // Increment the number
-                        cabinetNumberInput.value = lastCabinetNumber || "1"; // Set the value to incremented last number
-                    }
-                })
-                .catch(() => {
-                    // Handle error if fetch fails
                     const cabinetNumberInput = document.getElementById("cabinetNumber");
                     if (cabinetNumberInput) {
-                        cabinetNumberInput.value = "Error fetching cabinet number"; // Show error message if the request fails
-                    }
-                });
-        });
-
-                document.getElementById("department").addEventListener("change", function () {
-            const department = this.value;
-            const supervisorInput = document.getElementById("employeeName"); // Input field for supervisor name
-           const location=  document.getElementById("location").value;
-            fetch(`/Cabinet/GetSupervisor?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "Success") {
-                        supervisorInput.value = data.supervisor;
-                    } else {
-                        supervisorInput.value = "unassigned";
+                        const lastCabinetNumber = parseInt(data) + 1;
+                        cabinetNumberInput.value = lastCabinetNumber || "1";
                     }
                 })
                 .catch(() => {
-                    supervisorInput.value = "Error fetching supervisor";
-                });
-        });
-
-         document.getElementById("department").addEventListener("change", function () {
-            const department = this.value;
-            const supervisorInput = document.getElementById("assignedEmployeeId"); // Input field for supervisor name
-             const location=  document.getElementById("location").value;
-            fetch(`/Cabinet/GetID?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "Success") {
-                        supervisorInput.value = data.supervisor;
-                    } else {
-                        supervisorInput.value = "unassigned";
+                    const cabinetNumberInput = document.getElementById("cabinetNumber");
+                    if (cabinetNumberInput) {
+                        cabinetNumberInput.value = "Error fetching cabinet number";
                     }
-                })
-                .catch(() => {
-                    supervisorInput.value = "Error fetching supervisor";
                 });
-        });
 
+            // Update supervisor name and ID when department changes
+            document.getElementById("department").addEventListener("change", function () {
+                const department = this.value;
+                const location = document.getElementById("location").value;
 
-
-
-        /*
-
-                     document.getElementById("department").addEventListener("change", function () {
-                     const department = this.value;
-                    const employeeNameInput = document.getElementById("employeeName");
-
-
-                fetch(`/Cabinet/GetEmployeeName?department=${encodeURIComponent(department)}`)
+                // Fetch supervisor name
+                fetch(`/Cabinet/GetSupervisor?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
                     .then(response => response.json())
                     .then(data => {
-                        employeeNameInput.value = data !== "Not Found" ? data : "Employee not found";
+                        const supervisorInput = document.getElementById("employeeName");
+                        supervisorInput.value = data.status === "Success" ? data.supervisor : "unassigned";
                     })
                     .catch(() => {
-                        employeeNameInput.value = "Error fetching employee data";
+                        document.getElementById("employeeName").value = "Error fetching supervisor";
                     });
 
-        });
-
-            */
-
-
-
-
-
-               document.getElementById("location").addEventListener("change", function () {
-            const selectedLocation = this.value;
-            const departmentSelect = document.getElementById("department");
-
-            fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
-                .then(response => response.json())
-                .then(data => {
-                    departmentSelect.innerHTML = "";
-                    data.forEach(dept => {
-                        const option = document.createElement("option");
-                        option.value = dept;
-                        option.textContent = dept;
-                        departmentSelect.appendChild(option);
+                // Fetch supervisor ID
+                fetch(`/Cabinet/GetID?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const supervisorIdInput = document.getElementById("assignedEmployeeId");
+                        supervisorIdInput.value = data.status === "Success" ? data.supervisor : "unassigned";
+                    })
+                    .catch(() => {
+                        document.getElementById("assignedEmployeeId").value = "Error fetching supervisor";
                     });
 
-                    // Trigger department change to auto-load wings
-                    departmentSelect.dispatchEvent(new Event("change"));
-                });
-        });
-
-        document.getElementById("department").addEventListener("change", function () {
-            const selectedDepartment = this.value;
-            const wingSelect = document.getElementById("wing");
-
-            fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(selectedDepartment)}`)
-                .then(response => response.json())
-                .then(data => {
-                    wingSelect.innerHTML = "";
-                    data.forEach(wing => {
-                        const option = document.createElement("option");
-                        option.value = wing;
-                        option.textContent = wing;
-                        wingSelect.appendChild(option);
+                // Load wings
+                fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const wingSelect = document.getElementById("wing");
+                        wingSelect.innerHTML = "";
+                        data.forEach(wing => {
+                            const option = document.createElement("option");
+                            option.value = wing;
+                            option.textContent = wing;
+                            wingSelect.appendChild(option);
+                        });
                     });
-                });
+            });
+
+            // Update departments when location changes
+            document.getElementById("location").addEventListener("change", function () {
+                const selectedLocation = this.value;
+                const departmentSelect = document.getElementById("department");
+
+                fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        departmentSelect.innerHTML = "";
+                        data.forEach(dept => {
+                            const option = document.createElement("option");
+                            option.value = dept;
+                            option.textContent = dept;
+                            departmentSelect.appendChild(option);
+                        });
+
+                        departmentSelect.dispatchEvent(new Event("change")); // Trigger to load wings and supervisor
+                    });
+            });
+
+            
+
+            // Initialize UI behaviors
+            document.getElementById("dark-mode-toggle").addEventListener("click", function () {
+                document.body.classList.toggle("dark-mode");
+                const icon = this.querySelector("i");
+                icon.classList.toggle("fa-moon");
+                icon.classList.toggle("fa-sun");
+            });
+
+            document.getElementById("cabinet-management-toggle").addEventListener("click", function () {
+                const submenu = document.getElementById("cabinet-submenu");
+                submenu.classList.toggle("show");
+            });
+
+            // Trigger initial department and cabinet data load
+            document.getElementById("location").dispatchEvent(new Event("change"));
         });
-
-
-
-
-
-
-        // Trigger initial load
-        document.getElementById("location").dispatchEvent(new Event("change"));
-
     </script>
+
+
+
+
+
+
+
+
+
+
+
+@*
+        document.getElementById("admin-name").textContent = "Yasmeen Gharaibeh";
+
+        const locationSelect = document.getElementById("location");
+        const departmentSelect = document.getElementById("department");
+
+        locationSelect.addEventListener("change", function () {
+            const engDepts = ["A", "C", "CH", "E", "G", "M", "N"];
+            const medDepts = ["D", "N", "M", "P", "PH"];
+            departmentSelect.innerHTML = `<option value="">Select Department</option>`;
+            const depts = this.value === "Engineering" ? engDepts : this.value === "Medicine" ? medDepts : [];
+            depts.forEach(dep => {
+                const opt = document.createElement("option");
+                opt.value = dep;
+                opt.textContent = dep;
+                departmentSelect.appendChild(opt);
+            });
+        });
+
+        document.getElementById("dark-mode-toggle").addEventListener("click", function () {
+            document.body.classList.toggle("dark-mode");
+            const icon = this.querySelector("i");
+            icon.classList.toggle("fa-moon");
+            icon.classList.toggle("fa-sun");
+        });
+
+        document.getElementById("cabinet-management-toggle").addEventListener("click", function () {
+            const submenu = document.getElementById("cabinet-submenu");
+            submenu.classList.toggle("show");
+        });
+    </script>*@
 </body>
 </html>
