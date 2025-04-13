@@ -85,8 +85,8 @@ namespace JUSTLockers.Controllers
         {
             //sorry emas 
             // var supervisors = await _adminService.ViewAllSupervisorInfo(filter);
-             var supervisors = await _adminService.ViewAllSupervisorInfo();
-            ViewData["Filter"] = filter; 
+            var supervisors = await _adminService.ViewAllSupervisorInfo();
+            ViewData["Filter"] = filter;
             return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
         }
 
@@ -94,7 +94,6 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<IActionResult> LockerIssues()
         {
-           // var adminService = new AdminService(_context);
             var reports = await _adminService.ViewForwardedReports();
             return View("~/Views/Admin/Reports.cshtml", reports);
         }
@@ -102,18 +101,7 @@ namespace JUSTLockers.Controllers
         [HttpPost]
         public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName)
         {
-            //Supervisor supervisor = await _adminService.GetSupervisorById(supervisorId);
-            //var result = await _adminService.AssignCovenant(supervisor, departmentName);
 
-            //if (result.StartsWith("Covenant assigned"))
-            //{
-            //    TempData["SuccessMessage"] = result;
-            //}
-            //else
-            //{
-            //    TempData["ErrorMessage"] = result;
-            //}
-            //return RedirectToAction("SignCovenant");
 
             var result = await _adminService.AssignCovenant(supervisorId, departmentName);
 
@@ -147,5 +135,45 @@ namespace JUSTLockers.Controllers
 
 
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResolveReport(int reportId, string? resolutionDetails)
+        {
+            
+
+            var success = await _adminService.ResolveReport(reportId,resolutionDetails);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Report resolved successfully!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to resolve report.";
+            }
+
+            return RedirectToAction("LockerIssues");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteReport(int reportId)
+        {
+            var success = await _adminService.DeleteReport(reportId);
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Report deleted successfully!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to delete report.";
+            }
+            return RedirectToAction("LockerIssues");
+        }
+
+
+
     }
 }
+
+

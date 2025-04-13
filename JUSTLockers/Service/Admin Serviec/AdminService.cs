@@ -299,6 +299,7 @@ public class AdminService : IAdminService
                 r.Status AS ReportStatus,
                 r.ReportDate AS ReportDate,
                 r.ResolvedDate AS ResolvedDate,
+                r.ResolvedDetails AS ResolutionDetails,
                 l.Id AS LockerNumber,
                 l.Status AS LockerStatus,
                 u.id AS ReporterId,
@@ -328,7 +329,9 @@ public class AdminService : IAdminService
                             reader.GetInt32("ReporterId"),
                             reader.GetString("ReporterName"),
                             reader.GetString("ReporterEmail"),
-                            reader.GetString("DepartmentName") // Department is fetched from Lockers
+                            reader.GetString("DepartmentName")
+                            
+                            // Department is fetched from Lockers
                         ),
                         Locker = new Locker
                         {
@@ -341,7 +344,8 @@ public class AdminService : IAdminService
                         Subject = reader.GetString("ProblemDescription"),
                         Statement = reader.GetString("DetailedDescription"),
                         ReportDate = reader.GetDateTime("ReportDate"),
-                        ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate")
+                        ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                        ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
                     });
                 }
             }
@@ -439,5 +443,45 @@ public class AdminService : IAdminService
         }
 
         return departments;
+    }
+
+
+    public async Task<bool> ResolveReport(int reportId, string? resolutionDetails)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"UPDATE Reports 
+                     SET Status = 'RESOLVED', 
+                         ResolvedDate = @ResolvedDate,
+                         ResolvedDetails = @ResolutionDetails
+                     WHERE Id = @ReportId";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@ReportId", reportId);
+                command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
+                command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
+
+                return await command.ExecuteNonQueryAsync() > 0;
+            }
+        }
+    }
+
+    public async Task<bool> DeleteReport(int reportId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = "DELETE FROM Reports WHERE Id = @ReportId";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@ReportId", reportId);
+                return await command.ExecuteNonQueryAsync() > 0;
+            }
+        }
     }
 }

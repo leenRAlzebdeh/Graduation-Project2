@@ -15,4 +15,8 @@ public interface IAdminService : IUserActions
     public Task<Supervisor> GetSupervisorById(int supervisorId);
     void RespondForwardedReport(string respond);
     public Task<List<Department>> GetDepartments();
-}
+    public  Task<bool> ResolveReport(int reportId, string? resolutionDetails);
+    public Task<bool> DeleteReport(int reportId);
+
+
+    }

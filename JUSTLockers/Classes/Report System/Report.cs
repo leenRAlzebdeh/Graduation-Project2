@@ -12,7 +12,7 @@ public class Report
     public required string Statement { get; set; }
     public DateTime ReportDate { get; set; }
     public DateTime? ResolvedDate { get; set; }
-    //public required string ResolutionDetails { get; set; }
+    public  string? ResolutionDetails { get; set; }
 }
 
 public enum ReportType
