@@ -42,7 +42,7 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public IActionResult AddCabinet()
         {
-            return View();
+            return View("~/Views/Admin/AddCabinet.cshtml");
         }
         [HttpGet]
         public IActionResult AdminDashboard()
@@ -73,8 +73,8 @@ namespace JUSTLockers.Controllers
                 // Redirect to the desired view (e.g., Index)
                 return View("~/Views/Admin/AddCabinet.cshtml");
             }
-
-            return View(model); // If the model is invalid, return the same view
+            //return View("~/Views/Admin/AddCabinet.cshtml");
+             return View(model); // If the model is invalid, return the same view
         }
         public IActionResult Index()
         {

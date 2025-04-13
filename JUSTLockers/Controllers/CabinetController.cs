@@ -1,16 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using JUSTLockers.Classes;
+using JUSTLockers.DataBase;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using System.Linq.Expressions;
 
 namespace JUSTLockers.Controllers
 {
     public class CabinetController : Controller
     {
+       // private readonly DbConnectionFactory _context;
 
         private readonly IConfiguration _configuration;
 
         public CabinetController(IConfiguration configuration)
         {
             _configuration = configuration;
+          
         }
 
 
@@ -137,6 +143,51 @@ namespace JUSTLockers.Controllers
                 return Json("Error fetching last cabinet number: " + ex.Message); // Return error message if an exception occurs
             }
         }
+       
+        /*
+        [HttpGet]
+        public List<Cabinet> GetLatestCabinets()
+        {
+         
+                var cabinets = new List<Cabinet>();
+                string query = "SELECT * FROM Cabinets ORDER BY Id DESC LIMIT 5";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    {
+                        connection.Open();
+                        using (var command = new MySqlCommand(query, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    cabinets.Add(new Cabinet
+                                    {
+                                        CabinetNumber = reader.GetInt32("number_cab"),
+                                        Location = reader.GetString("location"),
+                                        Department = reader.GetString("department_name"),
+                                        Wing = reader.GetInt32("wing"),
+                                        Level = reader.GetInt32("level"),
+                                        Capacity = reader.GetInt32("Capacity"),
+                                        EmployeeId = reader.GetInt32("supervisor_id"),
+                                        // EmployeeName = reader.GetString("EmployeeName"),
+                                        cabinet_id = reader.GetString("cabinet_id"),
+                                        Status = (CabinetStatus)Enum.Parse(typeof(CabinetStatus), reader.GetString("Status")),
+
+                                    });
+                                }
+                            }
+                        }
+
+                        return cabinets;
+
+                    }
+                }
+            
+           
+        }*/
+       
 
         [HttpGet]
         public JsonResult GetWings(string departmentName)
@@ -156,12 +207,13 @@ namespace JUSTLockers.Controllers
                         totalWings = Convert.ToInt32(command.ExecuteScalar());
                     }
                 }
-
+                //1 up to totalWings
                 var wings = Enumerable.Range(1, totalWings)
                                       .Select(w => w.ToString())
                                       .ToList();
 
                 return Json(wings);
+              //  JSON is a format used to store and exchange data
             }
             catch (Exception ex)
             {
