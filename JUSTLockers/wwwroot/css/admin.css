@@ -104,7 +104,6 @@ body.dark-mode {
     height: 250px;
     overflow: hidden;
     border-bottom: 3px solid #ddd;
-
 }
 
 .hero-bg {
@@ -171,12 +170,12 @@ body.dark-mode {
             object-fit: cover;
             border: 2px solid #fff;
         }
-        .admininfo{
-            position:fixed;
-            top:0;
-            right:0;
 
-        }
+.admininfo {
+    position: fixed;
+    top: 0;
+    right: 0;
+}
 
 /* -----------------------------
    Dashboard Cards
@@ -286,6 +285,7 @@ button {
     .deny:hover {
         background: #c82333;
     }
+
 .report-details {
     background: #fff;
     margin: 20px;
@@ -384,6 +384,7 @@ body.dark-mode .detail-row {
     .delete-btn:hover {
         background-color: #c82333;
     }
+
 .pretty-submenu {
     display: none;
     flex-direction: column;

@@ -51,10 +51,7 @@
         }
     });
 });
-document.getElementById("cabinet-management-toggle").addEventListener("click", function () {
-    const submenu = document.getElementById("cabinet-submenu");
-    submenu.classList.toggle("show");
-});
+
 
 
 
