@@ -1,0 +1,25 @@
+﻿.clickable-row {
+    cursor: pointer;
+}
+
+.badge {
+    font-size: 0.9em;
+}
+
+.resolution-panel {
+    background-color: #f8f9fa;
+    border-left: 4px solid #28a745;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+}
+
+.resolution-header {
+    color: #28a745;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.toggle-solved-btn {
+    margin-left: 10px;
+}

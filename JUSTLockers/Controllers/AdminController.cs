@@ -157,6 +157,7 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteReport(int reportId)
         {
             var success = await _adminService.DeleteReport(reportId);
