@@ -5,6 +5,7 @@ using JUSTLockers.Classes;
 using MySqlConnector;
 using JUSTLockers.Services;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace JUSTLockers.Controllers
 {
@@ -18,11 +19,15 @@ namespace JUSTLockers.Controllers
                _context = context;
            }
         */
+        private readonly IConfiguration _configuration;
+
+       
         private readonly AdminService _adminService;
 
-        public AdminController(AdminService adminService)
+        public AdminController(AdminService adminService, IConfiguration configuration)
         {
             _adminService = adminService;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -39,6 +44,14 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
+
+        [HttpGet]
+        public IActionResult AddSupervisor()
+        {
+            return View();
+        }
+
+
         [HttpGet]
         public IActionResult AddCabinet()
         {
@@ -116,6 +129,78 @@ namespace JUSTLockers.Controllers
 
             return RedirectToAction("SignCovenant");
         }
+
+
+        //public JsonResult GetEmployee(int id)
+        //{
+        //    try
+        //    {
+        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //        {
+        //            string query = "SELECT name,email FROM Employees WHERE id = @id";
+        //            using (var command = new MySqlCommand(query, connection))
+        //            {
+        //                command.Parameters.AddWithValue("@id", id);
+
+        //                connection.Open();
+        //                var empName = command.ExecuteScalar()?.ToString();
+        //                var empEmail = command.ExecuteScalar()?.ToString();
+        //                if (string.IsNullOrEmpty(empName) && string.IsNullOrEmpty(empEmail))
+        //                {
+        //                    return Json(new { status = "Not Found", employee = "" });
+        //                }
+
+        //                return Json(new { status = "Success", employee = empName ,email=empEmail });
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Database error: {ex.Message}");
+        //        return Json(new { status = "Error", message = "Database error occurred" });
+        //    }
+        //}
+        public JsonResult GetEmployee(int id)
+        {
+            try
+            {
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    string query = "SELECT name, email FROM Employees WHERE id = @id";
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", id);
+                        connection.Open();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var empName = reader["name"].ToString();
+                                var empEmail = reader["email"].ToString();
+
+                                return Json(new { status = "Success", employee = empName, email = empEmail });
+                            }
+                            else
+                            {
+                                return Json(new { status = "Not Found", employee = "", email = "" });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database error: {ex.Message}");
+                return Json(new { status = "Error", message = "Database error occurred" });
+            }
+        }
+
+
+
+
+
+
 
         // Delete a covenant from a supervisor
         [HttpPost]
