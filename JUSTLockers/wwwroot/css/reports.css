@@ -1,10 +1,58 @@
-﻿.clickable-row {
-    cursor: pointer;
+﻿/* wwwroot/css/reports.css */
+.form-section {
+    background: #fff;
+    margin: 20px;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 
-.badge {
-    font-size: 0.9em;
+    .form-section h2 {
+        margin-bottom: 20px;
+    }
+
+body.dark-mode .form-section {
+    background: #2e2e2e;
+    color: #ccc;
 }
+
+.filter-controls select {
+    padding: 8px 12px;
+    border-radius: 25px;
+    border: 1px solid #ccc;
+    font-family: "Poppins", sans-serif;
+}
+
+    .filter-controls select:focus {
+        outline: none;
+        border-color: #3b5998;
+    }
+
+.action-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    margin: 2px;
+    transition: background 0.3s ease;
+}
+
+.solve-btn {
+    background-color: #28a745;
+}
+
+    .solve-btn:hover {
+        background-color: #218838;
+    }
+
+.reject-btn {
+    background-color: #dc3545;
+}
+
+    .reject-btn:hover {
+        background-color: #c82333;
+    }
 
 .resolution-panel {
     background-color: #f8f9fa;
@@ -20,6 +68,41 @@
     margin-bottom: 10px;
 }
 
-.toggle-solved-btn {
-    margin-left: 10px;
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: white;
+}
+
+    .status-badge.reported,
+    .status-badge.in_review,
+    .status-badge.escalated {
+        background-color: #ffc107;
+    }
+
+    .status-badge.resolved {
+        background-color: #28a745;
+    }
+
+    .status-badge.rejected {
+        background-color: #dc3545;
+    }
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.report-details-row {
+    display: none;
+}
+
+.report-details-content {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #3b5998;
+}
+
+body.dark-mode .report-details-content {
+    background-color: #2e2e2e;
 }

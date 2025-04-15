@@ -1,272 +1,245 @@
-﻿ @model IEnumerable<JUSTLockers.Classes.Report>
+﻿@model IEnumerable<JUSTLockers.Classes.Report>
 @using JUSTLockers.Classes
+@{
+    ViewData["Title"] = "Reports";
+}
 
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>Locker Issues</title>
-    <style>
-        .clickable-row {
-            cursor: pointer;
-        }
-
-        .badge {
-            font-size: 0.9em;
-        }
-
-        .resolution-panel {
-            background-color: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 4px;
-        }
-
-        .resolution-header {
-            color: #28a745;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .toggle-solved-btn {
-            margin-left: 10px;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker | @ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
+    <link rel="stylesheet" href="~/css/reports.css" />
 </head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("AdminDashboard", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle" id="cabinet-management-toggle">
+                    <i class="fas fa-archive"></i> Cabinet Management
+                </div>
+            </li>
+            <ul class="pretty-submenu" id="cabinet-submenu">
+                <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
+                <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
+                <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
+            </ul>
+            <li><i class="fas fa-users"></i> Employee Management</li>
+            <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info</a></li>
+            <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor</a></li>
+            <li class="nav-item">
+                <a href="@Url.Action("LockerIssues", "Admin")">
+                    <i class="fas fa-exclamation-triangle"></i> Reports
+                </a>
+            </li>
+            <li><i class="fas fa-cog"></i> Settings</li>
+        </ul>
+    </aside>
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Locker Issues</h2>
-        <div>
-            <a href="@Url.Action("AdminDashboard", "Admin")" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i> Back to Home
-            </a>
-            <button id="toggleSolved" class="btn btn-outline-secondary toggle-solved-btn">
-                <i class="fas fa-eye"></i> Show Solved
-            </button>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Reports Overview</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">@(User.Identity?.Name ?? "Admin")</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Reports Section -->
+        <section class="form-section">
+            <h2>Reported Issues</h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="filter-controls">
+                    <select id="status-filter" aria-label="Filter by status">
+                        <option value="all">All Statuses</option>
+                        <option value="reported">Reported</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <button id="toggleSolved" class="btn btn-outline-secondary">
+                    <i class="fas fa-eye"></i> Show Resolved/Rejected
+                </button>
+            </div>
+
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Locker #</th>
+                        <th>Problem</th>
+                        <th>Status</th>
+                        <th>Reported On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="report-list">
+                    @foreach (var report in Model)
+                    {
+                        <tr class="clickable-row @(report.Status == ReportStatus.RESOLVED || report.Status == ReportStatus.REJECTED ? "solved-row" : "unsolved-row")"
+                            data-report-id="@report.ReportId"
+                            data-status="@report.Status.ToString().ToLower()">
+                            <td>@report.Locker.LockerId</td>
+                            <td>@report.Subject</td>
+                            <td>
+                                <span class="status-badge @report.Status.ToString().ToLower()">
+                                    @report.Status
+                                </span>
+                            </td>
+                            <td>@report.ReportDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>
+                                @if (report.Status != ReportStatus.RESOLVED && report.Status != ReportStatus.REJECTED)
+                                {
+                                    <button class="action-btn solve-btn resolve-btn"
+                                            data-report-id="@report.ReportId"
+                                            data-locker-id="@report.Locker.LockerId">
+                                        <i class="fas fa-check"></i> Solve
+                                    </button>
+                                    <button class="action-btn reject-btn"
+                                            data-report-id="@report.ReportId"
+                                            data-locker-id="@report.Locker.LockerId"
+                                            data-subject="@report.Subject">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                }
+                                @if (report.Status == ReportStatus.REJECTED)
+                                {
+                                    <button class="action-btn solve-btn resolve-btn"
+                                            data-report-id="@report.ReportId"
+                                            data-locker-id="@report.Locker.LockerId">
+                                        <i class="fas fa-check"></i> Solve
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                        <tr class="report-details-row" data-report-id="@report.ReportId" style="display:none;">
+                            <td colspan="5" class="report-details-content">
+                                <div>
+                                    <p><strong>Locker Number:</strong> @report.Locker.LockerId</p>
+                                    <p><strong>Department:</strong> @report.Locker.Department</p>
+                                    <p><strong>Reported By:</strong> @report.Reporter.Name (@report.Reporter.Email)</p>
+                                    <p><strong>Student Department:</strong> @report.Reporter.Department</p>
+                                    <p><strong>Report Type:</strong> @report.Type</p>
+                                    <p><strong>Full Description:</strong> @report.Statement</p>
+
+                                    @if (report.Status == ReportStatus.RESOLVED || report.Status == ReportStatus.REJECTED)
+                                    {
+                                        <div class="resolution-panel">
+                                            <div class="resolution-header">
+                                                <i class="fas fa-check-circle"></i> Resolution Details
+                                            </div>
+                                            <p><strong>Resolved on:</strong> @(report.ResolvedDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")</p>
+                                            <div class="border-top pt-2 mt-2">
+                                                @if (!string.IsNullOrEmpty(report.ResolutionDetails))
+                                                {
+                                                    @report.ResolutionDetails
+                                                }
+                                                else
+                                                {
+                                                    <div class="alert alert-info"><i class="fas fa-info-circle"></i> No resolution details provided.</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- Resolve Report Modal -->
+    <div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="resolveModalTitle">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="resolveForm" asp-action="ResolveReport" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="resolveModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="resolvedDetails" class="form-label">Resolution Details</label>
+                            <textarea class="form-control" id="resolvedDetails" name="resolutionDetails" rows="5"
+                                      placeholder="Describe how the issue was resolved..."></textarea>
+                        </div>
+                        <input type="hidden" id="resolveReportId" name="reportId">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check-circle"></i> Mark as Resolved
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-    }
-
-    <table class="table table-hover table-striped">
-        <thead class="thead-dark">
-            <tr>
-                <th>Locker Number</th>
-                <th>Problem Description</th>
-                <th>Status</th>
-                <th>Reported On</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var report in Model)
-            {
-                <tr class="clickable-row @(report.Status == ReportStatus.RESOLVED ? "solved-row" : "unsolved-row")"
-                    data-bs-toggle="modal" data-bs-target="#detailsModal-@report.ReportId">
-                    <td>@report.Locker.LockerId</td>
-                    <td>@report.Subject</td>
-                    <td>
-                        <span class="badge @GetStatusBadgeClass(report.Status)">
-                            @report.Status
-                        </span>
-                    </td>
-                    <td>@report.ReportDate.ToString("MM/dd/yyyy hh:mm tt")</td>
-                    <td>
-                        @if (report.Status != ReportStatus.RESOLVED)
-                        {
-                            <button class="btn btn-sm btn-success"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#resolveModal-@report.ReportId"
-                                    onclick="event.stopPropagation()">
-                                <i class="fas fa-check"></i> Solve
-                            </button>
-                        }
-                        <button class="btn btn-sm btn-danger"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteModal-@report.ReportId"
-                                onclick="event.stopPropagation()">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </td>
-                </tr>
-
-                <!-- Report Details Modal -->
-                <div class="modal fade" id="detailsModal-@report.ReportId" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title">Report Details - Locker @report.Locker.LockerId</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <h6>Locker Information</h6>
-                                        <p><strong>Locker ID:</strong> @report.Locker.LockerId</p>
-                                        <p><strong>Department:</strong> @report.Locker.Department</p>
-                                        <p><strong>Status:</strong> <span class="badge @GetStatusBadgeClass(report.Status)">@report.Status</span></p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Reporter Information</h6>
-                                        <p><strong>Name:</strong> @report.Reporter.Name</p>
-                                        <p><strong>Email:</strong> @report.Reporter.Email</p>
-                                        <p><strong>Department:</strong> @report.Reporter.Department</p>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <h6>Problem Details</h6>
-                                    <p><strong>Subject:</strong> @report.Subject</p>
-                                    <p><strong>Description:</strong></p>
-                                    <div class="border p-3 bg-light rounded">@Html.Raw(report.Statement.Replace("\n", "<br/>"))</div>
-                                </div>
-
-                                @if (report.Status == ReportStatus.RESOLVED)
-                                {
-                                    <div class="resolution-panel">
-                                        <div class="resolution-header">
-                                            <i class="fas fa-check-circle"></i> Resolution Details
-                                        </div>
-                                        <p><strong>Resolved on:</strong> @report.ResolvedDate?.ToString("MM/dd/yyyy hh:mm tt")</p>
-                                        <div class="border-top pt-2 mt-2">
-                                            @if (!string.IsNullOrEmpty(report.ResolutionDetails))
-                                            {
-                                                @Html.Raw(report.ResolutionDetails.Replace("\n", "<br/>"))
-                                            }
-                                            else
-                                            {
-                                                <div class="alert alert-info">
-                                                    <i class="fas fa-info-circle"></i> This report was marked as resolved without additional details.
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                }
-                                }
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                        </div>
+    <!-- Reject Report Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="rejectModalTitle">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="rejectForm" asp-action="RejectReport" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="rejectModalTitle">Reject Report</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                </div>
-
-                <!-- Resolve Report Modal -->
-                <div class="modal fade" id="resolveModal-@report.ReportId" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <form asp-action="ResolveReport" method="post" id="resolveForm-@report.ReportId">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="reportId" value="@report.ReportId" />
-
-                                <div class="modal-header bg-success text-white">
-                                    <h5 class="modal-title">Resolve Report #@report.ReportId</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label for="resolutionDetails-@report.ReportId" class="form-label">Resolution Details *</label>
-                                        <textarea class="form-control" id="resolutionDetails-@report.ReportId"
-                                                  name="resolutionDetails" rows="5" 
-                                                  placeholder="Describe exactly how the issue was resolved..."></textarea>
-                                        <div class="invalid-feedback">Please provide detailed resolution information.</div>
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-check-circle"></i> Mark as Resolved
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to reject this report?</p>
+                        <p><strong>Locker:</strong> <span id="rejectLockerId"></span></p>
+                        <p><strong>Subject:</strong> <span id="rejectSubject"></span></p>
+                        <input type="hidden" id="rejectReportId" name="reportId">
                     </div>
-                </div>
-
-                <!-- Delete Report Modal -->
-                <div class="modal fade" id="deleteModal-@report.ReportId" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form asp-action="DeleteReport" method="post">
-                                <input type="hidden" name="reportId" value="@report.ReportId" />
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title">Delete Report</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <p>Are you sure you want to delete this report?</p>
-                                    <p><strong>Locker:</strong> @report.Locker.LockerId</p>
-                                    <p><strong>Subject:</strong> @report.Subject</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-danger">Delete Report</button>
-                                </div>
-                            </form>
-                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Reject Report</button>
                     </div>
-                </div>
-            }
-        </tbody>
-    </table>
-</div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Hide solved reports by default
-        document.querySelectorAll('.solved-row').forEach(row => {
-            row.style.display = 'none';
-        });
-
-        // Toggle solved reports visibility
-        const toggleButton = document.getElementById('toggleSolved');
-        let showSolved = false;
-
-        toggleButton.addEventListener('click', function() {
-            showSolved = !showSolved;
-
-            document.querySelectorAll('.solved-row').forEach(row => {
-                row.style.display = showSolved ? 'table-row' : 'none';
-            });
-
-            toggleButton.innerHTML = showSolved
-                ? '<i class="fas fa-eye-slash"></i> Hide Solved'
-                : '<i class="fas fa-eye"></i> Show Solved';
-
-            toggleButton.classList.toggle('btn-outline-secondary', !showSolved);
-            toggleButton.classList.toggle('btn-outline-primary', showSolved);
-        });
-    });
-</script>
-
-@functions {
-    public string GetStatusBadgeClass(ReportStatus status)
-    {
-        switch (status)
-        {
-            case ReportStatus.REPORTED:
-                return "bg-warning text-dark";
-            case ReportStatus.IN_REVIEW:
-                return "bg-info text-dark";
-            case ReportStatus.ESCALATED:
-                return "bg-danger";
-            case ReportStatus.RESOLVED:
-                return "bg-success";
-            case ReportStatus.REJECTED:
-                return "bg-secondary";
-            default:
-                return "bg-light text-dark";
-        }
-    }
-}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/reports.js"></script>
+</body>
+</html>

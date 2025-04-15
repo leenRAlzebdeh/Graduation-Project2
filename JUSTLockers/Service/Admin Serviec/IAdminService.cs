@@ -20,7 +20,8 @@ public interface IAdminService : IUserActions
     void RespondForwardedReport(string respond);
     public Task<List<Department>> GetDepartments();
     public  Task<bool> ResolveReport(int reportId, string? resolutionDetails);
-    public Task<bool> DeleteReport(int reportId);
+    public Task<bool> RejectReport(int reportId);
+    public Task<Report> GetReportDetails(int reportId);
 
 
     }

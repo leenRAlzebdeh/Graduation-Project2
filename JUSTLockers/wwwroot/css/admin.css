@@ -369,6 +369,46 @@ body.dark-mode .detail-row {
     transition: background 0.3s ease;
 }
 
+body.dark-mode .detail-row {
+    background-color: #3a3a3a;
+}
+
+.detail-cell {
+    text-align: left;
+    padding: 15px;
+}
+
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+}
+
+    .status-badge.pending {
+        background-color: #fff4c2;
+        color: #8b6f00;
+    }
+
+    .status-badge.resolved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+.action-btn {
+    border: none;
+    padding: 8px 14px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+    margin: 2px;
+    transition: background 0.3s ease;
+}
+
 .solve-btn {
     background-color: #28a745;
 }

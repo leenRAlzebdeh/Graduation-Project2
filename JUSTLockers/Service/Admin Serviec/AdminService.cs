@@ -561,19 +561,71 @@ public class AdminService : IAdminService
         }
     }
 
-    public async Task<bool> DeleteReport(int reportId)
+    public async Task<bool> RejectReport(int reportId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
 
-            var query = "DELETE FROM Reports WHERE Id = @ReportId";
+            var query = @"UPDATE Reports 
+                     SET Status = 'REJECTED', 
+                         ResolvedDate = @ResolvedDate
+                     WHERE Id = @ReportId";
 
             using (var command = new MySqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@ReportId", reportId);
+                command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                 return await command.ExecuteNonQueryAsync() > 0;
             }
         }
+    }
+
+    public async Task<Report> GetReportDetails(int reportId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = @"
+            SELECT r.Id AS ReportId, r.LockerId, r.Subject, r.Statement, r.Status, r.ReportDate, r.ResolvedDate, r.ResolvedDetails,
+                   l.DepartmentName, s.id AS ReporterId, s.name, s.email, s.department
+            FROM Reports r
+            JOIN Lockers l ON r.LockerId = l.Id
+            JOIN Students s ON r.ReporterId = s.id
+            WHERE r.Id = @ReportId";
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@ReportId", reportId);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new Report
+                        {
+                            ReportId = reader.GetInt32("ReportId"),
+                            Locker = new Locker
+                            {
+                                LockerId = reader.GetString("LockerId"),
+                                Department = reader.GetString("DepartmentName")
+                            },
+                            Subject = reader.GetString("Subject"),
+                            Statement = reader.GetString("Statement"),
+                            Status = Enum.Parse<ReportStatus>(reader.GetString("Status")),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull("ResolvedDate") ? null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull("ResolvedDetails") ? null : reader.GetString("ResolvedDetails"),
+                            Reporter = new Student
+                            (
+                                 reader.GetInt32("ReporterId"),
+                                 reader.GetString("name"),
+                                reader.GetString("email"),
+                                reader.GetString("department")
+                            )
+                        };
+                    }
+                }
+            }
+        }
+        return null; // Return null if no report is found
     }
 }

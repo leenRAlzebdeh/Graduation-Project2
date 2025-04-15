@@ -21,7 +21,7 @@ namespace JUSTLockers.Controllers
         */
         private readonly IConfiguration _configuration;
 
-       
+
         private readonly AdminService _adminService;
 
         public AdminController(AdminService adminService, IConfiguration configuration)
@@ -53,7 +53,7 @@ namespace JUSTLockers.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult AddSupervisor(int Id, string Name, string Email ,string Location=null, string DepartmentName=null)
+        public IActionResult AddSupervisor(int Id, string Name, string Email, string Location = null, string DepartmentName = null)
         {
             Supervisor supervisor = new Supervisor
             {
@@ -62,7 +62,7 @@ namespace JUSTLockers.Controllers
                 Email = Email,
                 Location = Location,
                 DepartmentName = DepartmentName,
-               // SupervisedDepartment = department
+                // SupervisedDepartment = department
             };
 
 
@@ -139,7 +139,7 @@ namespace JUSTLockers.Controllers
                 return View("~/Views/Admin/AddCabinet.cshtml");
             }
             //return View("~/Views/Admin/AddCabinet.cshtml");
-             return View(model); // If the model is invalid, return the same view
+            return View(model); // If the model is invalid, return the same view
         }
         public IActionResult Index()
         {
@@ -160,8 +160,8 @@ namespace JUSTLockers.Controllers
             //sorry emas 
             // var supervisors = await _adminService.ViewAllSupervisorInfo(filter);
             var Cabinets = await _adminService.ViewCabinetInfo();
-           // ViewData["Filter"] = filter;
-            return View( Cabinets);
+            // ViewData["Filter"] = filter;
+            return View(Cabinets);
         }
 
 
@@ -286,9 +286,9 @@ namespace JUSTLockers.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResolveReport(int reportId, string? resolutionDetails)
         {
-            
 
-            var success = await _adminService.ResolveReport(reportId,resolutionDetails);
+
+            var success = await _adminService.ResolveReport(reportId, resolutionDetails);
 
             if (success)
             {
@@ -304,22 +304,41 @@ namespace JUSTLockers.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteReport(int reportId)
+        public async Task<IActionResult> RejectReport(int reportId)
         {
-            var success = await _adminService.DeleteReport(reportId);
+            var success = await _adminService.RejectReport(reportId);
             if (success)
             {
-                TempData["SuccessMessage"] = "Report deleted successfully!";
+                TempData["SuccessMessage"] = "Report rejected successfully!";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to delete report.";
+                TempData["ErrorMessage"] = "Failed to reject report.";
             }
             return RedirectToAction("LockerIssues");
         }
 
 
 
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetReportDetails(int reportId)
+        {
+            try
+            {
+                var report = await _adminService.GetReportDetails(reportId); // Assume this method exists in AdminService
+                if (report == null)
+                {
+                    return NotFound(new { status = "Error", message = "Report not found" });
+                }
+                return Ok(report); // Returns JSON
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { status = "Error", message = "Internal server error: " + ex.Message });
+            }
+        }
     }
 }
 
