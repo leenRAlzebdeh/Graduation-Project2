@@ -98,6 +98,12 @@
                     class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Medicine" ? "active" : "")">
                         <i class="fas fa-briefcase-medical me-1"></i> Medicine
                     </a>
+                    <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "" })"
+                       class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "null" ? "active" : "")">
+                        <i class="fas fa-users me-1"></i> NotActive Supervisors
+                    </a>
+
+
                 </div>
 
                 <div class="table-responsive">

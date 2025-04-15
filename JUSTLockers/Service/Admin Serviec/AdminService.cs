@@ -17,6 +17,7 @@ public class AdminService : IAdminService
     {
         _configuration = configuration;
     }
+    //emas
     public string AddSupervisor(Supervisor supervisor)
     {
         try
