@@ -12,13 +12,7 @@ namespace JUSTLockers.Controllers
 
     public class AdminController : Controller
     {
-        //  private readonly IDbConnectionFactory _context;
-
-        /*  public AdminController(IDbConnectionFactory context)
-           {
-               _context = context;
-           }
-        */
+        
         private readonly IConfiguration _configuration;
 
 
@@ -66,10 +60,6 @@ namespace JUSTLockers.Controllers
             };
 
 
-
-
-
-
             //var _adminService = new AdminService(_context);
             if (ModelState.IsValid)
             {
@@ -92,15 +82,6 @@ namespace JUSTLockers.Controllers
             //return View("~/Views/Admin/AddCabinet.cshtml");
             return View(supervisor); // If the model is invalid, return the same view
         }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -192,35 +173,7 @@ namespace JUSTLockers.Controllers
         }
 
 
-        //public JsonResult GetEmployee(int id)
-        //{
-        //    try
-        //    {
-        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        //        {
-        //            string query = "SELECT name,email FROM Employees WHERE id = @id";
-        //            using (var command = new MySqlCommand(query, connection))
-        //            {
-        //                command.Parameters.AddWithValue("@id", id);
-
-        //                connection.Open();
-        //                var empName = command.ExecuteScalar()?.ToString();
-        //                var empEmail = command.ExecuteScalar()?.ToString();
-        //                if (string.IsNullOrEmpty(empName) && string.IsNullOrEmpty(empEmail))
-        //                {
-        //                    return Json(new { status = "Not Found", employee = "" });
-        //                }
-
-        //                return Json(new { status = "Success", employee = empName ,email=empEmail });
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Database error: {ex.Message}");
-        //        return Json(new { status = "Error", message = "Database error occurred" });
-        //    }
-        //}
+        
         public JsonResult GetEmployee(int id)
         {
             try

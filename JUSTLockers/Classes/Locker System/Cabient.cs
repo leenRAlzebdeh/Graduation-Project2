@@ -13,9 +13,9 @@ public class Cabinet
     public string EmployeeName { get; set; }
     public int Capacity { get; set; }
 
-    public string? cabinet_id { get; set; }
+    public string? Cabinet_id { get; set; }
 
-    public CabinetStatus Status { get; set; }
+    public CabinetStatus? Status { get; set; }
 
    
 }

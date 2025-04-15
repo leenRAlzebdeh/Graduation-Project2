@@ -123,10 +123,17 @@
                 <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
                 <li><a href="@Url.Action("ViewCabinetInfo", "Admin")"> Cabinets Info </a></li>
             </ul>
+            <li class="has-submenu">
+                <div class="submenu-toggle" id="Employee-management-toggle">
+                    <i class="fas fa-user-graduate"></i> Employee Management
+                </div>
+            </li>
+            <ul class="pretty-submenu" id="Employee-submenu">
 
-            <li><i class="fas fa-users"></i> Employee Management</li>
-            <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info </a></li>
-            <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor </a></li>
+                <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info </a></li>
+                <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor </a></li>
+            </ul>
+
 
             <li class="nav-item">
                 <a href="@Url.Action("LockerIssues", "Admin")">
@@ -207,7 +214,7 @@
             </form>
         </section>
     </main>
-
+    <script src="~/js/admin.js"></script>
     <script>
         const empIdInput = document.getElementById("Id");
         const locationSelect = document.getElementById("Location");

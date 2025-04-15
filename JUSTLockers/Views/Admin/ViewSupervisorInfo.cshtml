@@ -1,254 +1,308 @@
-﻿@* @model IEnumerable<JUSTLockers.Classes.Supervisor>
-
+﻿@model IEnumerable<JUSTLockers.Classes.Supervisor>
+@using JUSTLockers.Classes;
 @{
-    ViewData["Title"] = "Supervisors List";
+    ViewData["Title"] = "Supervisors Management";
     var currentFilter = ViewData["Filter"]?.ToString() ?? "All";
-
 }
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker | @ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
+    <link rel="stylesheet" href="~/css/SupervisorView.css" />
+    <style>
+        a {
+        text-decoration: none;
+        color: #eee;
+        }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+        .badge-custom {
+        padding: 0.5rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        }
+
+        .department-badge {
+        background-color: #e6f7ff;
+        color: #00b4d8;
+        border-left: 3px solid #4cc9f0;
+        }
+
+        .status-badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+        }
+
+        .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+        }
+
+        .clickable-row:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 120px;
+        display: inline-block;
+        }
+
+        body.dark-mode .detail-label {
+        color: #adb5bd;
+        }
+    </style>
 </head>
-<body>
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Supervisors List</h1>
 
-        <!-- Filtering Buttons -->
-        <div class="d-flex justify-content-center mb-3">
-            <a href="@Url.Action("ViewSupervisorInfo", "Admin",new { filter = "All" })" class="btn btn-primary mx-2">All</a>
-            <a href="@Url.Action("ViewSupervisorInfo","Admin", new { filter = "Engineering" })" class="btn btn-secondary mx-2">Engineering</a>
-            <a href="@Url.Action("ViewSupervisorInfo","Admin", new { filter = "Medicine" })" class="btn btn-secondary mx-2">Medicine</a>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
         </div>
-
-        <table class="table table-striped table-bordered table-hover">
-            <thead class="thead-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Supervised Department</th>
-                    <th>Location</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var supervisor in Model)
-                {
-                    @if (ViewData["Filter"] == null || ViewData["Filter"].ToString() == "All" || supervisor.Location == ViewData["Filter"].ToString())
-                    {
-                        <tr>
-                            <td>@supervisor.Id</td>
-                            <td>@supervisor.Name</td>
-                            <td>@supervisor.Email</td>
-                            <td>@supervisor.SupervisedDepartment?.Name</td>
-                            <td>@supervisor.Location</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
- *@
-
-                            @model IEnumerable<JUSTLockers.Classes.Supervisor>
-
-@{
-    ViewData["Title"] = "Supervisors List";
-    var currentFilter = ViewData["Filter"]?.ToString() ?? "All";
-}
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="~/css/SupervisoreView.css">
-
-</head>
-<body>
-    <div class="container py-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h2 class="h4 mb-0 text-center"><i class="fas fa-user-tie me-2"></i>Supervisors Management</h2>
-            </div>
-            <div class="card-body">
-                <!-- Filtering Buttons -->
-                <div class="d-flex justify-content-center flex-wrap mb-4">
-                    <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "All" })"
-                    class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "All" ? "active" : "")">
-                        <i class="fas fa-users me-1"></i> All Supervisors
-                    </a>
-                    <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Engineering" })"
-                    class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Engineering" ? "active" : "")">
-                        <i class="fas fa-cogs me-1"></i> Engineering
-                    </a>
-                    <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Medicine" })"
-                    class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Medicine" ? "active" : "")">
-                        <i class="fas fa-briefcase-medical me-1"></i> Medicine
-                    </a>
-                    <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "" })"
-                       class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "null" ? "active" : "")">
-                        <i class="fas fa-users me-1"></i> NotActive Supervisors
-                    </a>
-
-
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("AdminDashboard", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle" id="cabinet-management-toggle">
+                    <i class="fas fa-archive"></i> Cabinet Management
                 </div>
+            </li>
+            <ul class="pretty-submenu" id="cabinet-submenu">
+                <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
+                <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
+                <li><a href="@Url.Action("ViewCabinetInfo", "Admin")"> Cabinets Info </a></li>
+            </ul>
+            <li class="has-submenu">
+                <div class="submenu-toggle" id="Employee-management-toggle">
+                    <i class="fas fa-user-graduate"></i> Employee Management
+                </div>
+            </li>
+            <ul class="pretty-submenu" id="Employee-submenu">
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Department</th>
-                                <th>Location</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var supervisor in Model)
+                <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info </a></li>
+                <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor </a></li>
+            </ul>
+
+
+            <li class="nav-item">
+                <a href="@Url.Action("LockerIssues", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Reports
+                </a>
+            </li>
+            <li><i class="fas fa-cog"></i> Settings</li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Supervisors Management</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">@(User.Identity?.Name ?? "Admin")</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form Section -->
+        <section class="form-section">
+            <!-- Filtering Buttons -->
+            <div class="d-flex justify-content-center flex-wrap mb-4">
+                <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "All" })"
+                   class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "All" ? "active" : "")">
+                    <i class="fas fa-users me-1"></i> All Supervisors
+                </a>
+                <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Engineering" })"
+                   class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Engineering" ? "active" : "")">
+                    <i class="fas fa-cogs me-1"></i> Engineering
+                </a>
+                <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "Medicine" })"
+                   class="btn btn-outline-secondary mx-2 mb-2 @(currentFilter == "Medicine" ? "active" : "")">
+                    <i class="fas fa-briefcase-medical me-1"></i> Medicine
+                </a>
+                <a href="@Url.Action("ViewSupervisorInfo", "Admin", new { filter = "NotActive" })"
+                   class="btn btn-outline-primary mx-2 mb-2 @(currentFilter == "NotActive" ? "active" : "")">
+                    <i class="fas fa-user-slash me-1"></i> Not Active
+                </a>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var supervisor in Model)
+                        {
+                            bool shouldDisplay = currentFilter == "All" ||
+                            (currentFilter == "Engineering" && supervisor?.Location == "Engineering") ||
+                            (currentFilter == "Medicine" && supervisor?.Location == "Medicine") ||
+                            (currentFilter == "NotActive" && supervisor?.SupervisedDepartment == null);
+                            
+                            @if (shouldDisplay)
                             {
-                                @if (currentFilter == "All" || supervisor.Location == currentFilter)
-                                {
-                                    <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#supervisorModal-@supervisor.Id">
-                                        <td>@supervisor.Id</td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar me-2" style="width: 36px; height: 36px; background-color: #e9ecef; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="fas fa-user-tie text-secondary"></i>
-                                                </div>
-                                                @supervisor.Name
-                                            </div>
-                                        </td>
-                                        <td>@supervisor.Email</td>
-                                        <td>
-                                            @if (supervisor.SupervisedDepartment != null)
-                                            {
-                                                <span class="badge bg-primary badge-custom">
-                                                    @supervisor.SupervisedDepartment.Name
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary badge-custom">Not Assigned</span>
-                                            }
-                                        </td>
-                                        <td>@supervisor.Location</td>
-                                        <td>
-                                            @if (supervisor.SupervisedDepartment != null)
-                                            {
-                                                <span class="badge bg-success badge-custom">Active</span>
-                                            }else
-                                            {
-                                                <span class="badge bg-danger badge-custom">Not Active</span>         
-                                            }
-                                        </td>
-                                    </tr>
+                                <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#supervisorModal-@supervisor?.Id">
+                                    <td>@supervisor?.Id</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            
+                                            @supervisor?.Name
+                                        </div>
+                                    </td>
+                                    <td>@supervisor?.Email</td>
+                                    <td>
+                                        @if (supervisor?.SupervisedDepartment != null)
+                                        {
+                                            <span class="badge bg-primary badge-custom">
+                                                @supervisor?.SupervisedDepartment.Name
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary badge-custom">Not Assigned</span>
+                                        }
+                                    </td>
+                                    <td>@supervisor?.Location</td>
+                                    <td>
+                                        @if (supervisor?.SupervisedDepartment != null)
+                                        {
+                                            <span class="badge bg-success status-badge">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger status-badge">Not Active</span>
+                                        }
+                                    </td>
+                                </tr>
 
-                                    <!-- Supervisor Details Modal -->
-                                    <div class="modal fade" id="supervisorModal-@supervisor.Id" tabindex="-1" aria-labelledby="supervisorModalLabel-@supervisor.Id" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="supervisorModalLabel-@supervisor.Id">
-                                                        <i class="fas fa-user-tie me-2"></i>@supervisor.Name's Details
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-id-card me-2"></i>ID:</span>
-                                                                <span>@supervisor.Id</span>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-envelope me-2"></i>Email:</span>
-                                                                <span>@supervisor.Email</span>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-map-marker-alt me-2"></i>Location:</span>
-                                                                <span>@supervisor.Location</span>
-                                                            </div>
+                                <!-- Supervisor Details Modal -->
+                                <div class="modal fade" id="supervisorModal-@supervisor.Id" tabindex="-1" aria-labelledby="supervisorModalLabel-@supervisor.Id" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="supervisorModalLabel-@supervisor.Id">
+                                                    <i class="fas fa-user-tie me-2"></i>@supervisor.Name's Details
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <span class="detail-label"><i class="fas fa-id-card me-2"></i>ID:</span>
+                                                            <span>@supervisor.Id</span>
                                                         </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-building me-2"></i>Department:</span>
-                                                                @if (supervisor.SupervisedDepartment != null)
-                                                                {
-                                                                    <span class="badge bg-primary">@supervisor.SupervisedDepartment.Name</span>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span class="badge bg-secondary">Not Assigned</span>
-                                                                }
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <span class="detail-label"><i class="fas fa-layer-group me-2"></i>Total Wings:</span>
-                                                                <span>@(supervisor.SupervisedDepartment?.Total_Wings ?? 0)</span>
-                                                            </div>
-                                                            
+                                                        <div class="mb-3">
+                                                            <span class="detail-label"><i class="fas fa-envelope me-2"></i>Email:</span>
+                                                            <span>@supervisor.Email</span>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <span class="detail-label"><i class="fas fa-map-marker-alt me-2"></i>Location:</span>
+                                                            <span>@supervisor.Location</span>
                                                         </div>
                                                     </div>
-                                                    <hr>
-                                                    <div class="text-center">
-                                                        <button class="btn btn-primary me-2">
-                                                            <i class="fas fa-edit me-1"></i> Edit Profile
-                                                        </button>
-                                                        <button class="btn btn-outline-secondary">
-                                                            <i class="fas fa-envelope me-1"></i> Send Message
-                                                        </button>
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <span class="detail-label"><i class="fas fa-building me-2"></i>Department:</span>
+                                                            @if (supervisor.SupervisedDepartment != null)
+                                                            {
+                                                                <span class="badge bg-primary">@supervisor.SupervisedDepartment.Name</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-secondary">Not Assigned</span>
+                                                            }
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <span class="detail-label"><i class="fas fa-layer-group me-2"></i>Total Wings:</span>
+                                                            <span>@(supervisor.SupervisedDepartment?.Total_Wings ?? 0)</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                </div>
+                                                <hr>
+                                                
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             </div>
                                         </div>
                                     </div>
-                                }
+                                </div>
                             }
-                        </tbody>
-                    </table>
-                </div>
+                        }
+                    </tbody>
+                </table>
             </div>
-            <div class="card-footer text-center">
-                <a href="@Url.Action("AdminDashboard")" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
-                </a>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/admin.js"></script>
     <script>
-        // Highlight active filter button
+        // Sidebar submenu toggle
+        document.getElementById("cabinet-management-toggle")?.addEventListener("click", function () {
+            const submenu = document.getElementById("cabinet-submenu");
+            submenu.classList.toggle("show");
+        });
+
+        // Dark Mode Toggle
+        document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
+            document.body.classList.toggle("dark-mode");
+            const icon = this.querySelector("i");
+            icon.classList.toggle("fa-moon");
+            icon.classList.toggle("fa-sun");
+        });
+
+        // Highlight active row
         document.addEventListener('DOMContentLoaded', function() {
-            // Add click effect to table rows
             document.querySelectorAll('.clickable-row').forEach(row => {
                 row.addEventListener('click', function() {
-                    // Remove active class from all rows
                     document.querySelectorAll('.clickable-row').forEach(r => {
                         r.classList.remove('table-active');
                     });
-                    // Add active class to clicked row
                     this.classList.add('table-active');
                 });
             });
         });
     </script>
+    
 </body>
 </html>

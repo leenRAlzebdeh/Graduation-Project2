@@ -427,30 +427,33 @@ body.dark-mode .detail-row {
 
 .pretty-submenu {
     display: none;
-    flex-direction: column;
-    margin: 10px 20px;
+    position: absolute;
+    left: 260px; /* Match sidebar width */
+    top: 0;
+    width: 200px;
+    background: #fff;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    z-index: 100;
+    margin: 0;
+    padding: 10px 0;
 }
 
-    .pretty-submenu.show {
-        display: flex;
+.has-submenu {
+    position: relative;
+}
+
+.pretty-submenu.show {
+    display: block;
+}
+
+.pretty-submenu li {
+    padding: 10px 20px;
+    margin: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+    .pretty-submenu li:hover {
+        background: #f5f5f5;
     }
-
-    .pretty-submenu li {
-        background-color: #ffffff;
-        border-radius: 10px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-        transition: background 0.2s ease;
-    }
-
-        .pretty-submenu li a {
-            text-decoration: none;
-            color: #192f6a;
-            font-weight: 500;
-            display: block;
-        }
-
-        .pretty-submenu li:hover {
-            background-color: #f0f0f0;
-        }

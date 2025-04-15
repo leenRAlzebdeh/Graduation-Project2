@@ -432,7 +432,7 @@ public class AdminService : IAdminService
                         //EmployeeId = reader.IsDBNull(reader.GetOrdinal("supervisor_id"))
                         //             ? null
                         //             : reader.GetInt32("supervisor_id"),
-                        cabinet_id = reader.GetString("cabinet_id"),
+                        Cabinet_id = reader.GetString("cabinet_id"),
                         Capacity = reader.GetInt32("Capacity"),
                         Status = Enum.TryParse<CabinetStatus>(reader.GetString("status"), out var statusEnum)
                                  ? statusEnum
