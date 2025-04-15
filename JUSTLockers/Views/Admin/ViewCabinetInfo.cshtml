@@ -1,0 +1,91 @@
+﻿@model IEnumerable<JUSTLockers.Classes.Cabinet>
+@{
+    ViewData["Title"] = " Cabinets List -JUST Locker";
+  //  var currentFilter = ViewData["Filter"]?.ToString() ?? "All";
+}
+
+<title>@ViewData["Title"]</title>
+    <style>
+
+    /* Clean Cabinet Table Style */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+        .table thead {
+            background-color: #3498db;
+            color: #fff;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+            cursor: pointer;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+    h2 {
+        font-family: 'Segoe UI', sans-serif;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+
+
+
+
+
+
+    </style>
+
+
+<h2>Cabinet Information</h2>
+<a href="@Url.Action("AdminDashboard", "Admin")" class="btn btn-primary">
+    <i class="fas fa-arrow-left"></i> Back to Home
+</a>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Cabinet Number</th>
+            <th>Location</th>
+            <th>Department</th>
+            <th>Wing</th>
+            <th>Level</th>
+            @* <th>Supervisor ID</th> *@
+            @* <th>Supervisor Name</th> *@
+            <th>Cabinet ID</th>
+            <th>Capacity</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var cab in Model)
+        {
+            <tr>
+                <td>@cab.CabinetNumber</td>
+                <td>@cab.Location</td>
+                <td>@cab.Department</td>
+                <td>@cab.Wing</td>
+                <td>@cab.Level</td>
+                @* <td>@cab.EmployeeId</td> *@
+                @* <td>@cab.EmployeeName</td> *@
+                <td>@cab.cabinet_id</td>
+                <td>@cab.Capacity</td>
+                <td>@cab.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>

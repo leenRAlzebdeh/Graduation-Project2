@@ -403,6 +403,54 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
+  
+
+    public async Task<List<Cabinet>> ViewCabinetInfo()
+    {
+        var cabinets = new List<Cabinet>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"SELECT number_cab, wing, level, location, department_name, 
+                            cabinet_id, Capacity, status 
+                      FROM Cabinets";
+
+            using (var command = new MySqlCommand(query, connection))
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    cabinets.Add(new Cabinet
+                    {
+                        CabinetNumber = reader.GetInt32("number_cab"),
+                       // Wing = reader.GetString("wing"),
+                        Level = reader.GetInt32("level"),
+                        Location = reader.GetString("location"),
+                        Department = reader.GetString("department_name"),
+                        //EmployeeId = reader.IsDBNull(reader.GetOrdinal("supervisor_id"))
+                        //             ? null
+                        //             : reader.GetInt32("supervisor_id"),
+                        cabinet_id = reader.GetString("cabinet_id"),
+                        Capacity = reader.GetInt32("Capacity"),
+                        Status = Enum.TryParse<CabinetStatus>(reader.GetString("status"), out var statusEnum)
+                                 ? statusEnum
+                                 : CabinetStatus.IN_SERVICE, // default if unknown
+                        EmployeeName = "" // Optional: can join with Employees table if needed
+                    });
+                }
+            }
+        }
+
+        return cabinets;
+    }
+
+
+
+
+
+
     public async Task<List<Supervisor>> ViewAllSupervisorInfo()
     {
         var supervisors = new List<Supervisor>();

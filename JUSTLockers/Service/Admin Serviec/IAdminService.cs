@@ -11,6 +11,8 @@ public interface IAdminService : IUserActions
     public string AssignCabinet(Cabinet model);
     void SignCabinetToNewSupervisour();
     public Task<string> AssignCovenant(int supervisorId, string departmentName);
+
+    public  Task<List<Cabinet>> ViewCabinetInfo();
     public Task<List<Supervisor>> ViewAllSupervisorInfo();
     void ViewAllCabinetsInfo();
     Task<List<Report>> ViewForwardedReports();
