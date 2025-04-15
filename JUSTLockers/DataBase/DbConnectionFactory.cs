@@ -33,11 +33,12 @@ namespace JUSTLockers.DataBase
         {
 
         }
+        public DbSet<User> Users { get; set; }
 
         public DbSet<Student> Student { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Cabinet> Cabinets { get; set; }
-
+  public DbSet<Supervisor> Supervisors { get; set; }
     }
 
 

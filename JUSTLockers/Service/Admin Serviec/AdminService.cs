@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System.ComponentModel;
+using System.Data;
 namespace JUSTLockers.Services;
 
 public class AdminService : IAdminService
@@ -16,6 +17,48 @@ public class AdminService : IAdminService
     {
         _configuration = configuration;
     }
+    public string AddSupervisor(Supervisor supervisor)
+    {
+        try
+        {
+            string query = "INSERT INTO Supervisors (id, name, email, supervised_department, location) VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Id", supervisor.Id);
+                    command.Parameters.AddWithValue("@Name", supervisor.Name);
+                    command.Parameters.AddWithValue("@Email", supervisor.Email);
+                    command.Parameters.AddWithValue("@DepartmentName", supervisor.DepartmentName); // Avoid null exception
+
+                    command.Parameters.AddWithValue("@Location", supervisor.Location);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected > 0)
+                    {
+                        return "Supervisor added successfully!";
+                    }
+                    else
+                    {
+                        return "Failed to add supervisor. Please try again.";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            if(ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
+            {
+                return "Supervisor ID already exists";
+            }
+           
+            return $"Error: {ex.Message}";
+        }
+    }
+
+
 
     //emas
     public string AssignCabinet(Cabinet model)
@@ -94,8 +137,8 @@ public class AdminService : IAdminService
                 {
                     if (await reader.ReadAsync())
                     {
-                        departmentNameFromDb = reader.GetString("name");
-                        departmentLocation = reader.GetString("Location");
+                        departmentNameFromDb = reader.IsDBNull("name") ? null : reader.GetString("name");
+                        departmentLocation = reader.IsDBNull("Location") ? null : reader.GetString("Location");
                     }
                     else
                     {
@@ -116,8 +159,8 @@ public class AdminService : IAdminService
                 {
                     if (await reader.ReadAsync())
                     {
-                        supervisorName = reader.GetString("name");
-                        currentSupervisorLocation = reader.GetString("location");
+                        supervisorName = reader.IsDBNull("name") ? null : reader.GetString("name");
+                        currentSupervisorLocation = reader.IsDBNull("location") ? null : reader.GetString("location");
                     }
                     else
                     {
@@ -394,9 +437,9 @@ public class AdminService : IAdminService
                     {
                         supervisedDepartment = new Department
                         {
-                            Name = reader.GetString("department_name"),
-                            Total_Wings = reader.GetInt32("total_wings"),
-                            Location = reader.GetString("department_location")
+                            Name = reader.IsDBNull(reader.GetOrdinal("department_name"))? null: reader.GetString("department_name"),
+                            Total_Wings = reader.IsDBNull(reader.GetOrdinal("total_wings"))? 0: reader.GetInt32("total_wings"),
+                            Location = reader.IsDBNull(reader.GetOrdinal("department_location"))? null: reader.GetString("department_location")
                         };
                     }
 
@@ -407,7 +450,7 @@ public class AdminService : IAdminService
                         department: supervisedDepartment
                     )
                     {
-                        Location = reader.GetString("location")
+                        Location = reader.IsDBNull(reader.GetOrdinal("location"))? null : reader.GetString("location")
                     });
                 }
             }

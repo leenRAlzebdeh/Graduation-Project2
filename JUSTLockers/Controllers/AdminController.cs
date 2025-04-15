@@ -30,6 +30,8 @@ namespace JUSTLockers.Controllers
             _configuration = configuration;
         }
 
+
+
         [HttpGet]
         public async Task<IActionResult> SignCovenant()
         {
@@ -50,6 +52,56 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
+        [HttpPost]
+        public IActionResult AddSupervisor(int Id, string Name, string Email ,string Location=null, string DepartmentName=null)
+        {
+            Supervisor supervisor = new Supervisor
+            {
+                Id = Id,
+                Name = Name,
+                Email = Email,
+                Location = Location,
+                DepartmentName = DepartmentName,
+               // SupervisedDepartment = department
+            };
+
+
+
+
+
+
+            //var _adminService = new AdminService(_context);
+            if (ModelState.IsValid)
+            {
+                // Call the AssignCabinet method and capture the returned message
+                string message = _adminService.AddSupervisor(supervisor);
+
+                // Set the message to TempData
+                if (message.StartsWith("Supervisor added"))
+                {
+                    TempData["SuccessMessage"] = message; // Success message
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = message; // Error message
+                }
+
+                // Redirect to the desired view (e.g., Index)
+                return View("~/Views/Admin/AddSupervisor.cshtml");
+            }
+            //return View("~/Views/Admin/AddCabinet.cshtml");
+            return View(supervisor); // If the model is invalid, return the same view
+        }
+
+
+
+
+
+
+
+
+
+
 
 
         [HttpGet]

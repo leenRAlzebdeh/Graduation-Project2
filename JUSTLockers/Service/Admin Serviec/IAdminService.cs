@@ -1,8 +1,10 @@
 using JUSTLockers.Classes;
+using Microsoft.AspNetCore.Mvc;
 namespace JUSTLockers.Services;
 
 public interface IAdminService : IUserActions
 {
+    public string AddSupervisor(Supervisor supervisor);
     void RespondReallocation(string respond);
     void NotifyStudents();
     public Task<string> DeleteCovenant(int supervisorId);

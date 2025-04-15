@@ -1,4 +1,5 @@
-﻿
+﻿@model JUSTLockers.Classes.Supervisor
+@using JUSTLockers.Classes;
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,8 +56,8 @@
                 }
 
         .submit-btn {
-            grid-column: span 2;
             text-align: center;
+            margin-top: 20px;
         }
 
             .submit-btn button {
@@ -74,29 +75,7 @@
                     opacity: 0.9;
                 }
 
-        .cabinet-table {
-            margin-top: 40px;
-        }
-
-            .cabinet-table table {
-                width: 100%;
-                border-collapse: collapse;
-                border-radius: 15px;
-                overflow: hidden;
-            }
-
-            .cabinet-table th, .cabinet-table td {
-                padding: 12px;
-                text-align: center;
-                border-bottom: 1px solid #ddd;
-            }
-
-            .cabinet-table th {
-                background-color: #f5f5f5;
-            }
-
-        body.dark-mode .form-section,
-        body.dark-mode .cabinet-table {
+        body.dark-mode .form-section {
             background: #2e2e2e;
             color: #ccc;
         }
@@ -108,10 +87,17 @@
             border-color: #555;
         }
 
+        #department-container {
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+
         a {
             text-decoration: none;
             color: #eee;
         }
+
+
     </style>
 </head>
 <body>
@@ -142,7 +128,6 @@
             <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info </a></li>
             <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor </a></li>
 
-
             <li class="nav-item">
                 <a href="@Url.Action("LockerIssues", "Admin")">
                     <i class="fas fa-tachometer-alt"></i> Reports
@@ -159,7 +144,7 @@
             <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
             <div class="hero-overlay"></div>
             <div class="hero-content">
-                <h2>Add Superviosor</h2>
+                <h2>Add Supervisor</h2>
                 <div class="profile">
                     <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
                     <div class="admin-info">
@@ -184,108 +169,103 @@
                 <div class="message-box error">@TempData["ErrorMessage"]</div>
             }
 
-
-            <form class="supervior-form" asp-controller="Admin" asp-action="AssignCabinet" method="post">
+            <form class="super-form" asp-controller="Admin" asp-action="AddSupervisor" method="post">
                 <div class="form-group">
                     <label>Employee Id</label>
-                    <input type="text" id="emp-id" name="emp-id" required/>
-                </div>
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="emp-name" name="emp-name" readonly />
-                </div>
-               
-                  <div class="form-group">
-                    <label>Email</label>
-                    <input type="text" id="email" name="email" readonly />
+                    <input type="text" id="Id" name="Id" required placeholder="Enter ID Num." />
                 </div>
 
                 <div class="form-group">
-                    <label>Location</label>
-                    <select id="location" name="Location">
-                        <option value="null">Select</option>
+                    <label>Name</label>
+                    <input type="text" id="Name" name="Name" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="text" id="Email" name="Email" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label>Location <span style="color: darkblue; opacity: 0.5; font-size:small"> (Optional)</span> </label>
+                    <select id="Location" name="Location">
+                        <option value="">Select</option>
                         <option value="Engineering">Engineering</option>
                         <option value="Medicine">Medicine</option>
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label>Assign To Department</label>
-                    <select id="department" name="Department">
+                <div class="form-group"  id="department-container">
+                    <label>Assign To Department <span style="color: darkblue; opacity: 0.5; font-size:small"> </span></label>
+                    <select id="DepartmentName" name="DepartmentName">
                         <option value="">Select Location First</option>
                     </select>
                 </div>
 
-
                 <div class="submit-btn">
                     <button type="submit">Add Supervisor</button>
                 </div>
-                
             </form>
-
-
         </section>
     </main>
-    <script>
-        // Get employee data 
-        const empIdInput = document.getElementById("emp-id");
-        const locationSelect = document.getElementById("location");
-        const departmentSelect = document.getElementById("department");
 
-        
+    <script>
+        const empIdInput = document.getElementById("Id");
+        const locationSelect = document.getElementById("Location");
+        const departmentSelect = document.getElementById("DepartmentName");
+        const departmentContainer = document.getElementById("department-container");
+
         locationSelect.disabled = true;
         departmentSelect.disabled = true;
 
         empIdInput.addEventListener("change", function () {
             const empId = empIdInput.value;
 
-            fetch(`/Admin/GetEmployee?id=${encodeURIComponent(empId)}`)
+            fetch(`/Admin/GetEmployee?Id=${encodeURIComponent(empId)}`)
                 .then(response => response.json())
                 .then(data => {
-                    const supervisorInput = document.getElementById("emp-name");
-                    const emailInput = document.getElementById("email");
+                    const supervisorInput = document.getElementById("Name");
+                    const emailInput = document.getElementById("Email");
 
                     if (data.status === "Success") {
                         supervisorInput.value = data.employee;
                         emailInput.value = data.email;
 
-                        
                         locationSelect.disabled = false;
                         departmentSelect.disabled = false;
                     } else {
                         supervisorInput.value = "notfound";
                         emailInput.value = "notfound";
 
-                       
                         locationSelect.disabled = true;
                         departmentSelect.disabled = true;
+                        departmentContainer.style.display = "none";
                     }
                 })
                 .catch(() => {
-                    document.getElementById("emp-name").value = "Error fetching supervisor";
-                    document.getElementById("email").value = "Error";
-
-                   
+                    document.getElementById("Name").value = "Error fetching supervisor";
+                    document.getElementById("Email").value = "Error";
                     locationSelect.disabled = true;
                     departmentSelect.disabled = true;
+                    departmentContainer.style.display = "none";
                 });
         });
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Location to Department
             locationSelect.addEventListener("change", function () {
                 const selectedLocation = this.value;
 
-                fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+                if (selectedLocation) {
+                    departmentContainer.style.display = "block";
+                } else {
+                    departmentContainer.style.display = "none";
+                    departmentSelect.innerHTML = '<option value="">Select Location First</option>';
+                    return;
+                }
+
+                fetch(`/Cabinet/GetDepartments?Location=${encodeURIComponent(selectedLocation)}`)
                     .then(response => response.json())
                     .then(data => {
                         departmentSelect.innerHTML = "";
-
-                        const defaultOption = document.createElement("option");
-                        defaultOption.textContent = "Select a department";
-                        defaultOption.disabled = true;
-                        defaultOption.selected = true;
-                        departmentSelect.appendChild(defaultOption);
 
                         data.forEach(dept => {
                             const option = document.createElement("option");
@@ -313,19 +293,5 @@
             });
         });
     </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-   
 </body>
 </html>
