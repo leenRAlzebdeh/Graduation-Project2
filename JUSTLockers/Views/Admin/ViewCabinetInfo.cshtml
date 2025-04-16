@@ -27,7 +27,7 @@
         }
 
             .table-cabinets thead {
-                background-color: #3498db;
+                background-color: linear-gradient(135deg, #3b5998, #192f6a);
                 color: #fff;
             }
 
@@ -87,6 +87,62 @@
             text-decoration: none;
             color: #eee;
         }
+
+        
+        .filter-bar {
+            background-color: #f9fbfd;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .filter-bar label {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .table-cabinets th {
+            background-color: #0072ff;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .table-cabinets td,
+        .table-cabinets th {
+            font-size: 0.95rem;
+        }
+
+        @@media screen and (max-width: 768px) {
+            .filter-bar .row .col-md-3,
+            .filter-bar .row .col-md-2 {
+                margin-bottom: 15px;
+            }
+        }
+
+        .add-cabinet-bottom {
+            text-align: center;
+        }
+
+        .btn-add {
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+            .btn-add:hover {
+                background: linear-gradient(to right, #00c6ff, #0072ff);
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+                transform: translateY(-2px);
+            }
+
+
+
     </style>
 </head>
 
@@ -155,11 +211,8 @@
 
         <!-- Content Section -->
         <section class="management">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <a href="@Url.Action("AddCabinet", "Admin")" class="btn btn-success">
-                    <i class="fas fa-plus"></i> Add New Cabinet
-                </a>
-            </div>
+           
+
 
             @if (TempData["SuccessMessage"] != null)
             {
@@ -169,61 +222,79 @@
             {
                 <div class="message-box error">@TempData["ErrorMessage"]</div>
             }
+            <!--newwww-->
+            <!-- Filter and Search Controls -->
+           
+            <div class="container mt-4">
+                <div class="filter-bar row g-2">
+                    <div class="col-md-2">
+                        <label class="form-label">Location</label>
+                        <select class="form-select" id="filter-location">
+                            <option value="all">All</option>
+                            <option value="engineering">Engineering</option>
+                            <option value="medicine">Medicine</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="filter-department">
+                            <option value="all">All</option>
+                            <option value="a">A</option>
+                            <option value="n">N</option>
+                            <option value="ph">PH</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Wing</label>
+                        <select class="form-select" id="filter-wing">
+                            <option value="all">All</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Level</label>
+                        <select class="form-select" id="filter-level">
+                            <option value="all">All</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Search</label>
+                        <input type="text" id="filter-search" class="form-control" placeholder="Search...">
+                    </div>
+                </div>
 
-            <div class="table-responsive">
-                <table class="table-cabinets">
-                    <thead>
-                        <tr>
-                            <th>Cabinet Number</th>
-                            <th>Location</th>
-                            <th>Department</th>
-                            <th>Wing</th>
-                            <th>Level</th>
-                            <th>Cabinet ID</th>
-                            <th>Capacity</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var cab in Model)
-                        {
+                <!-- Cabinet Table -->
+                <div class="table-responsive mt-4">
+                    <table class="table-cabinets table">
+                        <thead>
                             <tr>
-                                <td>@cab.CabinetNumber</td>
-                                <td>@cab.Location</td>
-                                <td>@cab.Department</td>
-                                <td>@cab.Wing</td>
-                                <td>@cab.Level</td>
-                                <td>@cab.Cabinet_id</td>
-                                <td>@cab.Capacity</td>
-                                <td>
-                                    @{
-                                        var statusClass = "status-badge ";
-                                        switch (cab.Status)
-                                        {
-                                            case CabinetStatus.IN_SERVICE:
-                                                statusClass += "status-in_service";
-                                                break;
-                                            case CabinetStatus.DAMAGED:
-                                                statusClass += "status-damaged";
-                                                break;
-                                            case CabinetStatus.IN_MAINTENANCE:
-                                                statusClass += "status-in_maintenance";
-                                                break;
-                                            case CabinetStatus.OUT_OF_SERVICE:
-                                                statusClass += "status-out_of_service";
-                                                break;
-                                            default:
-                                                statusClass += "bg-secondary";
-                                                break;
-                                        }
-                                        var statusText = cab.Status?.ToString().ToLower().Replace("_", " ");
-                                    }
-                                    <span class="@statusClass">@statusText</span>
-                                </td>
+                                <th>Cabinet Number</th>
+                                <th>Location</th>
+                                <th>Department</th>
+                                <th>Wing</th>
+                                <th>Level</th>
+                                <th>Cabinet ID</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="cabinet-table-body">
+                            <tr><td>0</td><td>Engineering</td><td>A</td><td>0</td><td>0</td><td>A2-L0-cab0</td><td>5</td><td><span class="status-badge">In Service</span></td></tr>
+                            <tr><td>1</td><td>Engineering</td><td>A</td><td>0</td><td>0</td><td>A1-L0-cab1</td><td>6</td><td><span class="status-badge">In Service</span></td></tr>
+                            <tr><td>2</td><td>Engineering</td><td>N</td><td>0</td><td>0</td><td>N1-L0-cab2</td><td>7</td><td><span class="status-badge">In Service</span></td></tr>
+                            <tr><td>3</td><td>Medicine</td><td>PH</td><td>0</td><td>1</td><td>PH2-L1-cab4</td><td>4</td><td><span class="status-badge">In Service</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="add-cabinet-bottom text-center mt-4">
+
+                <a href="@Url.Action("AddCabinet", "Admin")" class="btn btn-add">
+                    <i class="fas fa-plus"></i> Add Cabinet 
+                </a>
             </div>
         </section>
     </main>
@@ -265,5 +336,44 @@
             }
         }
     </script>
+    <script>
+        const filters = {
+            location: document.getElementById("filter-location"),
+            department: document.getElementById("filter-department"),
+            wing: document.getElementById("filter-wing"),
+            level: document.getElementById("filter-level"),
+            search: document.getElementById("filter-search"),
+        };
+
+        const rows = document.querySelectorAll("#cabinet-table-body tr");
+
+        function applyFilters() {
+            const location = filters.location.value.toLowerCase();
+            const department = filters.department.value.toLowerCase();
+            const wing = filters.wing.value;
+            const level = filters.level.value;
+            const search = filters.search.value.toLowerCase();
+
+            rows.forEach(row => {
+                const tds = row.querySelectorAll("td");
+                const rLoc = tds[1].textContent.toLowerCase();
+                const rDept = tds[2].textContent.toLowerCase();
+                const rWing = tds[3].textContent;
+                const rLevel = tds[4].textContent;
+                const rText = row.textContent.toLowerCase();
+
+                const matchLoc = (location === "all" || rLoc === location);
+                const matchDept = (department === "all" || rDept === department);
+                const matchWing = (wing === "all" || rWing === wing);
+                const matchLevel = (level === "all" || rLevel === level);
+                const matchSearch = rText.includes(search);
+
+                row.style.display = matchLoc && matchDept && matchWing && matchLevel && matchSearch ? "" : "none";
+            });
+        }
+
+        Object.values(filters).forEach(el => el.addEventListener("input", applyFilters));
+    </script>
+
 </body>
 </html>
