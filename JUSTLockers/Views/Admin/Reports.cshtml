@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/message.css" />
     <link rel="stylesheet" href="~/css/reports.css" />
-   
 </head>
 
 <body>
@@ -49,7 +48,6 @@
                 </div>
             </li>
             <ul class="pretty-submenu" id="Employee-submenu">
-
                 <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info </a></li>
                 <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor </a></li>
             </ul>
@@ -65,7 +63,6 @@
             </li>
         </ul>
     </aside>
-
 
     <!-- Main Content -->
     <main class="main-content">
@@ -127,7 +124,16 @@
                     {
                         <tr class="clickable-row @(report.Status == ReportStatus.RESOLVED || report.Status == ReportStatus.REJECTED ? "solved-row" : "unsolved-row")"
                             data-report-id="@report.ReportId"
-                            data-status="@report.Status.ToString().ToLower()">
+                            data-status="@report.Status.ToString().ToLower()"
+                            data-locker-id="@report.Locker.LockerId"
+                            data-department="@report.Locker.Department"
+                            data-reporter-name="@report.Reporter.Name"
+                            data-reporter-email="@report.Reporter.Email"
+                            data-reporter-department="@report.Reporter.Department"
+                            data-report-type="@report.Type"
+                            data-statement="@report.Statement"
+                            data-resolved-date="@(report.ResolvedDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")"
+                            data-resolution-details="@report.ResolutionDetails">
                             <td>@report.Locker.LockerId</td>
                             <td>@report.Subject</td>
                             <td>
@@ -161,43 +167,43 @@
                                 }
                             </td>
                         </tr>
-                        <tr class="report-details-row" data-report-id="@report.ReportId" style="display:none;">
-                            <td colspan="5" class="report-details-content">
-                                <div>
-                                    <p><strong>Locker Number:</strong> @report.Locker.LockerId</p>
-                                    <p><strong>Department:</strong> @report.Locker.Department</p>
-                                    <p><strong>Reported By:</strong> @report.Reporter.Name (@report.Reporter.Email)</p>
-                                    <p><strong>Student Department:</strong> @report.Reporter.Department</p>
-                                    <p><strong>Report Type:</strong> @report.Type</p>
-                                    <p><strong>Full Description:</strong> @report.Statement</p>
-
-                                    @if (report.Status == ReportStatus.RESOLVED || report.Status == ReportStatus.REJECTED)
-                                    {
-                                        <div class="resolution-panel">
-                                            <div class="resolution-header">
-                                                <i class="fas fa-check-circle"></i> Resolution Details
-                                            </div>
-                                            <p><strong>Resolved on:</strong> @(report.ResolvedDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")</p>
-                                            <div class="border-top pt-2 mt-2">
-                                                @if (!string.IsNullOrEmpty(report.ResolutionDetails))
-                                                {
-                                                    @report.ResolutionDetails
-                                                }
-                                                else
-                                                {
-                                                    <div class="alert alert-info"><i class="fas fa-info-circle"></i> No resolution details provided.</div>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
                     }
                 </tbody>
             </table>
         </section>
     </main>
+
+    <!-- Report Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="detailsModalTitle">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="detailsModalTitle">Report Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Locker Number:</strong> <span id="detailsLockerId"></span></p>
+                    <p><strong>Department:</strong> <span id="detailsDepartment"></span></p>
+                    <p><strong>Reported By:</strong> <span id="detailsReporterName"></span> (<span id="detailsReporterEmail"></span>)</p>
+                    <p><strong>Student Department:</strong> <span id="detailsReporterDepartment"></span></p>
+                    <p><strong>Report Type:</strong> <span id="detailsReportType"></span></p>
+                    <p><strong>Full Description:</strong> <span id="detailsStatement"></span></p>
+                    <div id="detailsResolutionPanel" style="display:none;">
+                        <div class="resolution-panel">
+                            <div class="resolution-header">
+                                <i class="fas fa-check-circle"></i> Resolution Details
+                            </div>
+                            <p><strong>Resolved on:</strong> <span id="detailsResolvedDate"></span></p>
+                            <div class="border-top pt-2 mt-2" id="detailsResolutionDetails"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Resolve Report Modal -->
     <div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="resolveModalTitle">
@@ -263,13 +269,9 @@
             const submenu = document.getElementById("cabinet-submenu");
             submenu.classList.toggle("show");
         });
-
-        // Dark Mode Toggle
-        document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
-            document.body.classList.toggle("dark-mode");
-            const icon = this.querySelector("i");
-            icon.classList.toggle("fa-moon");
-            icon.classList.toggle("fa-sun");
+        document.getElementById("Employee-management-toggle")?.addEventListener("click", function () {
+            const submenu = document.getElementById("Employee-submenu");
+            submenu.classList.toggle("show");
         });
     </script>
 </body>

@@ -239,53 +239,51 @@ namespace JUSTLockers.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResolveReport(int reportId, string? resolutionDetails)
         {
-
-
-            var success = await _adminService.ResolveReport(reportId, resolutionDetails);
-
-            if (success)
+            try
             {
-                TempData["SuccessMessage"] = "Report resolved successfully!";
+                var success = await _adminService.ResolveReport(reportId, resolutionDetails);
+                if (success)
+                {
+                    return Json(new { success = true, message = "Report resolved successfully!" });
+                }
+                return Json(new { success = false, message = "Failed to resolve report." });
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Failed to resolve report.";
+                return Json(new { success = false, message = $"Error resolving report: {ex.Message}" });
             }
-
-            return RedirectToAction("LockerIssues");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectReport(int reportId)
         {
-            var success = await _adminService.RejectReport(reportId);
-            if (success)
+            try
             {
-                TempData["SuccessMessage"] = "Report rejected successfully!";
+                var success = await _adminService.RejectReport(reportId);
+                if (success)
+                {
+                    return Json(new { success = true, message = "Report rejected successfully!" });
+                }
+                return Json(new { success = false, message = "Failed to reject report." });
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Failed to reject report.";
+                return Json(new { success = false, message = $"Error rejecting report: {ex.Message}" });
             }
-            return RedirectToAction("LockerIssues");
         }
-
-
-
-
 
         [HttpGet]
         public async Task<IActionResult> GetReportDetails(int reportId)
         {
             try
             {
-                var report = await _adminService.GetReportDetails(reportId); // Assume this method exists in AdminService
+                var report = await _adminService.GetReportDetails(reportId);
                 if (report == null)
                 {
                     return NotFound(new { status = "Error", message = "Report not found" });
                 }
-                return Ok(report); // Returns JSON
+                return Ok(report);
             }
             catch (Exception ex)
             {
