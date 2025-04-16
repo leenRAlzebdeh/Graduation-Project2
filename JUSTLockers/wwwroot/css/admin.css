@@ -38,7 +38,7 @@ body.dark-mode {
     flex-direction: column;
     align-items: center;
     padding-top: 30px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .brand {
@@ -66,7 +66,6 @@ body.dark-mode {
 }
 
     .menu li {
-        padding: 15px;
         margin-bottom: 5px;
         border-radius: 8px;
         cursor: pointer;
@@ -74,6 +73,16 @@ body.dark-mode {
         display: flex;
         align-items: center;
     }
+
+        .menu li.nav-item a,
+        .menu li .submenu-toggle {
+            padding: 15px;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
 
         .menu li i {
             margin-right: 10px;
@@ -84,6 +93,48 @@ body.dark-mode {
         .menu li.active {
             background: rgba(255, 255, 255, 0.2);
         }
+
+/* Submenu Styling */
+.has-submenu {
+    display: flex;
+    flex-direction: column;
+}
+
+.pretty-submenu {
+    display: none; /* Hidden by default */
+    width: 100%;
+    padding-left: 30px; /* Indent submenu items */
+}
+
+    .pretty-submenu.show {
+        display: block; /* Show when toggled */
+    }
+
+    .pretty-submenu li {
+        padding: 10px 15px;
+        margin: 0;
+        border-radius: 8px;
+        transition: background 0.3s;
+    }
+
+        .pretty-submenu li:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+    .pretty-submenu a {
+        color: #ddd; /* Slightly lighter than top-level items for contrast */
+        text-decoration: none;
+        display: block;
+    }
+
+/* Dark Mode for Submenu */
+body.dark-mode .pretty-submenu a {
+    color: #bbb;
+}
+
+body.dark-mode .pretty-submenu li:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* -----------------------------
    Main Content
@@ -171,6 +222,7 @@ body.dark-mode {
             border: 2px solid #fff;
         }
 
+/* Fix for admininfo class (likely a typo in original CSS) */
 .admininfo {
     position: fixed;
     top: 0;
@@ -196,7 +248,7 @@ body.dark-mode {
     width: 220px;
     padding: 20px;
     text-align: center;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -214,7 +266,7 @@ body.dark-mode {
 
     .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
     }
 
 body.dark-mode .card {
@@ -230,7 +282,7 @@ body.dark-mode .card {
     margin: 0 20px 20px 20px;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     transition: background 0.3s ease;
 }
 
@@ -248,7 +300,8 @@ table {
     margin-top: 10px;
 }
 
-th, td {
+th,
+td {
     padding: 12px;
     border-bottom: 1px solid #ddd;
     text-align: center;
@@ -286,12 +339,13 @@ button {
         background: #c82333;
     }
 
+/* Report Details */
 .report-details {
     background: #fff;
     margin: 20px;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 body.dark-mode .report-details {
@@ -309,64 +363,6 @@ body.dark-mode .report-details {
 
 .detail-row {
     background-color: #f9f9f9;
-}
-
-body.dark-mode .detail-row {
-    background-color: #3a3a3a;
-}
-
-.detail-cell {
-    text-align: left;
-    padding: 15px;
-}
-
-/*.solve-btn {
-	background-color: #28a745;
-	color: white;
-	margin-right: 5px;
-}
-
-	.solve-btn:hover {
-		background-color: #218838;
-	}
-
-.delete-btn {
-	background-color: #dc3545;
-	color: white;
-}
-
-	.delete-btn:hover {
-		background-color: #c82333;
-	}*/
-.status-badge {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: inline-block;
-    min-width: 80px;
-    text-align: center;
-}
-
-    .status-badge.pending {
-        background-color: #fff4c2;
-        color: #8b6f00;
-    }
-
-    .status-badge.resolved {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-.action-btn {
-    border: none;
-    padding: 8px 14px;
-    font-weight: bold;
-    border-radius: 6px;
-    cursor: pointer;
-    color: white;
-    margin: 2px;
-    transition: background 0.3s ease;
 }
 
 body.dark-mode .detail-row {
@@ -425,35 +421,37 @@ body.dark-mode .detail-row {
         background-color: #c82333;
     }
 
-.pretty-submenu {
-    display: none;
-    position: absolute;
-    left: 260px; /* Match sidebar width */
-    top: 0;
-    width: 200px;
-    background: #fff;
-    border-radius: 0 8px 8px 0;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-    z-index: 100;
-    margin: 0;
-    padding: 10px 0;
-}
-
-.has-submenu {
-    position: relative;
-}
-
-.pretty-submenu.show {
-    display: block;
-}
-
-.pretty-submenu li {
-    padding: 10px 20px;
-    margin: 0;
-    border-radius: 0;
-    background: transparent;
-}
-
-    .pretty-submenu li:hover {
-        background: #f5f5f5;
+/* -----------------------------
+   Responsive Design
+----------------------------- */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
     }
+
+    .main-content {
+        margin-left: 200px;
+        width: calc(100% - 200px);
+    }
+
+    .pretty-submenu {
+        padding-left: 20px; /* Slightly less indent on smaller screens */
+    }
+}
+
+@media (max-width: 576px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .pretty-submenu {
+        padding-left: 15px; /* Further reduce indent on mobile */
+    }
+}
