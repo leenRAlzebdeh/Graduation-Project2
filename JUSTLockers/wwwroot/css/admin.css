@@ -455,3 +455,46 @@ body.dark-mode .detail-row {
         padding-left: 15px; /* Further reduce indent on mobile */
     }
 }
+/* -----------------------------
+   search bar
+----------------------------- */
+/* Search bar style like the screenshot */
+/* Top Divider & Filter Tab */
+
+.clean-search-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 25px auto 40px;
+    max-width: 300px;
+    position: relative;
+}
+
+    .clean-search-wrapper i {
+        position: absolute;
+        left: 16px;
+        font-size: 1rem;
+        color: #aaa;
+    }
+
+.clean-search-input {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    background: transparent;
+    font-size: 0.95rem;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+    .clean-search-input::placeholder {
+        color: #aaa;
+        font-weight: 400;
+    }
+
+    .clean-search-input:focus {
+        border-color: #4361ee;
+    }
+
