@@ -146,10 +146,10 @@ namespace JUSTLockers.Controllers
         //    return View(Cabinets);
         //}
         [HttpGet]
-        public async Task<IActionResult> ViewCabinetInfo(string? location, string? wing, int? level, string? department, string? status)
+        public async Task<IActionResult> ViewCabinetInfo(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
         {
 
-            var cabinets = await _adminService.ViewCabinetInfo(location, level, department, status, wing);
+            var cabinets = await _adminService.ViewCabinetInfo(searchCab,location, level, department, status, wing);
             return View(cabinets);
 
         }

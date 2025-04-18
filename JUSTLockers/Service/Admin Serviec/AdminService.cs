@@ -446,7 +446,7 @@ public class AdminService : IAdminService
     //    return cabinets;
     //}
 
-    public async Task<List<Cabinet>> ViewCabinetInfo(string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
+    public async Task<List<Cabinet>> ViewCabinetInfo(string? searchCab=null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
         var cabinets = new List<Cabinet>();
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -458,6 +458,12 @@ public class AdminService : IAdminService
 
             var command = new MySqlCommand();
             command.Connection = connection;
+
+            if (!string.IsNullOrEmpty(searchCab) && searchCab != "")
+            {
+                query += " AND cabinet_id like @searchCab";
+                command.Parameters.AddWithValue("@searchCab", $"%{searchCab}%");
+            }
 
 
 

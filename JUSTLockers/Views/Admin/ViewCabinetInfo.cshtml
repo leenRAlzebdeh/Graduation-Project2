@@ -253,6 +253,12 @@
             }
             <!--newwww-->
             <!-- Filter and Search Controls -->
+            <div class="add-cabinet-bottom text-left mt-4" style="text-align:left">
+
+                <a href="@Url.Action("AddCabinet", "Admin")" class="btn btn-add">
+                    <i class="fas fa-plus"></i> Add Cabinet
+                </a>
+            </div>
              <form method="get" asp-controller="Admin" asp-action="ViewCabinetInfo">
 
             <div class="filter-section container-fluid px-4 mt-4 mb-3">
@@ -270,23 +276,22 @@
                     <div class="col-md-2">
                         <label for="departmentFilter" class="form-label">Department</label>
                         <select id="department" name="department" class="form-select">
-                            <option value="">All Deps</option>
+                                <option value="">All Deps</option>
                            
                         </select>
                     </div>
 
                     <div class="col-md-2">
                         <label for="wingFilter" class="form-label">Wing</label>
-                        <select id="wing" name="wing" class="form-select">
-                            <option value="">All wings</option>
-                            
+                            <select id="wing" name="wing" class="form-select">
+                                <option value="">All wings</option>
                         </select>
                     </div>
 
                     <div class="col-md-2">
                         <label for="levelFilter" class="form-label">Level</label>
-                        <select id="level" name="Level" class="form-select">
-                            <option value="">All levels</option>
+                            <select id="level" name="Level" class="form-select">
+                                <option value="">All levels</option>
                             <option>0</option>
                             <option>1</option>
                             <option>2</option>
@@ -316,22 +321,24 @@
                 </div>
             </div>
             </form>
+             <form method="get" asp-controller="Admin" asp-action="ViewCabinetInfo">
+
             <section class="management">
                 <div class="fullwidth-search-container mb-3">
                     <i class="fas fa-search search-icon-left"></i>
-                    <input type="text" id="searchInput" class="fullwidth-search-input" placeholder="Filter by Cabinet ID ..." />
-                </div>
+                        <input type="text" id="searchInput" name="searchCab" value="@Context.Request.Query["searchCab"]" class="fullwidth-search-input" placeholder="Filter by Cabinet ID ..." />
+                    </div>
 
                 <!-- Search Button -->
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" id="searchButton" class="btn filter-button w-50">
+                    <button type="submit" id="searchButton" class="btn filter-button w-50">
                        Search
                     </button>
                 </div>
 
             </section>
 
-
+          </form>
                  
 
 
@@ -409,12 +416,7 @@
                 </div>
 
           
-            <div class="add-cabinet-bottom text-center mt-4">
-
-                <a href="@Url.Action("AddCabinet", "Admin")" class="btn btn-add">
-                    <i class="fas fa-plus"></i> Add Cabinet 
-                </a>
-            </div>
+          
         </section>
     </main>
 
@@ -481,6 +483,13 @@
                         departmentSelect.dispatchEvent(new Event("change")); // Trigger to load wings and supervisor
                     });
             });
+
+           
+
+
+
+
+
 
             // Department change event
             document.getElementById("department").addEventListener("change", function () {
