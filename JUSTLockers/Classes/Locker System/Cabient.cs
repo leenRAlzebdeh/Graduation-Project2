@@ -7,7 +7,7 @@ public class Cabinet
     public int CabinetNumber { get; set; }
     public string Location { get; set; }
     public string Department { get; set; }
-    public int Wing { get; set; }
+    public string Wing { get; set; }
     public int Level { get; set; }
     public int? EmployeeId { get; set; } // Nullable for optional data
     public string EmployeeName { get; set; }

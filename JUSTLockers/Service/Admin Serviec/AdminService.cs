@@ -403,21 +403,96 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-  
 
-    public async Task<List<Cabinet>> ViewCabinetInfo()
+
+    //public async Task<List<Cabinet>> ViewCabinetInfo()
+    //{
+    //    var cabinets = new List<Cabinet>();
+
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        await connection.OpenAsync();
+
+    //        var query = @"SELECT number_cab, wing, level, location, department_name, 
+    //                        cabinet_id, Capacity, status 
+    //                  FROM Cabinets";
+
+    //        using (var command = new MySqlCommand(query, connection))
+    //        using (var reader = await command.ExecuteReaderAsync())
+    //        {
+    //            while (await reader.ReadAsync())
+    //            {
+    //                cabinets.Add(new Cabinet
+    //                {
+    //                    CabinetNumber = reader.GetInt32("number_cab"),
+    //                   // Wing = reader.GetString("wing"),
+    //                    Level = reader.GetInt32("level"),
+    //                    Location = reader.GetString("location"),
+    //                    Department = reader.GetString("department_name"),
+    //                    //EmployeeId = reader.IsDBNull(reader.GetOrdinal("supervisor_id"))
+    //                    //             ? null
+    //                    //             : reader.GetInt32("supervisor_id"),
+    //                    Cabinet_id = reader.GetString("cabinet_id"),
+    //                    Capacity = reader.GetInt32("Capacity"),
+    //                    Status = Enum.TryParse<CabinetStatus>(reader.GetString("status"), out var statusEnum)
+    //                             ? statusEnum
+    //                             : CabinetStatus.IN_SERVICE, // default if unknown
+    //                    EmployeeName = "" // Optional: can join with Employees table if needed
+    //                });
+    //            }
+    //        }
+    //    }
+
+    //    return cabinets;
+    //}
+
+    public async Task<List<Cabinet>> ViewCabinetInfo(string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
         var cabinets = new List<Cabinet>();
-
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
-
             var query = @"SELECT number_cab, wing, level, location, department_name, 
-                            cabinet_id, Capacity, status 
-                      FROM Cabinets";
+                         cabinet_id, Capacity, status 
+                      FROM Cabinets WHERE 1=1";
 
-            using (var command = new MySqlCommand(query, connection))
+            var command = new MySqlCommand();
+            command.Connection = connection;
+
+
+
+            if (!string.IsNullOrEmpty(location) && location != "All")
+            {
+                query += " AND location = @location";
+                command.Parameters.AddWithValue("@location", location);
+            }
+
+            if (level.HasValue)
+            {
+                query += " AND level = @level";
+                command.Parameters.AddWithValue("@level", level.Value);
+            }
+
+            if (!string.IsNullOrEmpty(department) && department != "All Dep")
+            {
+                query += " AND department_name = @department";
+                command.Parameters.AddWithValue("@department", department);
+            }
+
+            if (!string.IsNullOrEmpty(status) && status != "All")
+            {
+                query += " AND status = @status";
+                command.Parameters.AddWithValue("@status", status);
+            }
+
+            if (!string.IsNullOrEmpty(wing) && wing != "All")
+            {
+                query += " AND wing = @wing";
+                command.Parameters.AddWithValue("@wing", wing);
+            }
+
+            command.CommandText = query;
+
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -425,27 +500,31 @@ public class AdminService : IAdminService
                     cabinets.Add(new Cabinet
                     {
                         CabinetNumber = reader.GetInt32("number_cab"),
-                       // Wing = reader.GetString("wing"),
+                        Wing = reader["wing"].ToString(),
                         Level = reader.GetInt32("level"),
-                        Location = reader.GetString("location"),
-                        Department = reader.GetString("department_name"),
-                        //EmployeeId = reader.IsDBNull(reader.GetOrdinal("supervisor_id"))
-                        //             ? null
-                        //             : reader.GetInt32("supervisor_id"),
-                        Cabinet_id = reader.GetString("cabinet_id"),
+                        Location = reader["location"].ToString(),
+                        Department = reader["department_name"].ToString(),
+                        Cabinet_id = reader["cabinet_id"].ToString(),
                         Capacity = reader.GetInt32("Capacity"),
-                        Status = Enum.TryParse<CabinetStatus>(reader.GetString("status"), out var statusEnum)
+                        Status = Enum.TryParse<CabinetStatus>(reader["status"].ToString(), out var statusEnum)
                                  ? statusEnum
-                                 : CabinetStatus.IN_SERVICE, // default if unknown
-                        EmployeeName = "" // Optional: can join with Employees table if needed
+                                 : CabinetStatus.IN_SERVICE,
+                        EmployeeName = ""
                     });
+
+
+
+
+
+
                 }
             }
+
+
         }
 
         return cabinets;
     }
-
 
 
 

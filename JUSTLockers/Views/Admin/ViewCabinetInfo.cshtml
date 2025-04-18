@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<JUSTLockers.Classes.Cabinet>
 @using JUSTLockers.Classes
 @{
-    ViewData["Title"] = "Cabinets List - JUST Locker";
+    ViewData["Title"] = "Cabinets List";
 }
 
 <!DOCTYPE html>
@@ -9,7 +9,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JUSTLocker | @ViewData["Title"]</title>
+    <title>@ViewData["Title"] | JUSTLocker </title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
@@ -253,13 +253,15 @@
             }
             <!--newwww-->
             <!-- Filter and Search Controls -->
+             <form method="get" asp-controller="Admin" asp-action="ViewCabinetInfo">
 
             <div class="filter-section container-fluid px-4 mt-4 mb-3">
                 <div class="row g-3">
                     <div class="col-md-2">
                         <label for="locationFilter" class="form-label">Location</label>
-                        <select id="locationFilter" class="form-select">
-                            <option value="all">All</option>
+
+                        <select id="location" name="Location" class="form-select">
+                            <option value="">All</option>
                             <option value="Engineering">Engineering</option>
                             <option value="Medicine">Medicine</option>
                         </select>
@@ -267,50 +269,70 @@
 
                     <div class="col-md-2">
                         <label for="departmentFilter" class="form-label">Department</label>
-                        <select id="departmentFilter" class="form-select">
-                            <option value="all">All</option>
-                            <option value="A">A</option>
-                            <option value="N">N</option>
-                            <option value="PH">PH</option>
+                        <select id="department" name="department" class="form-select">
+                            <option value="">All Deps</option>
+                           
                         </select>
                     </div>
 
                     <div class="col-md-2">
                         <label for="wingFilter" class="form-label">Wing</label>
-                        <select id="wingFilter" class="form-select">
-                            <option value="all">All</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
+                        <select id="wing" name="wing" class="form-select">
+                            <option value="">All wings</option>
+                            
                         </select>
                     </div>
 
                     <div class="col-md-2">
                         <label for="levelFilter" class="form-label">Level</label>
-                        <select id="levelFilter" class="form-select">
-                            <option value="all">All</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
+                        <select id="level" name="Level" class="form-select">
+                            <option value="">All levels</option>
+                            <option>0</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="levelFilter" class="form-label">Status</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value=""> All Status </option>
+                            @foreach (var status in Enum.GetNames(typeof(JUSTLockers.Classes.CabinetStatus)))
+                            {
+                                <option value="@status">@status</option>
+                            }
+
+
                         </select>
                     </div>
 
                     <div class="col-md-2 d-flex align-items-end">
-                        <button id="filterButton" class="btn filter-button w-100">
+                        <button type="submit" id="filterButton" class="btn filter-button w-100">
                             <i class="fas fa-filter me-2"></i> Filter
                         </button>
+                    
                     </div>
                 </div>
             </div>
+            </form>
+            <section class="management">
+                <div class="fullwidth-search-container mb-3">
+                    <i class="fas fa-search search-icon-left"></i>
+                    <input type="text" id="searchInput" class="fullwidth-search-input" placeholder="Filter by Cabinet ID ..." />
+                </div>
+
+                <!-- Search Button -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" id="searchButton" class="btn filter-button w-50">
+                       Search
+                    </button>
+                </div>
+
+            </section>
 
 
-
-
-                    <!-- Search Input - Full width, left aligned -->
-                    <div class="fullwidth-search-container mb-3">
-                        <i class="fas fa-search search-icon-left"></i>
-                        <input type="text" id="searchInput" class="fullwidth-search-input" placeholder="Filter by name..." />
-                    </div>
+                 
 
 
                 <!-- Cabinet Table -->
@@ -319,26 +341,32 @@
 
                         <thead class="table-dark">
                             <tr>
-                                <th>Cabinet Number</th>
+@*                                 <th>Cabinet Number</th>
+ *@ 
+                                <th>Cabinet ID</th>
                                 <th>Location</th>
                                 <th>Department</th>
                                 <th>Wing</th>
                                 <th>Level</th>
-                                <th>Cabinet ID</th>
+                               @*  <th>Cabinet ID</th> *@
                                 <th>Capacity</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
+                    @if (Model != null && Model.Any())
+                    {
+
                         <tbody>
                             @foreach (var cab in Model)
                             {
                                 <tr>
-                                    <td>@cab.CabinetNumber</td>
+                                    @* <td>@cab.CabinetNumber</td> *@
+                                <td>@cab.Cabinet_id</td>
                                     <td>@cab.Location</td>
                                     <td>@cab.Department</td>
                                     <td>@cab.Wing</td>
                                     <td>@cab.Level</td>
-                                    <td>@cab.Cabinet_id</td>
+                                   @*  <td>@cab.Cabinet_id</td> *@
                                     <td>@cab.Capacity</td>
                                     <td>
                                         @{
@@ -368,10 +396,19 @@
                                 </tr>
                             }
                         </tbody>
+                    }
+                    else
+                    {
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center">No cabinets found.</td>
+                            </tr>
+                        </tbody>
+                    }
                     </table>
                 </div>
 
-            </div>
+          
             <div class="add-cabinet-bottom text-center mt-4">
 
                 <a href="@Url.Action("AddCabinet", "Admin")" class="btn btn-add">
@@ -419,36 +456,60 @@
         }
     </script>
     <script>
-        document.getElementById("filterButton").addEventListener("click", function () {
-            const location = document.getElementById("locationFilter").value.toLowerCase();
-            const department = document.getElementById("departmentFilter").value.toLowerCase();
-            const wing = document.getElementById("wingFilter").value.toLowerCase();
-            const level = document.getElementById("levelFilter").value.toLowerCase();
+        document.addEventListener("DOMContentLoaded", function () {
 
-          const rows = document.querySelectorAll("#cabinetTable tbody tr");
+            // Location change event
+            document.getElementById("location").addEventListener("change", function () {
+                const selectedLocation = this.value;
+                const departmentSelect = document.getElementById("department");
 
+                fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        departmentSelect.innerHTML = "";
+                        const defaultOption = document.createElement("option");
+                        defaultOption.textContent = "All Dep";
+                        departmentSelect.appendChild(defaultOption);
 
-            rows.forEach(row => {
-                const cells = row.getElementsByTagName("td");
+                        data.forEach(dept => {
+                            const option = document.createElement("option");
+                            option.value = dept;
+                            option.textContent = dept;
+                            departmentSelect.appendChild(option);
+                        });
 
-                const rowLocation = cells[1]?.textContent.toLowerCase();
-                const rowDepartment = cells[2]?.textContent.toLowerCase();
-                const rowWing = cells[3]?.textContent.toLowerCase();
-                const rowLevel = cells[4]?.textContent.toLowerCase();
-
-                const locationMatch = (location === "all" || rowLocation === location);
-                const departmentMatch = (department === "all" || rowDepartment === department);
-                const wingMatch = (wing === "all" || rowWing === wing);
-                const levelMatch = (level === "all" || rowLevel === level);
-
-                if (locationMatch && departmentMatch && wingMatch && levelMatch) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
+                        departmentSelect.dispatchEvent(new Event("change")); // Trigger to load wings and supervisor
+                    });
             });
+
+            // Department change event
+            document.getElementById("department").addEventListener("change", function () {
+                const department = this.value;
+                const location = document.getElementById("location").value;
+
+                fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const wingSelect = document.getElementById("wing");
+                        data.forEach(wing => {
+                            const option = document.createElement("option");
+                            option.value = wing;
+                            option.textContent = wing;
+                            wingSelect.appendChild(option);
+                        });
+                    });
+            });
+
+            // Automatically trigger location change to load departments
+            document.getElementById("location").dispatchEvent(new Event("change"));
+
+           
+
         });
     </script>
+
+
+
 
 
 </body>

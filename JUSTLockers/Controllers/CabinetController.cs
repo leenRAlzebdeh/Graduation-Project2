@@ -1,8 +1,10 @@
 ﻿using JUSTLockers.Classes;
 using JUSTLockers.DataBase;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using System.Data;
 using System.Linq.Expressions;
 
 namespace JUSTLockers.Controllers
@@ -118,6 +120,23 @@ namespace JUSTLockers.Controllers
                 return Json(new { status = "Error", message = "Database error occurred" });
             }
         }
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
