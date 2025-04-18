@@ -323,10 +323,7 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-    public void ViewAllCabinetsInfo()
-    {
-        throw new NotImplementedException();
-    }
+   
     public async Task<List<Report>> ViewForwardedReports()
     {
         var reports = new List<Report>();
