@@ -136,15 +136,7 @@ namespace JUSTLockers.Controllers
             ViewData["Filter"] = filter;
             return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
         }
-        //[HttpGet]
-        //public async Task<IActionResult> ViewCabinetInfo(/*string filter = "All"*/)
-        //{
-        //    //sorry emas 
-        //    // var supervisors = await _adminService.ViewAllSupervisorInfo(filter);
-        //    var Cabinets = await _adminService.ViewCabinetInfo();
-        //    // ViewData["Filter"] = filter;
-        //    return View(Cabinets);
-        //}
+        
         [HttpGet]
         public async Task<IActionResult> ViewCabinetInfo(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
         {
