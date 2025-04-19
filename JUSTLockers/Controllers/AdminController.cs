@@ -83,7 +83,11 @@ namespace JUSTLockers.Controllers
             //return View("~/Views/Admin/AddCabinet.cshtml");
             return View(supervisor); // If the model is invalid, return the same view
         }
-
+        [HttpGet]
+        public IActionResult ReallocationRequest()
+        {
+            return View("~/Views/Admin/ReallocationRequest.cshtml");
+        }
 
 
         [HttpGet]
