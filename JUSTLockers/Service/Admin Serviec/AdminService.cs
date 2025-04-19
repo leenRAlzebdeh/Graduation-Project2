@@ -643,6 +643,24 @@ public class AdminService : IAdminService
         }
     }
 
+    public async Task<bool> ReviewReport(int reportId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"UPDATE Reports 
+                     SET Status = 'IN_REVIEW' 
+                     WHERE Id = @ReportId";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@ReportId", reportId);
+                return await command.ExecuteNonQueryAsync() > 0;
+            }
+        }
+    }
+
     public async Task<bool> RejectReport(int reportId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))

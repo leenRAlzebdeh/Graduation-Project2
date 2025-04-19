@@ -76,17 +76,20 @@ body.dark-mode .form-section {
 }
 
     .status-badge.reported,
-    .status-badge.in_review,
     .status-badge.escalated {
-        background-color: #ffc107;
+        background-color: lightcyan;
     }
 
     .status-badge.resolved {
-        background-color: #28a745;
+        background-color: aquamarine;
     }
 
     .status-badge.rejected {
-        background-color: #dc3545;
+        background-color: lightcoral;
+    }
+    .status-badge.in_review {
+        background-color: #ffc107;
+        color: #000;
     }
 
 .clickable-row {

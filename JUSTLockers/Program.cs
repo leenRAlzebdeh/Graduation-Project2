@@ -49,7 +49,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 36))));
 builder.Services.AddScoped<AdminService>();
-
+builder.Services.AddTransient<IEmailService, EmailService>();
 
 var app = builder.Build();
 

@@ -393,6 +393,7 @@ body.dark-mode .detail-row {
         background-color: #d4edda;
         color: #155724;
     }
+    
 
 .action-btn {
     border: none;
@@ -420,7 +421,13 @@ body.dark-mode .detail-row {
     .delete-btn:hover {
         background-color: #c82333;
     }
+.review-btn {
+    background-color: rgb(0, 148, 255);
+}
 
+    .review-btn:hover {
+        background-color: #0056b3;
+    }
 /* -----------------------------
    Responsive Design
 ----------------------------- */

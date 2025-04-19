@@ -1,7 +1,14 @@
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Mail;
 namespace JUSTLockers.Services;
-public class EmailService
+
+public interface IEmailService
+{
+    Task SendEmailAsync(string recipient, string subject, string body);
+}
+
+public class EmailService : IEmailService
 {
     private readonly IConfiguration _config;
 
@@ -12,23 +19,38 @@ public class EmailService
 
     public async Task SendEmailAsync(string recipient, string subject, string body)
     {
-        var smtpClient = new SmtpClient(_config["Email:SMTP"])
+        var email = _config.GetValue<string>("Email:Email");
+        if (string.IsNullOrWhiteSpace(email))
         {
-            Port = 587,
-            Credentials = new NetworkCredential(_config["Email:Username"], _config["Email:Password"]),
-            EnableSsl = true
+            throw new InvalidOperationException("Sender email is not configured.");
+        }
+
+        var password = _config.GetValue<string>("Email:Password");
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            throw new InvalidOperationException("Email password is not configured.");
+        }
+
+        var host = _config.GetValue<string>("Email:Host");
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            throw new InvalidOperationException("SMTP host is not configured.");
+        }
+
+        var port = _config.GetValue<int>("Email:Port");
+        if (port <= 0)
+        {
+            throw new InvalidOperationException("SMTP port is not configured or invalid.");
+        }
+
+        using var smtpClient = new SmtpClient(host, port)
+        {
+            EnableSsl = true,
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential(email, password)
         };
 
-        var mailMessage = new MailMessage
-        {
-            From = new MailAddress(_config["Email:Username"] ?? throw new InvalidOperationException("Email username is not configured.")),
-            Subject = subject,
-            Body = body,
-            IsBodyHtml = true,
-        };
-
-        mailMessage.To.Add(recipient);
-
-        await smtpClient.SendMailAsync(mailMessage);
+        using var message = new MailMessage(email, recipient, subject, body);
+        await smtpClient.SendMailAsync(message);
     }
 }

@@ -18,11 +18,12 @@ namespace JUSTLockers.Controllers
 
 
         private readonly AdminService _adminService;
-
-        public AdminController(AdminService adminService, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+        public AdminController(AdminService adminService, IConfiguration configuration,IEmailService emailService)
         {
             _adminService = adminService;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
 
@@ -293,6 +294,39 @@ namespace JUSTLockers.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { status = "Error", message = "Internal server error: " + ex.Message });
+            }
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeReportStatus(int reportId)
+        {
+            try
+            {
+                var success = await _adminService.ReviewReport(reportId);
+                if (success)
+                {
+                    return Json(new { success = true, message = "Report marked as In Review successfully!" });
+                }
+                return Json(new { success = false, message = "Failed to update report status." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error updating report status: {ex.Message}" });
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> TestEmail()
+        {
+            try
+            {
+                await _emailService.SendEmailAsync("leenalzebdeh@gmail.com", "Test Email", "This is a test email from JUSTLockers.");
+                return Ok("Email sent successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error sending email: {ex.Message}");
             }
         }
     }

@@ -35,6 +35,7 @@ public interface IAdminService : IUserActions
     public Task<bool> RejectReport(int reportId);
     //done
     public Task<Report> GetReportDetails(int reportId);
-
+    //done 
+    public Task<bool> ReviewReport(int reportId);
 
     }

@@ -1,59 +1,43 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Initialize Bootstrap modals
+    // Initialize all modals
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
     const resolveModal = new bootstrap.Modal(document.getElementById('resolveModal'));
     const rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
 
     let showSolved = false;
 
-    // Initialize toggle button
+    // Toggle solved reports button
     const toggleSolvedButton = document.getElementById('toggleSolved');
     if (toggleSolvedButton) {
-        toggleSolvedButton.innerHTML = '<i class="fas fa-eye"></i> Show Resolved/Rejected';
-        toggleSolvedButton.classList.add('btn-outline-secondary');
         toggleSolvedButton.addEventListener('click', function () {
             showSolved = !showSolved;
-            console.log('Toggled showSolved to:', showSolved);
-            filterReports();
             this.innerHTML = showSolved
                 ? '<i class="fas fa-eye-slash"></i> Hide Resolved/Rejected'
                 : '<i class="fas fa-eye"></i> Show Resolved/Rejected';
-            this.classList.toggle('btn-outline-secondary', !showSolved);
-            this.classList.toggle('btn-outline-primary', showSolved);
+            filterReports();
         });
-    } else {
-        console.error('toggleSolved button not found');
     }
 
     // Status filter
     const statusFilter = document.getElementById('status-filter');
     if (statusFilter) {
-        statusFilter.addEventListener('change', function () {
-            console.log('Status filter changed to:', this.value);
-            filterReports();
-        });
-    } else {
-        console.error('status-filter dropdown not found');
+        statusFilter.addEventListener('change', filterReports);
     }
 
     function filterReports() {
         const statusFilterValue = statusFilter ? statusFilter.value : 'all';
-        console.log('Filtering reports with status:', statusFilterValue, 'showSolved:', showSolved);
         document.querySelectorAll('.clickable-row').forEach(row => {
-            const rowStatus = row.dataset.status;
-            if (!['reported', 'resolved', 'rejected'].includes(rowStatus)) {
-                console.warn(`Invalid data-status value: ${rowStatus} for report ID: ${row.dataset.reportId}`);
-                row.style.display = 'none';
-                return;
-            }
+            const rowStatus = row.dataset.status.toLowerCase();
             const isFinal = rowStatus === 'resolved' || rowStatus === 'rejected';
-            const statusMatch = statusFilterValue === 'all' || statusFilterValue === rowStatus;
+            const statusMatch = statusFilterValue === 'all' ||
+                statusFilterValue.toLowerCase() === rowStatus;
             const shouldShow = statusMatch && (!isFinal || showSolved);
-            row.style.display = shouldShow ? 'table-row' : 'none';
+            row.style.display = shouldShow ? '' : 'none';
         });
     }
 
-    // Show report details in modal
+    // Report details click handler
     document.addEventListener('click', function (e) {
         const row = e.target.closest('.clickable-row');
         if (!row || e.target.closest('.action-btn')) return;
@@ -83,112 +67,97 @@ document.addEventListener("DOMContentLoaded", function () {
         detailsModal.show();
     });
 
-    // Resolve report button handler
+
+    // Resolve button handler
     document.addEventListener('click', function (e) {
         const button = e.target.closest('.resolve-btn');
         if (button) {
             e.preventDefault();
             e.stopPropagation();
-            const reportId = button.dataset.reportId;
-            document.getElementById('resolveModalTitle').textContent = `Resolve Report #${reportId}`;
-            document.getElementById('resolveReportId').value = reportId;
+            document.getElementById('resolveModalTitle').textContent = `Resolve Report #${button.dataset.reportId}`;
+            document.getElementById('resolveReportId').value = button.dataset.reportId;
             document.getElementById('resolvedDetails').value = '';
             resolveModal.show();
         }
     });
 
-    // Reject report button handler
+    // Reject button handler
     document.addEventListener('click', function (e) {
         const button = e.target.closest('.reject-btn');
         if (button) {
             e.preventDefault();
             e.stopPropagation();
-            const reportId = button.dataset.reportId;
-            const lockerId = button.dataset.lockerId;
-            const subject = button.dataset.subject;
-
-            document.getElementById('rejectModalTitle').textContent = `Reject Report - Locker ${lockerId}`;
-            document.getElementById('rejectLockerId').textContent = lockerId;
-            document.getElementById('rejectSubject').textContent = subject;
-            document.getElementById('rejectReportId').value = reportId;
-
+            document.getElementById('rejectModalTitle').textContent = `Reject Report - Locker ${button.dataset.lockerId}`;
+            document.getElementById('rejectLockerId').textContent = button.dataset.lockerId;
+            document.getElementById('rejectSubject').textContent = button.dataset.subject;
+            document.getElementById('rejectReportId').value = button.dataset.reportId;
             rejectModal.show();
         }
     });
 
-    // Resolve form submission
-    const resolveForm = document.getElementById('resolveForm');
-    if (resolveForm) {
-        resolveForm.addEventListener('submit', function (e) {
+    // REVIEW BUTTON FIX - This is the critical part
+    document.addEventListener('click', function (e) {
+        const button = e.target.closest('.review-btn');
+        if (button) {
             e.preventDefault();
-            const formData = new FormData(this);
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                }
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        resolveModal.hide();
-                        const reportId = formData.get('reportId');
-                        updateReportStatus(reportId, 'resolved', formData.get('resolutionDetails'));
-                        filterReports();
-                        showSuccessMessage(data.message);
-                    } else {
-                        showErrorMessage(data.message);
+            e.stopPropagation();
+            document.getElementById('reviewReportId').value = button.dataset.reportId;
+            reviewModal.show();
+        }
+    });
+
+    // Form submission handler
+    function setupFormHandler(formId, modal, successCallback) {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     }
                 })
-                .catch(error => {
-                    console.error('Error resolving report:', error);
-                    showErrorMessage(`Failed to resolve report: ${error.message}`);
-                });
-        });
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network error');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            modal.hide();
+                            successCallback(formData.get('reportId'), data.message);
+                            showMessage(data.message, 'success');
+                        } else {
+                            showMessage(data.message || 'Operation failed', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showMessage('An error occurred', 'error');
+                    });
+            });
+        }
     }
 
-    // Reject form submission
-    const rejectForm = document.getElementById('rejectForm');
-    if (rejectForm) {
-        rejectForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                }
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        rejectModal.hide();
-                        const reportId = formData.get('reportId');
-                        updateReportStatus(reportId, 'rejected');
-                        filterReports();
-                        showSuccessMessage(data.message);
-                    } else {
-                        showErrorMessage(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error rejecting report:', error);
-                    showErrorMessage(`Failed to reject report: ${error.message}`);
-                });
-        });
-    }
+    // Setup form handlers
+    setupFormHandler('resolveForm', resolveModal, (reportId) => {
+        updateReportStatus(reportId, 'resolved');
+    });
 
-    // Helper function to update report status in UI
+    setupFormHandler('rejectForm', rejectModal, (reportId) => {
+        updateReportStatus(reportId, 'rejected');
+    });
+
+    setupFormHandler('reviewForm', reviewModal, (reportId) => {
+        updateReportStatus(reportId, 'in_review');
+    });
+
+    // Update report status in UI
     function updateReportStatus(reportId, newStatus, resolutionDetails = '') {
-        const row = document.querySelector(`.clickable-row[data-report-id="${reportId}"]`);
+        const row = document.querySelector(`tr[data-report-id="${reportId}"]`);
         if (!row) return;
 
         row.dataset.status = newStatus;
@@ -197,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const statusBadge = row.querySelector('.status-badge');
         if (statusBadge) {
-            statusBadge.textContent = newStatus.toUpperCase();
+            statusBadge.textContent = newStatus === 'in_review' ? 'IN REVIEW' : newStatus.toUpperCase();
             statusBadge.className = `status-badge ${newStatus}`;
         }
 
@@ -211,51 +180,59 @@ document.addEventListener("DOMContentLoaded", function () {
                         <i class="fas fa-check"></i> Solve
                     </button>
                 `;
+            } else if (newStatus === 'in_review') {
+                actionsCell.innerHTML = `
+                    <button class="action-btn solve-btn resolve-btn"
+                            data-report-id="${reportId}"
+                            data-locker-id="${row.dataset.lockerId}">
+                        <i class="fas fa-check"></i> Solve
+                    </button>
+                    <button class="action-btn reject-btn"
+                            data-report-id="${reportId}"
+                            data-locker-id="${row.dataset.lockerId}"
+                            data-subject="${row.dataset.subject}">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                `;
             } else {
                 actionsCell.innerHTML = '';
             }
         }
 
-        // Update modal data attributes
-        row.dataset.resolvedDate = newStatus !== 'reported' ? new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : 'N/A';
-        row.dataset.resolutionDetails = resolutionDetails || row.dataset.resolutionDetails || '';
+        if (newStatus !== 'reported') {
+            row.dataset.resolvedDate = new Date().toLocaleString('en-US', {
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        if (resolutionDetails) {
+            row.dataset.resolutionDetails = resolutionDetails;
+        }
     }
 
-    // Show success message
-    function showSuccessMessage(message) {
-        const successBox = document.createElement('div');
-        successBox.className = 'message-box success';
-        successBox.textContent = message;
-        showMessage(successBox);
-    }
 
-    // Show error message
-    function showErrorMessage(message) {
-        const errorBox = document.createElement('div');
-        errorBox.className = 'message-box error';
-        errorBox.textContent = message;
-        showMessage(errorBox);
-    }
+    // Show message function
+    function showMessage(message, type) {
+        const messageBox = document.createElement('div');
+        messageBox.className = `message-box ${type}`;
+        messageBox.textContent = message;
 
-    // Generic message display
-    function showMessage(messageElement) {
         const formSection = document.querySelector('.form-section');
         if (formSection) {
             document.querySelectorAll('.message-box').forEach(msg => msg.remove());
-            formSection.prepend(messageElement);
+            formSection.prepend(messageBox);
+
             setTimeout(() => {
-                messageElement.style.opacity = '0';
-                setTimeout(() => messageElement.remove(), 300);
+                messageBox.style.opacity = '0';
+                setTimeout(() => messageBox.remove(), 300);
             }, 5000);
         }
     }
 
-    // Apply initial filter on page load
+    // Initial filter
     filterReports();
 });
