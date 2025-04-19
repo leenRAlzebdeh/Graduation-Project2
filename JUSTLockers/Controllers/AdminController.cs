@@ -329,6 +329,29 @@ namespace JUSTLockers.Controllers
                 return StatusCode(500, $"Error sending email: {ex.Message}");
             }
         }
+        [HttpGet]
+        public async Task<IActionResult> IsDepartmentAssigned(string departmentName)
+        {
+            try
+            {
+                // Check if department is assigned to any supervisor
+                var isAssigned = await _adminService.IsDepartmentAssigned(departmentName);
+
+                if (isAssigned)
+                {
+                    // You might want to add logic here to check if it's assigned to the current supervisor
+                    // being edited, in which case it wouldn't be an error
+                }
+
+                return Json(new { isAssigned });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+
     }
 }
 

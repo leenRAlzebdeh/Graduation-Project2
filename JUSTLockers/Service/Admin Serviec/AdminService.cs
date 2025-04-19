@@ -20,6 +20,7 @@ public class AdminService : IAdminService
     //emas
     public string AddSupervisor(Supervisor supervisor)
     {
+       
         try
         {
             string query = "INSERT INTO Supervisors (id, name, email, supervised_department, location) VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
@@ -123,6 +124,12 @@ public class AdminService : IAdminService
     }
     public async Task<string> AssignCovenant(int supervisorId, string departmentName)
     {
+
+        if(await IsDepartmentAssigned(departmentName))
+        {
+            return "Department is already assigned to another supervisor.";
+        }
+
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             connection.Open();
@@ -727,5 +734,22 @@ public class AdminService : IAdminService
             }
         }
         return null; // Return null if no report is found
+    }
+
+
+    public async Task<bool> IsDepartmentAssigned(string departmentName)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = "SELECT COUNT(*) FROM Supervisors WHERE supervised_department = @DepartmentName";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@DepartmentName", departmentName);
+                var count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                return count > 0;
+            }
+        }
     }
 }
