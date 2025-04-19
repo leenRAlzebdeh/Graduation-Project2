@@ -166,8 +166,8 @@
                                             <div class="modal-body">
                                                 <input type="hidden" name="supervisorId" value="@supervisor.Id" />
                                                 <div class="mb-3">
-                                                    <label for="departmentName-@supervisor.Id" class="form-label">Department Name</label>
-                                                    <select class="form-select" id="departmentName-@supervisor.Id" name="departmentName" required>
+        <label for="departmentName-@supervisor.Id" class="form-label">Department Name</label>
+        <select class="form-select" id="departmentName-@supervisor.Id" name="departmentName" required>
                                                         <option value="">-- Select Department --</option>
                                                         @foreach (var department in ViewBag.Departments as List<Department>)
                                                         {
@@ -180,7 +180,7 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label">Department Location</label>
-                                                    <input type="text" class="form-control" id="departmentLocation-@supervisor.Id" readonly>
+                                                    <input type="text" class="form-control" id="departmentLocation-@supervisor.Id" name="location" readonly>
                                                 </div>
                                                 <div class="alert alert-danger d-none" id="assignmentError-@supervisor.Id"></div>
                                             </div>
@@ -228,16 +228,10 @@
                 }
             });
         });
-
-            async function checkDepartmentAssignment(supervisorId, departmentName) {
+                async function checkDepartmentAndLocationAssignment(departmentName, location) {
             try {
-                const response = await fetch(`/Admin/IsDepartmentAssigned?departmentName=${encodeURIComponent(departmentName)}`);
+                const response = await fetch(`/Admin/IsDepartmentAssigned?departmentName=${encodeURIComponent(departmentName)}&location=${encodeURIComponent(location)}`);
                 const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
                 return data.isAssigned;
             } catch (error) {
                 console.error('Error checking department assignment:', error);
@@ -251,61 +245,67 @@
             const errorDiv = document.getElementById(`assignmentError-${supervisorId}`);
             const form = document.getElementById(`covenantForm-${supervisorId}`);
 
-            select.addEventListener('change', async function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const locationField = document.getElementById(`departmentLocation-${supervisorId}`);
+                            select.addEventListener('change', async function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const locationField = document.getElementById(`departmentLocation-${supervisorId}`);
+            const errorDiv = document.getElementById(`assignmentError-${supervisorId}`);
 
-                if (selectedOption.dataset.location) {
-                    locationField.value = selectedOption.dataset.location;
-                } else {
-                    locationField.value = '';
+            if (selectedOption.dataset.location) {
+                locationField.value = selectedOption.dataset.location;
+            } else {
+                locationField.value = '';
+            }
+
+            // Clear previous errors
+            errorDiv.classList.add('d-none');
+            errorDiv.textContent = '';
+
+            // Check if both department and location are selected
+            if (this.value && locationField.value) {
+                const isAssigned = await checkDepartmentAndLocationAssignment(
+                    this.value,
+                    locationField.value
+                );
+
+                if (isAssigned) {
+                    errorDiv.textContent = 'This department at this location is already assigned to another supervisor!';
+                    errorDiv.classList.remove('d-none');
                 }
-
-                // Clear previous errors
-                errorDiv.classList.add('d-none');
-                errorDiv.textContent = '';
-
-                // Check if a department is selected
-                if (this.value) {
-                    const isAssigned = await checkDepartmentAssignment(supervisorId, this.value);
-
-                    if (isAssigned) {
-                        errorDiv.textContent = 'This department is already assigned to another supervisor!';
-                        errorDiv.classList.remove('d-none');
-                    }
-                }
-            });
+            }
+        });
 
             // Prevent form submission if department is already assigned
-                    form.addEventListener('submit', async function(e) {
-            e.preventDefault(); // Always prevent default first
+                                  form.addEventListener('submit', async function(e) {
+            e.preventDefault();
 
             const departmentSelect = document.getElementById(`departmentName-${supervisorId}`);
+            const locationField = document.getElementById(`departmentLocation-${supervisorId}`);
             const errorDiv = document.getElementById(`assignmentError-${supervisorId}`);
 
             // Clear previous errors
             errorDiv.classList.add('d-none');
             errorDiv.textContent = '';
 
-            // Validate required field
-            if (!departmentSelect.value) {
-                errorDiv.textContent = 'Please select a department';
+            // Validate required fields
+            if (!departmentSelect.value || !locationField.value) {
+                errorDiv.textContent = 'Please select both department and location';
                 errorDiv.classList.remove('d-none');
-                departmentSelect.focus();
                 return;
             }
 
-            // Check department assignment
-            const isAssigned = await checkDepartmentAssignment(supervisorId, departmentSelect.value);
+            // Check department and location assignment
+            const isAssigned = await checkDepartmentAndLocationAssignment(
+                departmentSelect.value,
+                locationField.value
+            );
 
             if (isAssigned) {
-                errorDiv.textContent = 'This department is already assigned to another supervisor!';
+                errorDiv.textContent = 'This department at this location is already assigned to another supervisor!';
                 errorDiv.classList.remove('d-none');
-                departmentSelect.focus();
                 return;
             }
 
-            // If validation passes, submit the form programmatically
+            // If validation passes, submit the form
             this.submit();
         });
         });

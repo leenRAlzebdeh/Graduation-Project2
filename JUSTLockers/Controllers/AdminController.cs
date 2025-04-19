@@ -160,11 +160,11 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName)
+        public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName,string location)
         {
 
 
-            var result = await _adminService.AssignCovenant(supervisorId, departmentName);
+            var result = await _adminService.AssignCovenant(supervisorId, departmentName,location);
 
             if (result.StartsWith("Covenant assigned"))
             {
@@ -330,12 +330,12 @@ namespace JUSTLockers.Controllers
             }
         }
         [HttpGet]
-        public async Task<IActionResult> IsDepartmentAssigned(string departmentName)
+        public async Task<IActionResult> IsDepartmentAssigned(string departmentName,string location)
         {
             try
             {
                 // Check if department is assigned to any supervisor
-                var isAssigned = await _adminService.IsDepartmentAssigned(departmentName);
+                var isAssigned = await _adminService.IsDepartmentAssigned(departmentName,location);
 
                 if (isAssigned)
                 {
