@@ -48,53 +48,14 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
-        //[HttpPost]
-        //public IActionResult AddSupervisor(int Id, string Name, string Email, string Location = null, string DepartmentName = null)
-        //{
-        //    Supervisor supervisor = new Supervisor
-        //    {
-        //        Id = Id,
-        //        Name = Name,
-        //        Email = Email,
-        //        Location = Location,
-        //        DepartmentName = DepartmentName,
-        //        // SupervisedDepartment = department
-        //    };
-
-
-        //    //var _adminService = new AdminService(_context);
-        //    if (ModelState.IsValid)
-        //    {
-        //        // Call the AssignCabinet method and capture the returned message
-        //        string message = _adminService.AddSupervisor(supervisor);
-
-        //        // Set the message to TempData
-        //        if (message.StartsWith("Supervisor added"))
-        //        {
-        //            TempData["SuccessMessage"] = message; // Success message
-        //        }
-        //        else
-        //        {
-        //            TempData["ErrorMessage"] = message; // Error message
-        //        }
-
-        //        // Redirect to the desired view (e.g., Index)
-        //        return View("~/Views/Admin/AddSupervisor.cshtml");
-        //    }
-        //    //return View("~/Views/Admin/AddCabinet.cshtml");
-        //    return View(supervisor); // If the model is invalid, return the same view
-        //}
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSupervisor(Supervisor supervisor)
         {
             try
             {
-                //if (!ModelState.IsValid)
-                //{
-                //    return Json(new { success = false, message = "Please fill in all required fields correctly." });
-                //}
-
+                
                 // Check if employee exists
                 var employeeExists = await _adminService.CheckEmployeeExists(supervisor.Id);
                 if (!employeeExists)
@@ -135,6 +96,28 @@ namespace JUSTLockers.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteSupervisor([FromBody] int supervisorId)
+        {
+            try
+            {
+                var result = await _adminService.DeleteSupervisor(supervisorId);
+
+                if (result.StartsWith("Supervisor deleted"))
+                {
+                    return Json(new { success = true, message = result });
+                }
+
+                return Json(new { success = false, message = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
+
         [HttpGet]
         public IActionResult ReallocationRequest()
         {
@@ -174,10 +157,10 @@ namespace JUSTLockers.Controllers
                 }
 
                 // Redirect to the desired view (e.g., Index)
-                return View("~/Views/Admin/AddCabinet.cshtml");
+                return RedirectToAction("AddCabinet");
             }
-            //return View("~/Views/Admin/AddCabinet.cshtml");
-            return View(model); // If the model is invalid, return the same view
+            return View("~/Views/Admin/AddCabinet.cshtml");
+            
         }
         public IActionResult Index()
         {

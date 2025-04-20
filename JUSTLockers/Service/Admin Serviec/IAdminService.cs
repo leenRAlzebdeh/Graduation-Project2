@@ -8,6 +8,7 @@ public interface IAdminService : IUserActions
     public  Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null,string ? location = null, int? level = null, string? department = null, string? status = null, string? wing = null);
     //done
     public Task<(bool Success, string Message)> AddSupervisor(Supervisor supervisor);
+    public Task<string> DeleteSupervisor(int supervisorId);
     public Task<bool> CheckEmployeeExists(int employeeId);
     public Task<bool> SupervisorExists(int supervisorId);
     void RespondReallocation(string respond);

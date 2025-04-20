@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System.ComponentModel;
 using System.Data;
+using Dapper;
 namespace JUSTLockers.Services;
 
 public class AdminService : IAdminService
@@ -152,9 +153,9 @@ public class AdminService : IAdminService
         {
             string query = @"
         INSERT INTO Cabinets 
-        (number_cab, wing, level, location, department_name, supervisor_id, Capacity) 
+        (number_cab, wing, level, location, department_name, Capacity) 
         VALUES 
-        (@NumberCab, @Wing, @Level, @Location, @DepartmentName, @SupervisorId, @Capacity)";
+        (@NumberCab, @Wing, @Level, @Location, @DepartmentName, @Capacity)";
 
           //  string query2 = @"update Supervisors SET  supervised_department =@DepartmentName WHERE id=@SupervisorId";
 
@@ -170,8 +171,8 @@ public class AdminService : IAdminService
                     command.Parameters.AddWithValue("@Level", model.Level);
                     command.Parameters.AddWithValue("@Location", model.Location);
                     command.Parameters.AddWithValue("@DepartmentName", model.Department);
-                    command.Parameters.AddWithValue("@SupervisorId", model.EmployeeId ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@Capacity", model.Capacity);
+                    
 
                     int rowsAffected = command.ExecuteNonQuery(); // Executes the insertion and returns the number of rows affected
                     /*
@@ -291,6 +292,37 @@ public class AdminService : IAdminService
                     : "Failed to assign covenant.";
             }
         }
+    }
+    public async Task<string> DeleteSupervisor(int supervisorId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+
+            await connection.OpenAsync();
+            try
+            {
+                // First check if supervisor exists
+                var checkQuery = "SELECT COUNT(1) FROM Supervisors WHERE id = @SupervisorId";
+                var exists = await connection.ExecuteScalarAsync<bool>(checkQuery, new { SupervisorId = supervisorId });
+
+                if (!exists)
+                {
+                    return "Supervisor not found.";
+                }
+
+                // Delete the supervisor
+                var deleteQuery = "DELETE FROM Supervisors WHERE id = @SupervisorId";
+                int rowsAffected = await connection.ExecuteAsync(deleteQuery, new { SupervisorId = supervisorId });
+                return rowsAffected > 0
+                    ? "Supervisor deleted successfully."
+                    : "Failed to delete supervisor.";
+            }
+            catch (Exception ex)
+            {
+                return "Error in the services for deleting supervisor: " + ex.Message;
+            }
+        }
+            
     }
 
     public async Task<string> DeleteCovenant(int supervisorId)
