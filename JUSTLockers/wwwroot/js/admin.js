@@ -1,52 +1,6 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
     // Example data from "database" (replace with dynamic fetch in production)
-    const adminData = {
-        name: "Yasmeen Gharaibeh",
-        totalCabinets: 150,
-        pendingRequests: 5,
-        totalEmployees: 20,
-        totalReports: 2,
-        cabinets: [
-            { id: 101, department: "Engineering", owner: "John Doe", status: "Pending" },
-            { id: 102, department: "Medicine", owner: "Jane Smith", status: "Active" }
-        ]
-    };
-
-    // Populate dashboard
-    const adminNameElement = document.getElementById("admin-name");
-    if (adminNameElement) adminNameElement.textContent = adminData.name;
-
-    const totalCabinetsElement = document.getElementById("total-cabinets");
-    if (totalCabinetsElement) totalCabinetsElement.textContent = adminData.totalCabinets;
-
-    const pendingRequestsElement = document.getElementById("pending-requests");
-    if (pendingRequestsElement) pendingRequestsElement.textContent = adminData.pendingRequests;
-
-    const totalEmployeesElement = document.getElementById("total-employees");
-    if (totalEmployeesElement) totalEmployeesElement.textContent = adminData.totalEmployees;
-
-    const totalReportsElement = document.getElementById("total-reports");
-    if (totalReportsElement) totalReportsElement.textContent = adminData.totalReports;
-
-    // Build table rows
-    const cabinetList = document.getElementById("cabinet-list");
-    if (cabinetList) {
-        cabinetList.innerHTML = "";
-        adminData.cabinets.forEach((cabinet) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${cabinet.id}</td>
-                <td>${cabinet.department}</td>
-                <td>${cabinet.owner}</td>
-                <td>${cabinet.status}</td>
-                <td>
-                    <button class="approve">Approve</button>
-                    <button class="deny">Deny</button>
-                </td>
-            `;
-            cabinetList.appendChild(row);
-        });
-    }
+   
 
     // Dark mode toggle with persistence
     const darkModeToggle = document.getElementById("dark-mode-toggle");

@@ -1,5 +1,6 @@
 using JUSTLockers.Classes;
 using JUSTLockers.DataBase;
+using MailKit.Search;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
@@ -547,7 +548,9 @@ public class AdminService : IAdminService
             if (!string.IsNullOrEmpty(searchCab) && searchCab != "")
             {
                 query += " AND cabinet_id like @searchCab";
-                command.Parameters.AddWithValue("@searchCab", $"%{searchCab}%");
+                command.Parameters.AddWithValue("@searchCab", "%" + searchCab.Trim() + "%");
+
+                // command.Parameters.AddWithValue("@searchCab", $"%{searchCab}%");
             }
 
 
@@ -581,7 +584,7 @@ public class AdminService : IAdminService
                 query += " AND wing = @wing";
                 command.Parameters.AddWithValue("@wing", wing);
             }
-
+            query += " order by department_name";
             command.CommandText = query;
 
             using (var reader = await command.ExecuteReaderAsync())

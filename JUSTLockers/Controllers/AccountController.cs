@@ -25,6 +25,7 @@ namespace WebApplication5.Controllers
                 // return RedirectToAction("LockerIssues", "Admin");
                 // return RedirectToAction("~/Views/Admin/AddCabinet.cshtml");
                 //  return View("~/Views/Admin/AddCabinet.cshtml");
+                HttpContext.Session.SetInt32("UserId", id);
                 return View("~/Views/Home/AdminDashboard.cshtml");
               //  return RedirectToAction("AdminDashboard", "Admin");
             } 

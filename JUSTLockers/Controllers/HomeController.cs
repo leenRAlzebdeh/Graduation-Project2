@@ -22,7 +22,7 @@ public class HomeController : Controller
         // IEnumerable<Student> Student = _db.Student.ToList();
         return View("Login");
     }
-    public IActionResult Index()
+    public IActionResult Profile()
     {
         return View();
     }
