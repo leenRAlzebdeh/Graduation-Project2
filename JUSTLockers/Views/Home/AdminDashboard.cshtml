@@ -6,6 +6,8 @@
     <title>JUSTLocker Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="~/css/admin.css" />
 </head>
 <body>
@@ -48,7 +50,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("Settings", "Admin")">
+                <a href="@Url.Action("Profile", "Home")">
                     <i class="fas fa-cog"></i> Settings
                 </a>
             </li>
@@ -92,10 +94,19 @@
                 <p id="total-reports">Loading...</p>
             </div>
         </section>
-
+      
         <!-- Management Table -->
         <section class="management">
-            <h2>Manage Cabinets</h2>
+
+            <div class="welcome-box">
+                <h2>Welcome Back, Admin 👋</h2>
+                <p>
+                    Everything is set and ready to go.<br />
+                    You can now manage cabinets, approve requests, and monitor reports all in one place.
+                </p>
+            </div>
+
+           @*  <h2>Manage Cabinets</h2>
             <table>
                 <thead>
                     <tr>
@@ -109,10 +120,12 @@
                 <tbody id="cabinet-list">
                     <!-- Data inserted dynamically -->
                 </tbody>
-            </table>
+            </table> *@
         </section>
     </main>
 
-    <script src="~/js/admin.js"></script>
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script> 
+    
 </body>
 </html>
