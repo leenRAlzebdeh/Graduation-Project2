@@ -7,7 +7,9 @@ public interface IAdminService : IUserActions
     //done
     public  Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null,string ? location = null, int? level = null, string? department = null, string? status = null, string? wing = null);
     //done
-    public string AddSupervisor(Supervisor supervisor);
+    public Task<(bool Success, string Message)> AddSupervisor(Supervisor supervisor);
+    public Task<bool> CheckEmployeeExists(int employeeId);
+    public Task<bool> SupervisorExists(int supervisorId);
     void RespondReallocation(string respond);
     void NotifyStudents();
     //done
@@ -29,6 +31,7 @@ public interface IAdminService : IUserActions
     void RespondForwardedReport(string respond);
     //done
     public Task<List<Department>> GetDepartments();
+    public Task<List<Department>> GetDepartmentsByLocation(string location);
     //done
     public Task<bool> ResolveReport(int reportId, string? resolutionDetails);
     //done

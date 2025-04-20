@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/message.css" />
     <style>
@@ -25,7 +24,7 @@
                 margin-bottom: 20px;
             }
 
-        .cabinet-form {
+        .super-form {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
@@ -58,6 +57,7 @@
                 }
 
         .submit-btn {
+            grid-column: span 2;
             text-align: center;
             margin-top: 20px;
         }
@@ -94,16 +94,97 @@
             transition: opacity 0.3s ease;
         }
 
+        .text-danger {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .message-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .message-box {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            transform: translateX(100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+            .message-box.show {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            .message-box.success {
+                background-color: #28a745;
+                border-left: 5px solid #218838;
+            }
+
+            .message-box.error {
+                background-color: #dc3545;
+                border-left: 5px solid #c82333;
+            }
+
+            .message-box .close-btn {
+                background: transparent;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 1.2rem;
+                margin-left: 10px;
+            }
+
+        #departmentError {
+            color: #721c24;
+            font-size: 0.9em;
+            margin-top: 8px;
+            padding: 10px 15px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            display: none;
+            font-family: "Poppins", sans-serif;
+            line-height: 1.4;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+            #departmentError::before {
+                content: "\f071";
+                font-family: "Font Awesome 5 Free";
+                font-weight: 900;
+                margin-right: 8px;
+                color: #721c24;
+            }
+
+        body.dark-mode #departmentError {
+            background-color: #4a1c22;
+            color: #f5c6cb;
+            border-color: #6b2d34;
+        }
+
         a {
             text-decoration: none;
             color: #eee;
         }
-
-
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
             <img src="/photos/images/logo.jpeg" alt="Logo" />
@@ -124,7 +205,6 @@
                     <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
                     <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
                     <li><a href="@Url.Action("ReallocationRequest", "Admin")">Reallocation Management</a></li>
-
                 </ul>
             </li>
             <li class="has-submenu">
@@ -148,10 +228,9 @@
             </li>
         </ul>
     </aside>
+    <div class="message-container" id="messageContainer"></div>
 
-    <!-- Main Content -->
     <main class="main-content">
-        <!-- Header -->
         <header class="hero-header">
             <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
             <div class="hero-overlay"></div>
@@ -161,147 +240,354 @@
                     <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
                     <div class="admin-info">
                         <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
-                        <span id="admin-name">Loading...</span>
+                        <span id="admin-name">@(User.Identity?.Name ?? "Admin")</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Form Section -->
         <section class="form-section">
             <h2>Add New Supervisor</h2>
 
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="message-box success">@TempData["SuccessMessage"]</div>
-            }
+            <!-- Update the form section to match the Supervisor model properties -->
+            <form class="super-form" asp-controller="Admin" asp-action="AddSupervisor" method="post" id="supervisorForm">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="message-box error">@TempData["ErrorMessage"]</div>
-            }
-
-            <form class="super-form" asp-controller="Admin" asp-action="AddSupervisor" method="post">
                 <div class="form-group">
-                    <label>Employee Id</label>
-                    <input type="text" id="Id" name="Id" required placeholder="Enter ID Num." />
+                    <label asp-for="Id">Employee Id</label>
+                    <input type="text" asp-for="Id" id="Id" required placeholder="Enter ID Num." />
+                    <span asp-validation-for="Id" class="text-danger"></span>
+                    <div class="text-danger" id="idError"></div>
                 </div>
 
                 <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="Name" name="Name" readonly />
+                    <label asp-for="Name">Name</label>
+                    <input type="text" asp-for="Name" id="Name" readonly />
+                    <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="text" id="Email" name="Email" readonly />
+                    <label asp-for="Email">Email</label>
+                    <input type="email" asp-for="Email" id="Email" readonly />
+                    <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label>Location <span style="color: darkblue; opacity: 0.5; font-size:small"> (Optional)</span> </label>
-                    <select id="Location" name="Location">
-                        <option value="">Select</option>
+                    <label asp-for="Location">Location</label>
+                    <select asp-for="Location" id="Location" name="Location" required>
+                        <option value="">Select Location</option>
                         <option value="Engineering">Engineering</option>
                         <option value="Medicine">Medicine</option>
                     </select>
+                    <span asp-validation-for="Location" class="text-danger"></span>
                 </div>
 
-                <div class="form-group"  id="department-container">
-                    <label>Assign To Department <span style="color: darkblue; opacity: 0.5; font-size:small"> </span></label>
-                    <select id="DepartmentName" name="DepartmentName">
+                <div class="form-group" id="department-container">
+                    <label asp-for="DepartmentName">Assign To Department</label>
+                    <select asp-for="DepartmentName" id="DepartmentName" name="DepartmentName">
                         <option value="">Select Location First</option>
                     </select>
+                    <span asp-validation-for="DepartmentName" class="text-danger"></span>
+                    <div class="text-danger" id="departmentError"></div>
                 </div>
 
+                <div id="loadingIndicator" style="display: none; grid-column: span 2;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
                 <div class="submit-btn">
-                    <button type="submit">Add Supervisor</button>
+                    <button type="submit" id="submitBtn">Add Supervisor</button>
                 </div>
             </form>
         </section>
     </main>
     <script src="~/js/admin.js"></script>
     <script>
-        const empIdInput = document.getElementById("Id");
-        const locationSelect = document.getElementById("Location");
-        const departmentSelect = document.getElementById("DepartmentName");
-        const departmentContainer = document.getElementById("department-container");
+        document.addEventListener("DOMContentLoaded", function () {
+            const empIdInput = document.getElementById("Id");
+            const nameInput = document.getElementById("Name");
+            const emailInput = document.getElementById("Email");
+            const locationSelect = document.getElementById("Location");
+            const departmentSelect = document.getElementById("DepartmentName");
+            const departmentContainer = document.getElementById("department-container");
+            const form = document.getElementById("supervisorForm");
+            const idError = document.getElementById("idError");
+            const departmentError = document.getElementById("departmentError");
+            const messageContainer = document.getElementById("messageContainer");
 
-        locationSelect.disabled = true;
-        departmentSelect.disabled = true;
+            departmentContainer.style.display = "none";
 
-        empIdInput.addEventListener("change", function () {
-            const empId = empIdInput.value;
+            function showMessage(type, text) {
+                const message = document.createElement("div");
+                message.className = `message-box ${type}`;
 
-            fetch(`/Admin/GetEmployee?Id=${encodeURIComponent(empId)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const supervisorInput = document.getElementById("Name");
-                    const emailInput = document.getElementById("Email");
+                const messageText = document.createElement("span");
+                messageText.textContent = text;
+                message.appendChild(messageText);
+
+                const closeBtn = document.createElement("button");
+                closeBtn.className = "close-btn";
+                closeBtn.innerHTML = "×";
+                closeBtn.addEventListener("click", () => {
+                    message.classList.remove('show');
+                    setTimeout(() => message.remove(), 300);
+                });
+                message.appendChild(closeBtn);
+
+                messageContainer.appendChild(message);
+
+                setTimeout(() => message.classList.add('show'), 50);
+
+                const autoDismiss = setTimeout(() => {
+                    message.classList.remove('show');
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+
+                message.addEventListener('mouseenter', () => {
+                    clearTimeout(autoDismiss);
+                });
+
+                message.addEventListener('mouseleave', () => {
+                    setTimeout(() => {
+                        message.classList.remove('show');
+                        setTimeout(() => message.remove(), 300);
+                    }, 3000);
+                });
+            }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                        setTimeout(() => {
+                            showMessage('success', '@Html.Raw(TempData["SuccessMessage"])');
+                        }, 300);
+            </text>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                        setTimeout(() => {
+                            showMessage('error', '@Html.Raw(TempData["ErrorMessage"])');
+                        }, 300);
+            </text>
+        }
+
+            empIdInput.addEventListener("input", function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+
+            empIdInput.addEventListener("change", async function () {
+                const empId = this.value.trim();
+
+                if (!empId) {
+                    nameInput.value = "";
+                    emailInput.value = "";
+                    locationSelect.value = "";
+                    departmentSelect.value = "";
+                    departmentContainer.style.display = "none";
+                    idError.textContent = "Please enter an Employee ID";
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/Admin/GetEmployee?id=${encodeURIComponent(empId)}`);
+                    const data = await response.json();
 
                     if (data.status === "Success") {
-                        supervisorInput.value = data.employee;
+                        nameInput.value = data.employee;
                         emailInput.value = data.email;
-
-                        locationSelect.disabled = false;
-                        departmentSelect.disabled = false;
+                        idError.textContent = "";
                     } else {
-                        supervisorInput.value = "notfound";
-                        emailInput.value = "notfound";
-
-                        locationSelect.disabled = true;
-                        departmentSelect.disabled = true;
+                        nameInput.value = "";
+                        emailInput.value = "";
+                        idError.textContent = "Employee not found";
+                        locationSelect.value = "";
+                        departmentSelect.value = "";
                         departmentContainer.style.display = "none";
                     }
-                })
-                .catch(() => {
-                    document.getElementById("Name").value = "Error fetching supervisor";
-                    document.getElementById("Email").value = "Error";
-                    locationSelect.disabled = true;
-                    departmentSelect.disabled = true;
-                    departmentContainer.style.display = "none";
-                });
-        });
+                } catch (error) {
+                    console.error("Error fetching employee:", error);
+                    nameInput.value = "";
+                    emailInput.value = "";
+                    idError.textContent = "Error fetching employee";
+                }
+            });
 
-        document.addEventListener("DOMContentLoaded", function () {
-            locationSelect.addEventListener("change", function () {
+            locationSelect.addEventListener("change", async function () {
                 const selectedLocation = this.value;
+                departmentSelect.innerHTML = '<option value="">Loading...</option>';
 
-                if (selectedLocation) {
-                    departmentContainer.style.display = "block";
-                } else {
+                if (!selectedLocation) {
                     departmentContainer.style.display = "none";
                     departmentSelect.innerHTML = '<option value="">Select Location First</option>';
                     return;
                 }
 
-                fetch(`/Cabinet/GetDepartments?Location=${encodeURIComponent(selectedLocation)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        departmentSelect.innerHTML = "";
+                try {
+                    const response = await fetch(`/Admin/GetDepartmentsByLocation?location=${encodeURIComponent(selectedLocation)}`);
+                    const departments = await response.json();
 
-                        data.forEach(dept => {
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+
+                    if (departments.length > 0) {
+                        departments.forEach(dept => {
                             const option = document.createElement("option");
-                            option.value = dept;
-                            option.textContent = dept;
+                            option.value = dept.name;
+                            option.textContent = `${dept.name} (${dept.location})`;
+                            option.dataset.location = dept.location;
                             departmentSelect.appendChild(option);
                         });
-
-                        departmentSelect.dispatchEvent(new Event("change"));
-                    });
+                        departmentContainer.style.display = "block";
+                    } else {
+                        departmentSelect.innerHTML = '<option value="">No departments found</option>';
+                        departmentContainer.style.display = "block";
+                    }
+                } catch (error) {
+                    console.error("Error loading departments:", error);
+                    departmentSelect.innerHTML = '<option value="">Error loading departments</option>';
+                }
             });
 
-            // Dark Mode Toggle
-            document.getElementById("dark-mode-toggle").addEventListener("click", function () {
+            departmentSelect.addEventListener("change", async function() {
+                const department = this.value;
+                const location = locationSelect.value;
+
+                if (!department || !location) {
+                    departmentError.style.display = "none";
+                    departmentError.textContent = "";
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/Admin/IsDepartmentAssigned?departmentName=${encodeURIComponent(department)}&location=${encodeURIComponent(location)}`);
+                    const data = await response.json();
+
+                    if (data.isAssigned) {
+                        departmentError.textContent = "This department is already assigned to another supervisor";
+                        departmentError.style.display = "block";
+                        showMessage('error', 'This department is already assigned to another supervisor');
+                        setTimeout(() => {
+                            departmentError.style.display = "none";
+                            departmentError.textContent = "";
+                        }, 3000);
+                    } else {
+                        departmentError.style.display = "none";
+                        departmentError.textContent = "";
+                    }
+                } catch (error) {
+                    console.error("Error checking department assignment:", error);
+                    departmentError.textContent = "Error checking department availability";
+                    departmentError.style.display = "block";
+                    showMessage('error', 'Error checking department availability');
+                    setTimeout(() => {
+                        departmentError.style.display = "none";
+                        departmentError.textContent = "";
+                    }, 3000);
+                }
+            });
+
+                    form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+
+            const empId = empIdInput.value.trim();
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const location = locationSelect.value;
+            const department = departmentSelect.value;
+
+            idError.textContent = "";
+            departmentError.style.display = "none";
+            departmentError.textContent = "";
+
+            if (!empId) {
+                idError.textContent = "Employee ID is required";
+                showMessage('error', 'Employee ID is required');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                return;
+            }
+
+            if (!name) {
+                idError.textContent = "Employee name is required";
+                showMessage('error', 'Employee name is required');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                return;
+            }
+
+            if (!email) {
+                idError.textContent = "Employee email is required";
+                showMessage('error', 'Employee email is required');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                return;
+            }
+
+            if (!location) {
+                showMessage('error', 'Please select a location');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                return;
+            }
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('Id', empId);
+            formData.append('Name', name);
+            formData.append('Email', email);
+            formData.append('Location', location);
+            if (department) {
+                formData.append('DepartmentName', department);
+            }
+
+            try {
+                const response = await fetch('/Admin/AddSupervisor', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage('success', result.message);
+                        setTimeout(() => {
+                            window.location.href = '@Url.Action("ViewSupervisorInfo", "Admin")';
+                        }, 1500);
+                    } else {
+                        showMessage('error', result.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while adding the supervisor');
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+            document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
                 document.body.classList.toggle("dark-mode");
                 const icon = this.querySelector("i");
-                icon.classList.toggle("fa-moon");
-                icon.classList.toggle("fa-sun");
+                if (icon) {
+                    icon.classList.toggle("fa-moon");
+                    icon.classList.toggle("fa-sun");
+                }
             });
 
-            // Sidebar submenu toggle
-            document.getElementById("cabinet-management-toggle").addEventListener("click", function () {
+            document.getElementById("cabinet-management-toggle")?.addEventListener("click", function () {
                 const submenu = document.getElementById("cabinet-submenu");
-                submenu.classList.toggle("show");
+                if (submenu) {
+                    submenu.classList.toggle("show");
+                }
             });
         });
     </script>

@@ -48,42 +48,93 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
+        //[HttpPost]
+        //public IActionResult AddSupervisor(int Id, string Name, string Email, string Location = null, string DepartmentName = null)
+        //{
+        //    Supervisor supervisor = new Supervisor
+        //    {
+        //        Id = Id,
+        //        Name = Name,
+        //        Email = Email,
+        //        Location = Location,
+        //        DepartmentName = DepartmentName,
+        //        // SupervisedDepartment = department
+        //    };
+
+
+        //    //var _adminService = new AdminService(_context);
+        //    if (ModelState.IsValid)
+        //    {
+        //        // Call the AssignCabinet method and capture the returned message
+        //        string message = _adminService.AddSupervisor(supervisor);
+
+        //        // Set the message to TempData
+        //        if (message.StartsWith("Supervisor added"))
+        //        {
+        //            TempData["SuccessMessage"] = message; // Success message
+        //        }
+        //        else
+        //        {
+        //            TempData["ErrorMessage"] = message; // Error message
+        //        }
+
+        //        // Redirect to the desired view (e.g., Index)
+        //        return View("~/Views/Admin/AddSupervisor.cshtml");
+        //    }
+        //    //return View("~/Views/Admin/AddCabinet.cshtml");
+        //    return View(supervisor); // If the model is invalid, return the same view
+        //}
         [HttpPost]
-        public IActionResult AddSupervisor(int Id, string Name, string Email, string Location = null, string DepartmentName = null)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddSupervisor(Supervisor supervisor)
         {
-            Supervisor supervisor = new Supervisor
+            try
             {
-                Id = Id,
-                Name = Name,
-                Email = Email,
-                Location = Location,
-                DepartmentName = DepartmentName,
-                // SupervisedDepartment = department
-            };
+                //if (!ModelState.IsValid)
+                //{
+                //    return Json(new { success = false, message = "Please fill in all required fields correctly." });
+                //}
 
-
-            //var _adminService = new AdminService(_context);
-            if (ModelState.IsValid)
-            {
-                // Call the AssignCabinet method and capture the returned message
-                string message = _adminService.AddSupervisor(supervisor);
-
-                // Set the message to TempData
-                if (message.StartsWith("Supervisor added"))
+                // Check if employee exists
+                var employeeExists = await _adminService.CheckEmployeeExists(supervisor.Id);
+                if (!employeeExists)
                 {
-                    TempData["SuccessMessage"] = message; // Success message
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = message; // Error message
+                    return Json(new { success = false, message = "Employee not found in the system." });
                 }
 
-                // Redirect to the desired view (e.g., Index)
-                return View("~/Views/Admin/AddSupervisor.cshtml");
+                // Check if supervisor already exists
+                var supervisorExists = await _adminService.SupervisorExists(supervisor.Id);
+                if (supervisorExists)
+                {
+                    return Json(new { success = false, message = "This employee is already a supervisor." });
+                }
+
+                // Validate department assignment if provided
+                if (!string.IsNullOrEmpty(supervisor.DepartmentName) && !string.IsNullOrEmpty(supervisor.Location))
+                {
+                    var isAssigned = await _adminService.IsDepartmentAssigned(supervisor.DepartmentName, supervisor.Location);
+                    if (isAssigned)
+                    {
+                        return Json(new { success = false, message = $"Department {supervisor.DepartmentName} at {supervisor.Location} is already assigned." });
+                    }
+                }
+
+                // Add supervisor
+                var result = await _adminService.AddSupervisor(supervisor);
+
+                if (result.Success)
+                {
+                    return Json(new { success = true, message = result.Message });
+                }
+
+                return Json(new { success = false, message = result.Message });
             }
-            //return View("~/Views/Admin/AddCabinet.cshtml");
-            return View(supervisor); // If the model is invalid, return the same view
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
         }
+
         [HttpGet]
         public IActionResult ReallocationRequest()
         {
@@ -344,6 +395,20 @@ namespace JUSTLockers.Controllers
                 }
 
                 return Json(new { isAssigned });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDepartmentsByLocation(string location)
+        {
+            try
+            {
+                var departments = await _adminService.GetDepartmentsByLocation(location);
+                return Json(departments);
             }
             catch (Exception ex)
             {

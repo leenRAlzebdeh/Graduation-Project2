@@ -18,48 +18,130 @@ public class AdminService : IAdminService
         _configuration = configuration;
     }
     //emas
-    public string AddSupervisor(Supervisor supervisor)
+    //public string AddSupervisor(Supervisor supervisor)
+    //{
+
+    //    try
+    //    {
+    //        string query = "INSERT INTO Supervisors (id, name, email, supervised_department, location) VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
+
+    //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //        {
+    //            connection.Open();
+    //            using (var command = new MySqlCommand(query, connection))
+    //            {
+    //                command.Parameters.AddWithValue("@Id", supervisor.Id);
+    //                command.Parameters.AddWithValue("@Name", supervisor.Name);
+    //                command.Parameters.AddWithValue("@Email", supervisor.Email);
+    //                command.Parameters.AddWithValue("@DepartmentName", supervisor.DepartmentName); // Avoid null exception
+
+    //                command.Parameters.AddWithValue("@Location", supervisor.Location);
+
+    //                int rowsAffected = command.ExecuteNonQuery();
+    //                if (rowsAffected > 0)
+    //                {
+    //                    return "Supervisor added successfully!";
+    //                }
+    //                else
+    //                {
+    //                    return "Failed to add supervisor. Please try again.";
+    //                }
+    //            }
+    //        }
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        if(ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
+    //        {
+    //            return "Supervisor ID already exists";
+    //        }
+
+    //        return $"Error: {ex.Message}";
+    //    }
+    //}
+    public async Task<bool> CheckEmployeeExists(int employeeId)
     {
-       
         try
         {
-            string query = "INSERT INTO Supervisors (id, name, email, supervised_department, location) VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
-
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                connection.Open();
+                await connection.OpenAsync();
+
+                string query = "SELECT COUNT(*) FROM Employees WHERE id = @EmployeeId";
+
                 using (var command = new MySqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@Id", supervisor.Id);
-                    command.Parameters.AddWithValue("@Name", supervisor.Name);
-                    command.Parameters.AddWithValue("@Email", supervisor.Email);
-                    command.Parameters.AddWithValue("@DepartmentName", supervisor.DepartmentName); // Avoid null exception
+                    command.Parameters.AddWithValue("@EmployeeId", employeeId);
 
-                    command.Parameters.AddWithValue("@Location", supervisor.Location);
-
-                    int rowsAffected = command.ExecuteNonQuery();
-                    if (rowsAffected > 0)
-                    {
-                        return "Supervisor added successfully!";
-                    }
-                    else
-                    {
-                        return "Failed to add supervisor. Please try again.";
-                    }
+                    var count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                    return count > 0;
                 }
             }
         }
         catch (Exception ex)
         {
-            if(ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
+            // Log the error (you should inject ILogger<AdminController> in the constructor)
+
+
+            // In case of error, return false to prevent false positives
+            return false;
+        }
+    }
+    public async Task<(bool Success, string Message)> AddSupervisor(Supervisor supervisor)
+    {
+        try
+        {
+            string query = @"INSERT INTO Supervisors 
+                        (id, name, email, supervised_department, location) 
+                        VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                return "Supervisor ID already exists";
+                await connection.OpenAsync();
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Id", supervisor.Id);
+                    command.Parameters.AddWithValue("@Name", supervisor.Name);
+                    command.Parameters.AddWithValue("@Email", supervisor.Email);
+                    command.Parameters.AddWithValue("@DepartmentName",
+                        string.IsNullOrEmpty(supervisor.DepartmentName) ? DBNull.Value : supervisor.DepartmentName);
+                    command.Parameters.AddWithValue("@Location",
+                        string.IsNullOrEmpty(supervisor.Location) ? DBNull.Value : supervisor.Location);
+
+                    int rowsAffected = await command.ExecuteNonQueryAsync();
+
+                    return rowsAffected > 0
+                        ? (true, "Supervisor added successfully!")
+                        : (false, "Failed to add supervisor");
+                }
             }
-           
-            return $"Error: {ex.Message}";
+        }
+        catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry
+        {
+            return (false, "Supervisor ID already exists");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Error adding supervisor: {ex.Message}");
         }
     }
 
+    public async Task<bool> SupervisorExists(int supervisorId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = "SELECT COUNT(*) FROM Supervisors WHERE id = @Id";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", supervisorId);
+                var count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                return count > 0;
+            }
+        }
+    }
 
 
     //emas
@@ -618,6 +700,35 @@ public class AdminService : IAdminService
                         Total_Wings = reader.GetInt32("total_wings"),
                         Location = reader.GetString("Location")
                     });
+                }
+            }
+        }
+
+        return departments;
+    }
+    public async Task<List<Department>> GetDepartmentsByLocation(string location)
+    {
+        var departments = new List<Department>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = "SELECT name, Location FROM Departments WHERE Location = @Location";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Location", location);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        departments.Add(new Department
+                        {
+                            Name = reader.GetString("name"),
+                            Location = reader.GetString("Location")
+                        });
+                    }
                 }
             }
         }
