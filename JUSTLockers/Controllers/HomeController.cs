@@ -22,9 +22,10 @@ public class HomeController : Controller
         // IEnumerable<Student> Student = _db.Student.ToList();
         return View("Login");
     }
-    public IActionResult Profile()
+    [HttpGet]
+    public IActionResult ReallocationForm()
     {
-        return View();
+     return View("~/Views/Supervisor/ReallocationForm.cshtml");
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
