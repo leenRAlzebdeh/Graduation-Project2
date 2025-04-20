@@ -21,7 +21,47 @@ namespace JUSTLockers.Controllers
           
         }
 
+        [HttpGet]
+        public JsonResult GetCabinet(string cabinet_id)
+        {
+            try
+            {
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    string query = "SELECT number_cab, location, department_name, wing, level FROM Cabinets WHERE cabinet_id = @cabinet_id";
 
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@cabinet_id", cabinet_id);
+                        connection.Open();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var cabinet = new
+                                {
+                                    number_cab = reader["number_cab"].ToString(),
+                                    location = reader["location"].ToString(),
+                                    department_name = reader["department_name"].ToString(),
+                                    wing = reader["wing"].ToString(),
+                                    level = reader["level"].ToString()
+                                };
+
+                                return Json(cabinet);
+                            }
+                        }
+                    }
+                }
+
+                return Json(null); // Not found
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database error: {ex.Message}");
+                return Json(null);
+            }
+        }
 
 
         [HttpGet]
