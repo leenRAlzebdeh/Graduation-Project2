@@ -12,6 +12,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
+
     <style>
         
 
@@ -124,40 +126,49 @@
 
     <div class="container">
         <h2>Reallocate Cabinet</h2>
-        <form method="post" asp-action="Reallocate" asp-controller="Cabinets" class="cabinet-form">
+        <form method="post" asp-action="ReallocationRequest" asp-controller="Supervisor" class="cabinet-form">
 
-          
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
 
-            <input type="hidden" name="number_cab" />
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
+
+
+            <input type="hidden" name="NumberCab" id="NumberCab" />
             <h4>Current Cab info</h4>
             <div class="row g-3 align-items-end">
                 <div class="col-sm-6 col-md-2">
-                    <label for="supervisor_id" class="form-label">Supervisor ID</label>
-                    <input type="text" class="form-control" name="supervisor_id" id="supervisor_id" required />
+                    <label for="SuperiorID" class="form-label">Supervisor ID</label>
+                    <input type="text" class="form-control" name="SuperiorID" id="SuperiorID" required />
                 </div>
                 <div class="col-sm-6 col-md-2">
-                    <label for="cabinet_id" class="form-label">Cabinet ID</label>
-                    <input type="text" class="form-control" name="cabinet_id" id="cabinet_id" required />
+                    <label for="CurrentCabinetID" class="form-label">Cabinet ID</label>
+                    <input type="text" class="form-control" name="CurrentCabinetID" id="CurrentCabinetID" required />
                     <div id="cabinetError" class="text-danger mt-1" style="display:none;">Cabinet not found.</div>
                 </div>
                 <div class="col-sm-6 col-md-2">
                     <label for="location" class="form-label">Location</label>
-                    <input type="text" class="form-control" name="location" readonly required />
+                    <input type="text" class="form-control" name="location" id="location" readonly required />
                 </div>
 
                 <div class="col-sm-6 col-md-2">
-                    <label for="department_name" class="form-label">Department</label>
-                    <input type="text" class="form-control" name="department_name" readonly required />
+                    <label for="CurrentDepartment" class="form-label">Department</label>
+                    <input type="text" class="form-control" name="CurrentDepartment" id="CurrentDepartment" readonly required />
                 </div>
 
                 <div class="col-sm-6 col-md-2">
                     <label for="wing" class="form-label">Wing</label>
-                    <input type="number" class="form-control" name="wing" readonly required />
+                    <input type="number" class="form-control" name="wing" id="wing" readonly required />
                 </div>
 
                 <div class="col-sm-6 col-md-2">
                     <label for="level" class="form-label">Level</label>
-                    <input type="number" class="form-control" name="level" readonly required />
+                    <input type="number" class="form-control" name="level" id="level" readonly required />
                 </div>
 
               
@@ -167,8 +178,8 @@
 
                     <h4>Request Cab info</h4>
                      <div class="col-sm-6 col-md-2">
-                        <label for="location" class="form-label">Location</label>
-                        <select id="location" name="Location" class="form-select">
+                        <label for="RequestLocation" class="form-label">Location</label>
+                        <select id="RequestLocation" name="RequestLocation" class="form-select" required>
                             <option value="">Select</option>
                             <option value="Engineering">Engineering</option>
                             <option value="Medicine">Medicine</option>
@@ -176,23 +187,23 @@
                     </div>
 
                     <div class="col-sm-6 col-md-2">
-                        <label for="department_name" class="form-label">Department</label>
-                        <select id="department" name="department" class="form-select">
+                        <label for="RequestedDepartment" class="form-label">Department</label>
+                        <select id="RequestedDepartment" name="RequestedDepartment" class="form-select" required>
                             <option value="">Select</option>
 
                         </select>
                     </div>
                    
                     <div class="col-sm-6 col-md-2">
-                        <label for="wing" class="form-label">Wing</label>
-                        <select id="wing" name="wing" class="form-select">
+                        <label for="RequestWing" class="form-label">Wing</label>
+                        <select id="RequestWing" name="RequestWing" class="form-select" required>
                             <option value="">Select</option>
                         </select>
                     </div>
 
                     <div class="col-sm-6 col-md-2">
-                        <label for="level" class="form-label">Level</label>
-                        <select id="level" name="Level" class="form-select">
+                        <label for="RequestLevel" class="form-label">Level</label>
+                        <select id="RequestLevel" name="RequestLevel" class="form-select" required>
                             <option value="">Select</option>
                             <option>0</option>
                             <option>1</option>
@@ -225,9 +236,9 @@
         document.addEventListener("DOMContentLoaded", function () {
 
             // Location change event
-            document.getElementById("location").addEventListener("change", function () {
+            document.getElementById("RequestLocation").addEventListener("change", function () {
                 const selectedLocation = this.value;
-                const departmentSelect = document.getElementById("department");
+                const departmentSelect = document.getElementById("RequestedDepartment");
 
                 fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
                     .then(response => response.json())
@@ -256,14 +267,14 @@
 
 
             // Department change event
-            document.getElementById("department").addEventListener("change", function () {
+            document.getElementById("RequestedDepartment").addEventListener("change", function () {
                 const department = this.value;
-                const location = document.getElementById("location").value;
+                const location = document.getElementById("RequestLocation").value;
 
                 fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
                     .then(response => response.json())
                     .then(data => {
-                        const wingSelect = document.getElementById("wing");
+                        const wingSelect = document.getElementById("RequestWing");
                         data.forEach(wing => {
                             const option = document.createElement("option");
                             option.value = wing;
@@ -274,7 +285,7 @@
             });
 
             // Automatically trigger location change to load departments
-            document.getElementById("location").dispatchEvent(new Event("change"));
+            document.getElementById("RequestLocation").dispatchEvent(new Event("change"));
 
 
 
@@ -287,12 +298,12 @@
         document.addEventListener("DOMContentLoaded", function () {
 
 
-        var userId = @(userId ?? 0);
+             var userId = @(userId ?? 0);
 
-            document.getElementById("supervisor_id").value = userId;
+            document.getElementById("SuperiorID").value = userId;
 
 
-             const cabinetIdInput = document.getElementById("cabinet_id");
+             const cabinetIdInput = document.getElementById("CurrentCabinetID");
 
         cabinetIdInput.addEventListener("blur", function () {
             const cabId = cabinetIdInput.value.trim();
@@ -305,9 +316,9 @@
             cabinetIdInput.classList.remove("is-invalid");
             document.getElementById("cabinetError").style.display = "none";
 
-            document.querySelector('input[name="number_cab"]').value = data.number_cab;
+            document.querySelector('input[name="NumberCab"]').value = data.number_cab;
             document.querySelector('input[name="location"]').value = data.location;
-            document.querySelector('input[name="department_name"]').value = data.department_name;
+            document.querySelector('input[name="CurrentDepartment"]').value = data.department_name;
             document.querySelector('input[name="wing"]').value = data.wing;
             document.querySelector('input[name="level"]').value = data.level;
             document.getElementById("submitBtn").disabled = false;
@@ -315,16 +326,16 @@
             cabinetIdInput.classList.add("is-invalid");
             document.getElementById("cabinetError").style.display = "block";
 
-            document.querySelector('input[name="number_cab"]').value = "";
+            document.querySelector('input[name="NumberCab"]').value = "";
             document.querySelector('input[name="location"]').value = "";
-            document.querySelector('input[name="department_name"]').value = "";
+            document.querySelector('input[name="CurrentDepartment"]').value = "";
             document.querySelector('input[name="wing"]').value = "";
             document.querySelector('input[name="level"]').value = "";
                document.getElementById("submitBtn").disabled = true;
         }
                 })
                 .catch(error => {
-                    console.error("Error fetching cabinet info:", error);
+                   // console.error("Error fetching cabinet info:", error);
                     alert("Failed to fetch cabinet info.");
                 });
         });

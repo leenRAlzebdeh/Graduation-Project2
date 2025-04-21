@@ -1,9 +1,12 @@
+using JUSTLockers.Classes;
+using Microsoft.AspNetCore.Mvc;
+
 namespace JUSTLockers.Services;
 public interface ISupervisorService : IUserActions, ILockerActions
 {
     void ViewAllStudentReservations();
     void Notify();
-    void ReallocateCabinet();
+    Task<string> ReallocationRequest(Reallocation model);
     void ViewCovenantInfo();
     void CancelStudentReservation();
     void ManualReserve();

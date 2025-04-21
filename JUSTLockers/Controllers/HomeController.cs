@@ -23,9 +23,9 @@ public class HomeController : Controller
         return View("Login");
     }
     [HttpGet]
-    public IActionResult ReallocationForm()
+    public IActionResult ReallocationRequest()
     {
-     return View("~/Views/Supervisor/ReallocationForm.cshtml");
+     return View("~/Views/Supervisor/ReallocationRequest.cshtml");
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

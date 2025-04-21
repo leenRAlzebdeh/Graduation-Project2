@@ -121,7 +121,7 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public IActionResult ReallocationRequest()
         {
-            return View("~/Views/Admin/ReallocationRequest.cshtml");
+            return View("~/Views/Supervisor/ReallocationRequest.cshtml");
         }
 
 
