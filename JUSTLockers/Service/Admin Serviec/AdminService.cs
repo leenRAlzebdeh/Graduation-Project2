@@ -319,7 +319,7 @@ public class AdminService : IAdminService
             }
             catch (Exception ex)
             {
-                return "Error in the services for deleting supervisor: " + ex.Message;
+                return "Error in the services for deleting supervisor: " + supervisorId;
             }
         }
             
