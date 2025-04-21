@@ -1,0 +1,340 @@
+﻿@{
+    ViewData["Title"] = "Reallocate Cabinet";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Reallocate Cabinet</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <style>
+        
+
+        .container {
+            max-width: 1100px;
+            margin-left: 270px; /* Adjust this to match your sidebar width */
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 4rem;
+        }
+        h2 {
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #333;
+        }
+
+        .cabinet-form .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .cabinet-form .form-control,
+        .cabinet-form .form-select {
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            box-shadow: none;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+            .cabinet-form .form-control:focus,
+            .cabinet-form .form-select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+            }
+
+        .cabinet-form button {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.6rem;
+            background-color: #007bff;
+            border: none;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+            .cabinet-form button:hover {
+                background-color: #0056b3;
+            }
+
+        @@media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+            }
+
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("AdminDashboard", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Cabinet Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
+                    <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
+                    <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
+                    <li><a href="@Url.Action("ReallocationRequest", "Admin")">Reallocation Management</a></li>
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Employee Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info</a></li>
+                    <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action("LockerIssues", "Admin")">
+                    <i class="fas fa-tachometer-alt"></i> Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action("ReallocationForm", "Home")">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <div class="container">
+        <h2>Reallocate Cabinet</h2>
+        <form method="post" asp-action="Reallocate" asp-controller="Cabinets" class="cabinet-form">
+
+          
+
+            <input type="hidden" name="number_cab" />
+            <h4>Current Cab info</h4>
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-md-2">
+                    <label for="supervisor_id" class="form-label">Supervisor ID</label>
+                    <input type="text" class="form-control" name="supervisor_id" id="supervisor_id" required />
+                </div>
+                <div class="col-sm-6 col-md-2">
+                    <label for="cabinet_id" class="form-label">Cabinet ID</label>
+                    <input type="text" class="form-control" name="cabinet_id" id="cabinet_id" required />
+                    <div id="cabinetError" class="text-danger mt-1" style="display:none;">Cabinet not found.</div>
+                </div>
+                <div class="col-sm-6 col-md-2">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" class="form-control" name="location" readonly required />
+                </div>
+
+                <div class="col-sm-6 col-md-2">
+                    <label for="department_name" class="form-label">Department</label>
+                    <input type="text" class="form-control" name="department_name" readonly required />
+                </div>
+
+                <div class="col-sm-6 col-md-2">
+                    <label for="wing" class="form-label">Wing</label>
+                    <input type="number" class="form-control" name="wing" readonly required />
+                </div>
+
+                <div class="col-sm-6 col-md-2">
+                    <label for="level" class="form-label">Level</label>
+                    <input type="number" class="form-control" name="level" readonly required />
+                </div>
+
+              
+
+               
+                <div class="row g-3 align-items-end">
+
+                    <h4>Request Cab info</h4>
+                     <div class="col-sm-6 col-md-2">
+                        <label for="location" class="form-label">Location</label>
+                        <select id="location" name="Location" class="form-select">
+                            <option value="">Select</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Medicine">Medicine</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 col-md-2">
+                        <label for="department_name" class="form-label">Department</label>
+                        <select id="department" name="department" class="form-select">
+                            <option value="">Select</option>
+
+                        </select>
+                    </div>
+                   
+                    <div class="col-sm-6 col-md-2">
+                        <label for="wing" class="form-label">Wing</label>
+                        <select id="wing" name="wing" class="form-select">
+                            <option value="">Select</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 col-md-2">
+                        <label for="level" class="form-label">Level</label>
+                        <select id="level" name="Level" class="form-select">
+                            <option value="">Select</option>
+                            <option>0</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+
+                        </select>
+                    </div>
+
+                   
+
+                <div class="col-sm-6 col-md-2 d-grid">
+                    <label class="form-label">&nbsp;</label>
+                        <button type="submit" id="submitBtn" disabled class="btn btn-primary">
+                        <i class="fas fa-check-circle"></i> Submit
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    @{
+        int? userId = Context.Session.GetInt32("UserId");
+    }
+    
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="~/js/admin.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // Location change event
+            document.getElementById("location").addEventListener("change", function () {
+                const selectedLocation = this.value;
+                const departmentSelect = document.getElementById("department");
+
+                fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        departmentSelect.innerHTML = "";
+                        const defaultOption = document.createElement("option");
+                        defaultOption.textContent = "All Dep";
+                        departmentSelect.appendChild(defaultOption);
+
+                        data.forEach(dept => {
+                            const option = document.createElement("option");
+                            option.value = dept;
+                            option.textContent = dept;
+                            departmentSelect.appendChild(option);
+                        });
+
+                        departmentSelect.dispatchEvent(new Event("change")); // Trigger to load wings and supervisor
+                    });
+            });
+
+
+
+
+
+
+
+
+            // Department change event
+            document.getElementById("department").addEventListener("change", function () {
+                const department = this.value;
+                const location = document.getElementById("location").value;
+
+                fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const wingSelect = document.getElementById("wing");
+                        data.forEach(wing => {
+                            const option = document.createElement("option");
+                            option.value = wing;
+                            option.textContent = wing;
+                            wingSelect.appendChild(option);
+                        });
+                    });
+            });
+
+            // Automatically trigger location change to load departments
+            document.getElementById("location").dispatchEvent(new Event("change"));
+
+
+
+        });
+    </script>
+
+    <script>
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+        var userId = @(userId ?? 0);
+
+            document.getElementById("supervisor_id").value = userId;
+
+
+             const cabinetIdInput = document.getElementById("cabinet_id");
+
+        cabinetIdInput.addEventListener("blur", function () {
+            const cabId = cabinetIdInput.value.trim();
+            if (!cabId) return;
+
+            fetch(`/Cabinet/GetCabinet?cabinet_id=${cabId}`)
+                .then(response => response.json())
+                .then(data => {
+                           if (data) {
+            cabinetIdInput.classList.remove("is-invalid");
+            document.getElementById("cabinetError").style.display = "none";
+
+            document.querySelector('input[name="number_cab"]').value = data.number_cab;
+            document.querySelector('input[name="location"]').value = data.location;
+            document.querySelector('input[name="department_name"]').value = data.department_name;
+            document.querySelector('input[name="wing"]').value = data.wing;
+            document.querySelector('input[name="level"]').value = data.level;
+            document.getElementById("submitBtn").disabled = false;
+        } else {
+            cabinetIdInput.classList.add("is-invalid");
+            document.getElementById("cabinetError").style.display = "block";
+
+            document.querySelector('input[name="number_cab"]').value = "";
+            document.querySelector('input[name="location"]').value = "";
+            document.querySelector('input[name="department_name"]').value = "";
+            document.querySelector('input[name="wing"]').value = "";
+            document.querySelector('input[name="level"]').value = "";
+               document.getElementById("submitBtn").disabled = true;
+        }
+                })
+                .catch(error => {
+                    console.error("Error fetching cabinet info:", error);
+                    alert("Failed to fetch cabinet info.");
+                });
+        });
+                cabinetIdInput.addEventListener("input", () => {
+            cabinetIdInput.classList.remove("is-invalid");
+            document.getElementById("cabinetError").style.display = "none";
+        });
+
+        });
+        
+    </script>
+</body>
+</html>
