@@ -6,6 +6,7 @@ public interface ISupervisorService : IUserActions, ILockerActions
 {
     void ViewAllStudentReservations();
     void Notify();
+    //done
     Task<string> ReallocationRequest(Reallocation model);
     void ViewCovenantInfo();
     void CancelStudentReservation();

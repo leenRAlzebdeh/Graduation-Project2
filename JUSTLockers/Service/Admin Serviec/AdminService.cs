@@ -542,7 +542,7 @@ public class AdminService : IAdminService
         {
             await connection.OpenAsync();
             var query = @"SELECT RequestID, SupervisorID, CurrentDepartment, RequestLocation,CurrentLocation,
-                             RequestedDepartment, CurrentCabinetID 
+                             RequestedDepartment, CurrentCabinetID ,NewCabinetID
                              FROM Reallocation where RequestStatus='Pending'";
 
             using (var command = new MySqlCommand(query, connection))
@@ -557,6 +557,7 @@ public class AdminService : IAdminService
                         CurrentDepartment = reader["CurrentDepartment"]?.ToString(),
                         RequestedDepartment = reader["RequestedDepartment"]?.ToString(),
                         CurrentCabinetID = reader["CurrentCabinetID"]?.ToString(),
+                        NewCabinetID = reader["NewCabinetID"]?.ToString(),
                         CurrentLocation = reader["CurrentLocation"]?.ToString(),
                         RequestLocation = reader["RequestLocation"]?.ToString()
                     });
