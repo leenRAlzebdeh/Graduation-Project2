@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/message.css" />
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
     <style>
         .form-section {
             background: #fff;
@@ -185,6 +187,7 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
             <img src="/photos/images/logo.jpeg" alt="Logo" />
@@ -204,7 +207,8 @@
                     <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
                     <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
                     <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
-                    <li><a href="@Url.Action("ReallocationRequest", "Admin")">Reallocation Management</a></li>
+                    <li><a href="@Url.Action("ReallocationResponse", "Admin")">Reallocation Management</a></li>
+
                 </ul>
             </li>
             <li class="has-submenu">
@@ -222,7 +226,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("Profile", "Home")">
+                <a href="@Url.Action("ReallocationRequest", "Home")">
                     <i class="fas fa-cog"></i> Settings
                 </a>
             </li>

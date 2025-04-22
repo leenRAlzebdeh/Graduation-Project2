@@ -38,32 +38,32 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch('/Dashboard/GetPendingRequestsNumberJson')
         .then(response => response.json())
         .then(data => {
-            const cabinetNumberInput = document.getElementById("pending-requests");
-            if (cabinetNumberInput) {
-                const lastCabinetNumber = parseInt(data);
-                cabinetNumberInput.textContent = lastCabinetNumber || "1";
+            const PendingRequestsNumberInput = document.getElementById("pending-requests");
+            if (PendingRequestsNumberInput) {
+                const PendingRequestsNumber = parseInt(data);
+                PendingRequestsNumberInput.textContent = PendingRequestsNumber||0 ;
             }
         })
         .catch(() => {
-            const cabinetNumberInput = document.getElementById("pending-requests");
-            if (cabinetNumberInput) {
-                cabinetNumberInput.value = "Error fetching pending requests number";
+            const PendingRequestsNumberInput = document.getElementById("pending-requests");
+            if (PendingRequestsNumberInput) {
+                PendingRequestsNumberInput.value = "Error fetching pending requests number";
             }
         });
 
     fetch('/Dashboard/GetReportsNumberJson')
         .then(response => response.json())
         .then(data => {
-            const cabinetNumberInput = document.getElementById("total-reports");
-            if (cabinetNumberInput) {
-                const lastCabinetNumber = parseInt(data);
-                cabinetNumberInput.textContent = lastCabinetNumber || "1";
+            const ReportsNumberInput = document.getElementById("total-reports");
+            if (ReportsNumberInput) {
+                const tReportsNumber = parseInt(data);
+               ReportsNumberInput.textContent = tReportsNumber ;
             }
         })
         .catch(() => {
-            const cabinetNumberInput = document.getElementById("total-reports");
-            if (cabinetNumberInput) {
-                cabinetNumberInput.value = "Error fetching total reports number";
+            const ReportsNumberInput = document.getElementById("total-reports");
+            if (ReportsNumberInput) {
+                ReportsNumberInput.value = "Error fetching total reports number";
             }
         });
 

@@ -48,7 +48,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                string query = "SELECT COUNT(*) AS totalPending FROM Reports WHERE Status = 'IN_REVIEW'; ";
+                string query = "SELECT COUNT(*) AS totalPending FROM Reallocation  WHERE RequestStatus = 'Pending'";
 
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
@@ -72,7 +72,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                string query = "SELECT COUNT(*) AS totalReports FROM Reports ";
+                string query = "SELECT COUNT(*) AS totalPending FROM Reports WHERE Status = 'IN_REVIEW'";
 
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {

@@ -63,6 +63,7 @@
 
 <body>
     <!-- Sidebar -->
+    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
             <img src="/photos/images/logo.jpeg" alt="Logo" />
@@ -82,7 +83,8 @@
                     <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
                     <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
                     <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
-                    <li><a href="@Url.Action("ReallocationRequest", "Admin")">Reallocation Management</a></li>
+                    <li><a href="@Url.Action("ReallocationResponse", "Admin")">Reallocation Management</a></li>
+
                 </ul>
             </li>
             <li class="has-submenu">
@@ -100,13 +102,12 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("Profile", "Home")">
+                <a href="@Url.Action("ReallocationRequest", "Home")">
                     <i class="fas fa-cog"></i> Settings
                 </a>
             </li>
         </ul>
     </aside>
-
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header -->
@@ -336,5 +337,7 @@
             });
         });
     </script>
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
 </body>
 </html>

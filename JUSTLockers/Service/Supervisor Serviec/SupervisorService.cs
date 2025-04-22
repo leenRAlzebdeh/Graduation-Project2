@@ -80,12 +80,12 @@ public class SupervisorService : ISupervisorService
         {
             string query = @"INSERT INTO Reallocation 
                          
-                         (SuperviorID, CurrentDepartment, RequestedDepartment, 
-                          RequestLocation, RequestWing, RequestLevel, 
+                         (SupervisorID, CurrentDepartment, RequestedDepartment, 
+                          RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
                           number_cab, CurrentCabinetID) 
                          VALUES 
-                         (@SuperiorID, @CurrentDepartment, @RequestedDepartment, 
-                          @RequestLocation,@RequestWing, @RequestLevel,
+                         (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
+                          @RequestLocation,@CurrentLocation,@RequestWing, @RequestLevel,
                           @NumberCab, @CurrentCabinetID)";
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -94,9 +94,10 @@ public class SupervisorService : ISupervisorService
 
                 using (var command = new MySqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@SuperiorID", model.SuperiorID);
+                    command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
                     command.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
                     //command.Parameters.AddWithValue("@RequestStatus", model.RequestStatus?.ToString() ?? "PENDING");
                     command.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
                    // command.Parameters.AddWithValue("@RequestDate", model.RequestDate ?? DateTime.Now);

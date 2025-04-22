@@ -119,9 +119,9 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
-        public IActionResult ReallocationRequest()
+        public IActionResult ReallocationResponsePage()
         {
-            return View("~/Views/Supervisor/ReallocationRequest.cshtml");
+            return View("~/Views/Admin/ReallocationResponsePage.cshtml");
         }
 
 
@@ -184,6 +184,46 @@ namespace JUSTLockers.Controllers
             return View(cabinets);
 
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ReallocationResponse()
+        {
+            var requests = await _adminService.ReallocationResponse();
+
+            if (requests == null || !requests.Any())
+            {
+                ViewBag.Message = "No reallocation requests to Approve.";
+            }
+
+           // return View(requests);
+            return View("~/Views/Admin/ReallocationResponse.cshtml", requests);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApproveRequestReallocation(int requestId)
+        {
+            bool success = await _adminService.ApproveRequestReallocation(requestId);
+
+            if (!success)
+            {
+                TempData["Error"] = "Failed to approve the reallocation request.";
+            }
+            return RedirectToAction("ReallocationResponse", "Admin");
+            //  return View("~/Views/Admin/ReallocationResponse.cshtml");// or return View(...) if you want to show a custom result page
+        }
+        [HttpPost]
+        public async Task<IActionResult> RejectRequestReallocation(int requestId)
+        {
+            bool success = await _adminService.RejectRequestReallocation(requestId);
+
+            if (!success)
+            {
+                TempData["Error"] = "Failed to reject the reallocation request.";
+            }
+            return RedirectToAction("ReallocationResponse", "Admin");
+            //  return View("~/Views/Admin/ReallocationResponse.cshtml");// or return View(...) if you want to show a custom result page
+        }
+
 
 
         [HttpGet]

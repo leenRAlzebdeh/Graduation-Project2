@@ -418,6 +418,106 @@ public class AdminService : IAdminService
     }
 
 
+    public async Task<bool> RejectRequestReallocation(int requestId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            string rejectQuery = @"UPDATE Reallocation 
+                               SET RequestStatus = 'Rejected' 
+                               WHERE RequestID = @RequestID";
+
+            using (var rejectCmd = new MySqlCommand(rejectQuery, connection))
+            {
+                rejectCmd.Parameters.AddWithValue("@RequestID", requestId);
+                int rowsAffected = await rejectCmd.ExecuteNonQueryAsync();
+                return rowsAffected > 0;
+            }
+        }
+    }
+
+
+    public async Task<bool> ApproveRequestReallocation(int requestId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            // Fix the select query: include all needed columns and correct syntax
+            string selectQuery = @"
+            SELECT RequestedDepartment, RequestLocation, number_cab, NewCabinetID, RequestWing, RequestLevel
+            FROM Reallocation
+            WHERE RequestID = @RequestID";
+
+            string department = null;
+            string location = null;
+            string newCabinetId = null;
+            string numberCab = null;
+            string wing = null;
+            string level = null;
+
+            using (var selectCmd = new MySqlCommand(selectQuery, connection))
+            {
+                selectCmd.Parameters.AddWithValue("@RequestID", requestId);
+                using (var reader = await selectCmd.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        department = reader["RequestedDepartment"]?.ToString();
+                        location = reader["RequestLocation"]?.ToString();
+                        newCabinetId = reader["NewCabinetID"]?.ToString();
+                        numberCab = reader["number_cab"]?.ToString();
+                        wing = reader["RequestWing"]?.ToString();
+                        level = reader["RequestLevel"]?.ToString();
+                    }
+                    else return false; // Not found
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(department) || string.IsNullOrWhiteSpace(location)
+                || string.IsNullOrWhiteSpace(newCabinetId) || string.IsNullOrWhiteSpace(numberCab))
+                return false;
+
+            // Update Cabinet info
+            string updateCabinetQuery = @"
+            UPDATE Cabinets 
+            SET department_name = @Department,
+                location = @Location,
+                wing = @Wing,
+                level = @Level
+               
+            WHERE number_cab = @NumberCab";
+
+            using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection))
+            {
+                updateCmd.Parameters.AddWithValue("@Department", department);
+                updateCmd.Parameters.AddWithValue("@Location", location);
+                updateCmd.Parameters.AddWithValue("@Wing", wing);
+                updateCmd.Parameters.AddWithValue("@Level", level);
+               // updateCmd.Parameters.AddWithValue("@CabinetID", newCabinetId); // string value
+                updateCmd.Parameters.AddWithValue("@NumberCab", numberCab);    // still string
+
+                await updateCmd.ExecuteNonQueryAsync();
+            }
+
+            // Mark request as approved
+            string approveQuery = @"UPDATE Reallocation 
+                                SET RequestStatus = 'Approved' 
+                                WHERE RequestID = @RequestID";
+
+            using (var approveCmd = new MySqlCommand(approveQuery, connection))
+            {
+                approveCmd.Parameters.AddWithValue("@RequestID", requestId);
+                await approveCmd.ExecuteNonQueryAsync();
+            }
+
+            return true;
+        }
+    }
+
+
+
     //emas 
     public void Login()
     {
@@ -434,10 +534,40 @@ public class AdminService : IAdminService
         throw new NotImplementedException();
     }
 
-    public void RespondReallocation(string respond)
+    public async Task<List<Reallocation>> ReallocationResponse()
     {
-        throw new NotImplementedException();
+        var reallocations = new List<Reallocation>();
+                                                   
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = @"SELECT RequestID, SupervisorID, CurrentDepartment, RequestLocation,CurrentLocation,
+                             RequestedDepartment, CurrentCabinetID 
+                             FROM Reallocation where RequestStatus='Pending'";
+
+            using (var command = new MySqlCommand(query, connection))
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    reallocations.Add(new Reallocation
+                    {
+                        RequestID = reader["RequestID"] != DBNull.Value ? Convert.ToInt32(reader["RequestID"]) : 0,
+                        SupervisorID = reader["SupervisorID"] != DBNull.Value ? Convert.ToInt32(reader["SupervisorID"]) : 0, // Convert to int
+                        CurrentDepartment = reader["CurrentDepartment"]?.ToString(),
+                        RequestedDepartment = reader["RequestedDepartment"]?.ToString(),
+                        CurrentCabinetID = reader["CurrentCabinetID"]?.ToString(),
+                        CurrentLocation = reader["CurrentLocation"]?.ToString(),
+                        RequestLocation = reader["RequestLocation"]?.ToString()
+                    });
+                }
+            }
+        }
+
+        return reallocations;
     }
+
+
 
     public void SignCabinetToNewSupervisour()
     {
