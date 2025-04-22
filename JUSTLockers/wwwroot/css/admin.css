@@ -132,7 +132,7 @@ body.dark-mode {
 .pretty-submenu {
     display: none; /* Hidden by default */
     width: 100%;
-    padding-left: 30px; /* Indent submenu items */
+     /* padding-left: 30px;*/ /* Indent submenu items */
 }
 
     .pretty-submenu.show {
