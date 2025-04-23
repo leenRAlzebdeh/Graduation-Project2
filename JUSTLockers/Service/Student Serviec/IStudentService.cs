@@ -1,13 +1,14 @@
+using JUSTLockers.Classes;
+
 namespace JUSTLockers.Services;
 public interface IStudentService : IUserActions, ILockerActions
 {
     void Login();
-    void ViewAvailableLockers();
-    void ReserveLocker();
-    void ViewReservationInfo();
+   
+    public Task<Reservation> ViewReservationInfo(int studentId);
     void ReportProblem();
     void DeleteReport();
     void ViewAllReports();
     void CheckReportStatus();
-    void RemoveReservation();
+  
 }
