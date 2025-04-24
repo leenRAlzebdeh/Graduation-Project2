@@ -1,4 +1,5 @@
 using JUSTLockers.DataBase;
+using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -50,6 +51,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 36))));
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SupervisorService>();
+builder.Services.AddScoped<IStudentService, StudentService>();
 
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddSession();

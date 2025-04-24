@@ -37,7 +37,7 @@ namespace WebApplication5.Controllers
             else if (role == "Student")
             {
                 HttpContext.Session.SetInt32("UserId", id);
-                return RedirectToAction("StudentDashboard");
+                return View("~/Views/Home/StudentDashboard.cshtml");
             }
             else
             {

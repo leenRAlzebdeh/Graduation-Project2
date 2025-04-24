@@ -88,6 +88,19 @@ namespace JUSTLockers.Controllers
                 return StatusCode(500, $"Error retrieving reservation info: {ex.Message}");
             }
         }
+        [HttpGet]
+        public IActionResult StudentDashboard()
+        {
+            // Logic to show the Assign Cabinet page
+            // return View();
+            return View("~/Views/Home/StudentDashboard.cshtml");
+        }
+
+        [HttpGet]
+        public IActionResult ReportProblems()
+        {
+            return View("~/Views/Student/ReportProblems.cshtml");
+        }
 
         // Cancel a reservation
         [HttpDelete]

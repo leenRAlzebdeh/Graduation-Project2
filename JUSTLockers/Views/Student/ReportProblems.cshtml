@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <style>
+
+        .report-box {
+            margin-top: 40px;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .radio-group label {
+            display: block;
+            margin: 8px 0;
+            font-size: 15px;
+        }
+
+        textarea {
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+            font-size: 14px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        input[type="file"] {
+            margin-top: 5px;
+        }
+
+        .submit-btn {
+            background-color: #4B0082;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            .submit-btn:hover {
+                background-color: #5a189a;
+            }
+
+    </style>
+
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("StudentDashboard", "Student")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Report Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("ReportProblems", "Student")">Report Problem </a></li>
+                    <li><a href="@Url.Action()">page</a></li>
+                    <li><a href="@Url.Action()">page</a></li>
+
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Locker Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action()">page</a></li>
+                    <li><a href="@Url.Action()">page</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action()">
+                    <i class="fas fa-tachometer-alt"></i> page
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action()">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero / Header Section -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Student Dashboard</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+
+
+        <!-- Management Table -->
+        <section class="management">
+
+            <div class="report-box">
+                <h2 style="color: #4B0082; margin-bottom: 20px;">Report a Problem</h2>
+                <form method="post" enctype="multipart/form-data" action="/Admin/SubmitProblemReport">
+                    <fieldset style="border: 2px solid #4B0082; padding: 1.5em; border-radius: 15px;">
+                        <legend style="padding: 0 15px; font-weight: 600; color: #4B0082;">Problem Details</legend>
+
+                        <p style="font-weight: 500; margin-top: 10px;">Type of Problem:</p>
+                        <div class="radio-group">
+                            <label><input type="radio" name="ProblemType" value="Locker Locked" required /> Locker Locked</label><br />
+                            <label><input type="radio" name="ProblemType" value="Theft" /> Theft</label><br />
+                            <label><input type="radio" name="ProblemType" value="Maintenance" /> MAINTENANCE</label><br />
+                            <label>
+                                <input type="radio" name="ProblemType" value="Other" /> Other:
+                                <input type="text" name="OtherDetail" placeholder="Specify here..." style="width: 60%; margin-top: 5px;" />
+                            </label>
+                        </div>
+
+                        <br />
+                        <label style="font-weight: 500;">Description:</label>
+                        <br />
+                        <textarea name="Description" rows="4" cols="60" required placeholder="Describe the issue..." style="margin-top: 5px;"></textarea>
+
+                        <br />
+                        <br />
+                        <label style="font-weight: 500;">Upload Image (optional):</label>
+                        <br />
+                        <input type="file" name="ImageFile" accept="image/*" />
+
+                        <br />
+                        <br />
+                        <button type="submit" class="submit-btn">Submit Report</button>
+                    </fieldset>
+                </form>
+            </div>
+
+
+
+            @*  <h2>Manage Cabinets</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Department</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="cabinet-list">
+                    <!-- Data inserted dynamically -->
+                </tbody>
+            </table> *@
+        </section>
+    </main>
+
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
+
+</body>
+</html>
