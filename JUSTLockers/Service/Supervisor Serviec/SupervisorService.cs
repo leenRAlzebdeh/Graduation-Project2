@@ -23,12 +23,12 @@ public class SupervisorService : ISupervisorService
             throw new NotImplementedException();
         }
 
-        public void ViewAvailableLockers()
+        public Task<List<Locker>> ViewAvailableLockers(string departmentName)
         {
             throw new NotImplementedException();
         }
 
-        public void ReserveLocker()
+        public Task<bool> ReserveLocker(int studentId, string lockerId)
         {
             throw new NotImplementedException();
         }
@@ -170,7 +170,7 @@ public class SupervisorService : ISupervisorService
             throw new NotImplementedException();
         }
 
-        public void CancelReservation()
+    public Task<bool> CancelReservation(int studentId, string reservationId)
         {
             throw new NotImplementedException();
         }
