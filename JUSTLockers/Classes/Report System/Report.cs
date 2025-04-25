@@ -19,7 +19,7 @@ public enum ReportType
 {
     THEFT,
     MAINTENANCE,
-    LOCKED_LOCKER
+    LOCKED_LOCKER,OTHER
 }
 
 public enum ReportStatus

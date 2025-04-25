@@ -18,6 +18,16 @@ namespace WebApplication5.Controllers
         }
 
         [HttpPost]
+        public IActionResult Logout()
+        {
+            // Clear the session or authentication cookie
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Home");
+        }
+
+
+
+        [HttpPost]
         public IActionResult Login(int id, string password)
         {
             string role = IsValidUser(id, password);

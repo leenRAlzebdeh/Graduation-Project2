@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JUSTLocker Student Dashboard</title>
+    <title>JUSTLocker | ReportProblem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -122,6 +122,9 @@
             </div>
         </header>
 
+        @{
+            int? userId = Context.Session.GetInt32("UserId");
+        }
 
 
         <!-- Management Table -->
@@ -132,16 +135,19 @@
                 <form method="post" enctype="multipart/form-data" action="/Admin/SubmitProblemReport">
                     <fieldset style="border: 2px solid #4B0082; padding: 1.5em; border-radius: 15px;">
                         <legend style="padding: 0 15px; font-weight: 600; color: #4B0082;">Problem Details</legend>
-
+                        <input type="hidden" name="ReporterId" id="ReporterId" value="@userId" />
+                        @*                         <label style="font-weight: 500;">Report ID:</label> 
+ *@@*                         <input type="text" id="ReportID" name="ReportID" required readonly style="width: 100%; max-width: 100%; margin-top: 5px;" />
+ *@
                         <p style="font-weight: 500; margin-top: 10px;">Type of Problem:</p>
                         <div class="radio-group">
                             <label><input type="radio" name="ProblemType" value="Locker Locked" required /> Locker Locked</label><br />
                             <label><input type="radio" name="ProblemType" value="Theft" /> Theft</label><br />
                             <label><input type="radio" name="ProblemType" value="Maintenance" /> MAINTENANCE</label><br />
                             <label>
-                                <input type="radio" name="ProblemType" value="Other" /> Other:
-                                <input type="text" name="OtherDetail" placeholder="Specify here..." style="width: 60%; margin-top: 5px;" />
-                            </label>
+                                <input type="radio" name="ProblemType" value="Other" /> Other
+@*                                 <input type="text" name="OtherDetail" placeholder="Specify here..." style="width: 60%; margin-top: 5px;" />
+ *@                            </label>
                         </div>
 
                         <br />
@@ -164,26 +170,37 @@
 
 
 
-            @*  <h2>Manage Cabinets</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Department</th>
-                        <th>Owner</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="cabinet-list">
-                    <!-- Data inserted dynamically -->
-                </tbody>
-            </table> *@
+           
         </section>
     </main>
 
     <script src="~/js/DashbordAdmin.js"></script>
     <script src="~/js/admin.js"></script>
+
+    <script>
+
+            document.addEventListener("DOMContentLoaded", function () {
+
+        // Auto-increment cabinet number on page load
+        fetch('/Student/GetLastReportIDJson')
+            .then(response => response.json())
+            .then(data => {
+                const Input = document.getElementById("ReportID");
+                if (Input) {
+                    const lastReportNumber = parseInt(data) + 1;
+                    Input.value = lastReportNumber || "1";
+                }
+            })
+            .catch(() => {
+                const Input = document.getElementById("ReportID");
+                if (Input) {
+                    Input.value = "Error fetching Report id";
+                }
+            });
+             });
+
+    </script>
+
 
 </body>
 </html>

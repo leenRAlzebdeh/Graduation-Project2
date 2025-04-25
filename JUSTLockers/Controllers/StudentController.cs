@@ -4,17 +4,25 @@ using JUSTLockers.Classes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JUSTLockers.Services;
+using Microsoft.Extensions.Configuration;
+using MySqlConnector;
 
 namespace JUSTLockers.Controllers
 {
     public class StudentController : Controller
     {
         private readonly IStudentService _studentService;
+        private readonly IConfiguration _configuration;
 
-        public StudentController(IStudentService studentService)
+        public StudentController(IStudentService studentService , IConfiguration configuration)
         {
             _studentService = studentService;
+            _configuration = configuration;
         }
+       
+
+      
+
 
         public IActionResult Index()
         {
@@ -97,9 +105,31 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
-        public IActionResult ReportProblems()
+        public IActionResult ReportProblem()
         {
-            return View("~/Views/Student/ReportProblems.cshtml");
+            return View("~/Views/Student/ReportProblem.cshtml");
+        }
+        [HttpGet]
+        public JsonResult GetLastReportIDJson()
+        {
+            try
+            {
+                string query = "SELECT MAX(Id) AS LastReportID FROM Reports";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        return Json(result.ToString()); // Return the last cabinet number as a string
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json("Error fetching last Report id: " + ex.Message); // Return error message if an exception occurs
+            }
         }
 
         // Cancel a reservation

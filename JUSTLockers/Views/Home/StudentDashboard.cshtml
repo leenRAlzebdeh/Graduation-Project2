@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="~/css/admin.css" />
 </head>
@@ -28,7 +29,7 @@
                     <i class="fas fa-archive"></i> Report Management
                 </div>
                 <ul class="pretty-submenu" id="cabinet-submenu">
-                    <li><a href="@Url.Action("ReportProblems", "Student")">Report Problem </a></li>
+                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem </a></li>
                     <li><a href="@Url.Action()">page</a></li>
                     <li><a href="@Url.Action()">page</a></li>
 
@@ -54,6 +55,13 @@
                 </a>
             </li>
         </ul>
+        <div class="logout-section text-center mb-3">
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
     </aside>
 
     <!-- Main Content -->
