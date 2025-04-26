@@ -104,6 +104,28 @@ namespace JUSTLockers.Controllers
             return View("~/Views/Home/StudentDashboard.cshtml");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> SubmitProblemReport(IFormFile ImageFile, int ReportID, string LockerId, string ProblemType,string Subject, string Description)
+        {
+            int? reporterId = HttpContext.Session.GetInt32("UserId");
+            if (reporterId == null)
+                return Unauthorized();
+
+            var result = await _studentService.SaveReportAsync(ReportID, reporterId.Value, LockerId, ProblemType, Subject, Description, ImageFile);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Report Sent Successfully"; 
+                return RedirectToAction("ReportProblem", "Student");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to send the report. Please try again.";
+                return StatusCode(500, "Failed to save the report.");
+            }
+        }
+
+       
         [HttpGet]
         public IActionResult ReportProblem()
         {
@@ -131,6 +153,42 @@ namespace JUSTLockers.Controllers
                 return Json("Error fetching last Report id: " + ex.Message); // Return error message if an exception occurs
             }
         }
+
+
+
+        [HttpGet]
+        public JsonResult GetLockerIDJson(int ReporterId)
+        {
+            try
+            {
+                string query = "SELECT LockerId FROM Reports WHERE ReporterId = @ReporterId";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ReporterId", ReporterId);
+
+                        var result = command.ExecuteScalar();
+                        if (result != null)
+                        {
+                            return Json(result.ToString());
+                        }
+                        else
+                        {
+                            return Json("No locker found for this reporter.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json("Error fetching locker ID: " + ex.Message);
+            }
+        }
+
+
 
         // Cancel a reservation
         [HttpDelete]

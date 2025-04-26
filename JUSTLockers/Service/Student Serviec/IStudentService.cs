@@ -8,7 +8,9 @@ public interface IStudentService : IUserActions, ILockerActions
    
     public Task<Reservation> ViewReservationInfo(int studentId);
 
-    void ReportProblem();
+    //void ReportProblem();
+    Task<bool> SaveReportAsync(int ReportID,int reporterId, string LockerId, string problemType,string Subject, string description, IFormFile imageFile);
+
     void DeleteReport();
     void ViewAllReports();
     void CheckReportStatus();

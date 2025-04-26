@@ -26,6 +26,11 @@ namespace JUSTLockers.Controllers
             _emailService = emailService;
         }
 
+        //[HttpGet]
+        //public IActionResult ReportedIssues()
+        //{
+        //    return View("~/Views/Supervisor/ReportedIssues.cshtml");
+        //}
 
 
         [HttpPost]
@@ -49,6 +54,14 @@ namespace JUSTLockers.Controllers
 
             return View("~/Views/Supervisor/ReallocationRequest.cshtml", model);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportedIssues()
+        {
+            var reports = await _superService.ViewReportedIssues();
+            return View("~/Views/Supervisor/ReportedIssues.cshtml", reports);
+        }
+
 
         [HttpGet]
         public IActionResult ReallocationRequestForm()

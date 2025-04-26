@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
     <style>
 
         .report-box {
@@ -129,26 +130,40 @@
 
         <!-- Management Table -->
         <section class="management">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
 
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
             <div class="report-box">
                 <h2 style="color: #4B0082; margin-bottom: 20px;">Report a Problem</h2>
-                <form method="post" enctype="multipart/form-data" action="/Admin/SubmitProblemReport">
+                <form method="post" enctype="multipart/form-data" asp-controller="Student" asp-action="SubmitProblemReport" method="post">
                     <fieldset style="border: 2px solid #4B0082; padding: 1.5em; border-radius: 15px;">
                         <legend style="padding: 0 15px; font-weight: 600; color: #4B0082;">Problem Details</legend>
+                        <input type="hidden" name="ReportID" id="ReportID" />
                         <input type="hidden" name="ReporterId" id="ReporterId" value="@userId" />
-                        @*                         <label style="font-weight: 500;">Report ID:</label> 
- *@@*                         <input type="text" id="ReportID" name="ReportID" required readonly style="width: 100%; max-width: 100%; margin-top: 5px;" />
- *@
+                                                <label style="font-weight: 500;">Locker ID:</label> 
+                        <input type="text" id="LockerID" name="LockerID" required readonly value="L101" />
+
                         <p style="font-weight: 500; margin-top: 10px;">Type of Problem:</p>
                         <div class="radio-group">
-                            <label><input type="radio" name="ProblemType" value="Locker Locked" required /> Locker Locked</label><br />
-                            <label><input type="radio" name="ProblemType" value="Theft" /> Theft</label><br />
-                            <label><input type="radio" name="ProblemType" value="Maintenance" /> MAINTENANCE</label><br />
+                            <label><input type="radio" name="ProblemType" value="LOCKED_LOCKER" required /> Locker Locked</label><br />
+                            <label><input type="radio" name="ProblemType" value="THEFT" /> Theft</label><br />
+                            <label><input type="radio" name="ProblemType" value="MAINTENANCE" /> MAINTENANCE</label><br />
                             <label>
-                                <input type="radio" name="ProblemType" value="Other" /> Other
+                                <input type="radio" name="ProblemType" value="OTHER" /> Other
 @*                                 <input type="text" name="OtherDetail" placeholder="Specify here..." style="width: 60%; margin-top: 5px;" />
  *@                            </label>
                         </div>
+
+                        <br />
+                        <label style="font-weight: 500;">Subject:</label>
+                        <br />
+                        <input name="Subject" rows="4" cols="60" required placeholder="Subject" style="margin-top: 5px;"/>
 
                         <br />
                         <label style="font-weight: 500;">Description:</label>
@@ -178,11 +193,36 @@
     <script src="~/js/admin.js"></script>
 
     <script>
+                document.querySelector('input[name="ImageFile"]').addEventListener('change', function (event) {
+            const file = event.target.files[0];  // Get the selected file
+            if (file) {
+                const mimeType = file.type;  // This is the MIME type (e.g., "image/png", "image/jpeg")
+                console.log("Mime Type: ", mimeType);  // You can check this in the console for debugging
+            }
+        });
 
-            document.addEventListener("DOMContentLoaded", function () {
 
-        // Auto-increment cabinet number on page load
-        fetch('/Student/GetLastReportIDJson')
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const reporterInput = document.getElementById("ReporterId");
+            const lockerInput = document.getElementById("LockerID");
+
+            if (reporterInput && lockerInput) {
+                const reporterId = reporterInput.value;
+
+                fetch(`/Student/GetLockerIDJson?ReporterId=${encodeURIComponent(reporterId)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        lockerInput.value = data || "N/A";
+                    })
+                    .catch(() => {
+                        lockerInput.value = "Error fetching Locker ID";
+                    });
+            }
+
+
+
+             fetch('/Student/GetLastReportIDJson')
             .then(response => response.json())
             .then(data => {
                 const Input = document.getElementById("ReportID");
@@ -197,9 +237,10 @@
                     Input.value = "Error fetching Report id";
                 }
             });
-             });
 
+        });
     </script>
+
 
 
 </body>
