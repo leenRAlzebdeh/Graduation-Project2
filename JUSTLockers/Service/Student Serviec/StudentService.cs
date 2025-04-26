@@ -17,7 +17,7 @@ namespace JUSTLockers.Service
         {
             throw new NotImplementedException();
         }
-        //leen
+        //leen may not use it 
         public async Task<List<Locker>> ViewAvailableLockers(string departmentName)
         {
             var availableLockers = new List<Locker>();
@@ -270,5 +270,72 @@ namespace JUSTLockers.Service
                 }
             }
         }
+
+        public async Task<Department> GetDepartmentInfo(int studentId)
+        {
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                // Get student's department and location
+                var query = @"SELECT department, Location, total_wings FROM Students WHERE id = @StudentId";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@StudentId", studentId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return new Department
+                            {
+                                Name = reader.GetString("department"),
+                                Location = reader.GetString("Location"),
+                                Total_Wings = reader.GetInt32("total_wings")
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        public async Task<List<Wing>> GetAvailableWingsAndLevels(string departmentName)
+        {
+            var wings = new List<Wing>();
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                // Get all wings and levels for the department with available lockers
+                var query = @"SELECT c.wing, c.level, COUNT(l.Id) as AvailableLockers
+                            FROM Cabinets c
+                            JOIN Lockers l ON c.cabinet_id = l.cabinet_id
+                            WHERE c.department_name = @DepartmentName
+                            AND l.Status = 'EMPTY'
+                            GROUP BY c.wing, c.level
+                            ORDER BY c.wing, c.level";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@DepartmentName", departmentName);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            wings.Add(new Wing
+                            {
+                                Id = reader.GetString("wing"),
+                            });
+                        }
+                    }
+                }
+            }
+            return wings;
+        }
+
     }
 }
