@@ -593,12 +593,15 @@ public class AdminService : IAdminService
                 r.ReportDate AS ReportDate,
                 r.ResolvedDate AS ResolvedDate,
                 r.ResolvedDetails AS ResolutionDetails,
+r.ImageData AS ImageData,
+                r.ImageMimeType AS ImageMimeType,
                 l.Id AS LockerNumber,
                 l.Status AS LockerStatus,
                 u.id AS ReporterId,
                 u.name AS ReporterName,
                 u.email AS ReporterEmail,
                 d.name AS DepartmentName
+       
             FROM 
                 Reports r
             JOIN 
@@ -607,8 +610,8 @@ public class AdminService : IAdminService
                 Students u ON r.ReporterId = u.id
             JOIN 
                 Departments d ON l.DepartmentName = d.name
-            WHERE 
-                r.Type = 'THEFT'";
+where r.Type='THEFT'
+          ";
 
             using (var command = new MySqlCommand(query, connection))
             using (var reader = await command.ExecuteReaderAsync())
@@ -639,6 +642,8 @@ public class AdminService : IAdminService
                         ReportDate = reader.GetDateTime("ReportDate"),
                         ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
                         ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                        ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                        ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
                     });
                 }
             }

@@ -72,12 +72,13 @@ body.dark-mode .form-section {
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.85rem;
-    color: white;
+    background-color: darkslateblue;
 }
 
     .status-badge.reported,
     .status-badge.escalated {
-        background-color: lightcyan;
+        background-color:darkslateblue;
+       
     }
 
     .status-badge.resolved {

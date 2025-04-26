@@ -7,6 +7,7 @@ using MySqlConnector;
 using System.ComponentModel;
 using System.Data;
 using Dapper;
+using Microsoft.Data.SqlClient;
 namespace JUSTLockers.Services;
 
 
@@ -48,12 +49,124 @@ public class SupervisorService : ISupervisorService
             throw new NotImplementedException();
         }
 
-        public void ViewAllReports()
-        {
-            throw new NotImplementedException();
-        }
 
-        public void CheckReportStatus()
+    //public async Task<List<Report>> ViewReportedIssues()
+    //{
+    //    var reports = new List<Report>();
+    //    var query = "SELECT * FROM Reports";
+
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        await connection.OpenAsync();
+
+    //        using (var command = new MySqlCommand(query, connection))
+    //        using (var reader = await command.ExecuteReaderAsync())
+    //        {
+    //            while (await reader.ReadAsync())
+    //            {
+    //                reports.Add(new Report
+    //                {
+    //                    Reporter = null,
+    //                    Locker = null,
+
+    //                    ReportId = reader.GetInt32("Id"),
+    //                    ReporterId = reader.GetInt32("ReporterId"),
+    //                    LockerId = reader.GetString("LockerId"),
+
+    //                    // Converting string from DB to enums
+    //                    Type = Enum.Parse<ReportType>(reader.GetString("Type")),
+    //                    Status = Enum.Parse<ReportStatus>(reader.GetString("Status")),
+
+    //                    Subject = reader.GetString("Subject"),
+    //                    Statement = reader.GetString("Statement"),
+    //                    ReportDate = reader.GetDateTime("ReportDate"),
+    //                    ResolvedDate = reader.IsDBNull("ResolvedDate") ? null : reader.GetDateTime("ResolvedDate"),
+    //                    ResolutionDetails = reader.IsDBNull("ResolvedDetails") ? null : reader.GetString("ResolvedDetails"),
+    //                    ImageData = reader.IsDBNull("ImageData") ? null : (byte[])reader["ImageData"],
+    //                    ImageMimeType = reader.IsDBNull("ImageMimeType") ? null : reader.GetString("ImageMimeType")
+    //                });
+    //            }
+    //        }
+    //    }
+
+    //    return reports;
+    //}
+    public async Task<List<Report>> ViewReportedIssues()
+    {
+        var reports = new List<Report>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            connection.Open();
+            var query = @"
+            SELECT 
+                r.Id AS ReportId,
+                r.Subject AS ProblemDescription,
+                r.Statement AS DetailedDescription,
+                r.Type AS ReportType,
+                r.Status AS ReportStatus,
+                r.ReportDate AS ReportDate,
+                r.ResolvedDate AS ResolvedDate,
+                r.ResolvedDetails AS ResolutionDetails,
+                r.ImageData AS ImageData,
+                r.ImageMimeType AS ImageMimeType,
+                l.Id AS LockerNumber,
+                l.Status AS LockerStatus,
+                u.id AS ReporterId,
+                u.name AS ReporterName,
+                u.email AS ReporterEmail,
+                d.name AS DepartmentName
+       
+            FROM 
+                Reports r
+            JOIN 
+                Lockers l ON r.LockerId = l.Id
+            JOIN 
+                Students u ON r.ReporterId = u.id
+            JOIN 
+                Departments d ON l.DepartmentName = d.name
+          ";
+
+            using (var command = new MySqlCommand(query, connection))
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    reports.Add(new Report
+                    {
+                        ReportId = reader.GetInt32("ReportId"),
+                        Reporter = new Student(
+                            reader.GetInt32("ReporterId"),
+                            reader.GetString("ReporterName"),
+                            reader.GetString("ReporterEmail"),
+                            reader.GetString("DepartmentName")
+
+                        // Department is fetched from Lockers
+                        ),
+                        Locker = new Locker
+                        {
+                            LockerId = reader.GetString("LockerNumber"),
+                            Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                            Department = reader.GetString("DepartmentName"),
+                        },
+                        Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                        Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                        Subject = reader.GetString("ProblemDescription"),
+                        Statement = reader.GetString("DetailedDescription"),
+                        ReportDate = reader.GetDateTime("ReportDate"),
+                        ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                        ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                        ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                        ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
+                    });
+                }
+            }
+        }
+        return reports;
+    }
+
+
+    public void CheckReportStatus()
         {
             throw new NotImplementedException();
         }

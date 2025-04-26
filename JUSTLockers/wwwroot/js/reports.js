@@ -52,6 +52,13 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('detailsReportType').textContent = row.dataset.reportType || 'N/A';
         document.getElementById('detailsStatement').textContent = row.dataset.statement || 'No description provided';
 
+
+        
+       
+
+
+
+
         const resolutionPanel = document.getElementById('detailsResolutionPanel');
         if (row.dataset.status === 'resolved' || row.dataset.status === 'rejected') {
             resolutionPanel.style.display = 'block';

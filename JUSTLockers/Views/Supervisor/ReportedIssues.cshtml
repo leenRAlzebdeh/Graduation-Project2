@@ -17,6 +17,41 @@
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/message.css" />
     <link rel="stylesheet" href="~/css/reports.css" />
+    <style>
+
+
+        .zoomable-image {
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+
+            .zoomable-image.zoomed-out {
+                transform: scale(2); /* or 2.5 if you want bigger */
+                cursor: zoom-out;
+            }
+
+ 
+
+        .action-btn {
+            padding: 5px 8px;
+            border-radius: 10px;
+            font-weight:200;
+            cursor: pointer;
+            color: white;
+            margin: 2px;
+            transition: background 0.3s ease;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.70rem;
+            background-color: darkslateblue;
+        }
+        .status-badge.reported,
+        .status-badge.escalated {
+            background-color: darkslateblue;
+        }
+    </style>
 </head>
 
 <body>
@@ -29,43 +64,50 @@
         </div>
         <ul class="menu">
             <li class="nav-item">
-                <a href="@Url.Action("AdminDashboard", "Admin")">
+                <a href="@Url.Action("StudentDashboard", "Student")">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
             </li>
             <li class="has-submenu">
                 <div class="submenu-toggle">
-                    <i class="fas fa-archive"></i> Cabinet Management
+                    <i class="fas fa-archive"></i> Report Management
                 </div>
                 <ul class="pretty-submenu" id="cabinet-submenu">
-                    <li><a href="@Url.Action("AddCabinet", "Admin")">Add Cabinet</a></li>
-                    <li><a href="@Url.Action("SignCovenant", "Admin")">Sign Covenant</a></li>
-                    <li><a href="@Url.Action("ViewCabinetInfo", "Admin")">Cabinets Info</a></li>
-                    <li><a href="@Url.Action("ReallocationResponse", "Admin")">Reallocation Management</a></li>
+                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem </a></li>
+                    <li><a href="@Url.Action("ReportedIssues","Supervisor")">Test for image</a></li>
+                    <li><a href="@Url.Action()">page</a></li>
 
                 </ul>
             </li>
             <li class="has-submenu">
                 <div class="submenu-toggle">
-                    <i class="fas fa-user-graduate"></i> Employee Management
+                    <i class="fas fa-user-graduate"></i> Locker Management
                 </div>
                 <ul class="pretty-submenu" id="Employee-submenu">
-                    <li><a href="@Url.Action("ViewSupervisorInfo", "Admin")">Employees Info</a></li>
-                    <li><a href="@Url.Action("AddSupervisor", "Admin")">Add Supervisor</a></li>
+                    <li><a href="@Url.Action()">page</a></li>
+                    <li><a href="@Url.Action()">page</a></li>
                 </ul>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("LockerIssues", "Admin")">
-                    <i class="fas fa-tachometer-alt"></i> Reports
+                <a href="@Url.Action()">
+                    <i class="fas fa-tachometer-alt"></i> page
                 </a>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("ReallocationRequest", "Home")">
+                <a href="@Url.Action()">
                     <i class="fas fa-cog"></i> Settings
                 </a>
             </li>
         </ul>
+        <div class="logout-section text-center mb-3">
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
     </aside>
+
 
     <!-- Main Content -->
     <main class="main-content">
@@ -116,8 +158,9 @@
             <table class="table table-hover table-striped">
                 <thead>
                     <tr>
+                       
                         <th>Locker #</th>
-                        <th>Problem</th>
+                      @*   <th>Problem</th> *@
                         <th>Status</th>
                         <th>Reported On</th>
                         <th>Actions</th>
@@ -136,9 +179,11 @@
                             data-report-type="@report.Type"
                             data-statement="@report.Statement"
                             data-resolved-date="@(report.ResolvedDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")"
-                            data-resolution-details="@report.ResolutionDetails">
+                            data-resolution-details="@report.ResolutionDetails"
+                            data-imagetype="@report.ImageMimeType"
+                            data-image="@(report.ImageData != null ? Convert.ToBase64String(report.ImageData) : "")">
                             <td>@report.Locker.LockerId</td>
-                            <td>@report.Subject</td>
+                           @*  <td>@report.Subject</td> *@
                             <td>
                                 <span class="status-badge @report.Status.ToString().ToLower()">
                                     @(report.Status == ReportStatus.IN_REVIEW ? "IN REVIEW" : report.Status.ToString())
@@ -201,11 +246,33 @@
                     <p><strong>Student Department:</strong> <span id="detailsReporterDepartment"></span></p>
                     <p><strong>Report Type:</strong> <span id="detailsReportType"></span></p>
                     <p><strong>Full Description:</strong> <span id="detailsStatement"></span></p>
+                    <div>
+
+                        <p class="col-sm-3">Image:</p>
+@*                         <p class="col-sm-9" id="modalImageContainer">
+ *@@*                             <img id="modalImage" class="img-thumbnail" alt="Report Image" style="max-width: 150px; max-height: 150px; cursor: pointer;" />
+ *@
+                          @*   @if (Model.Any(r => r.ImageData != null))
+                            {
+                                <img id="modalImage" class="img-thumbnail" alt="Report Image" style="max-width: 150px; max-height: 150px; cursor: pointer;" />
+                            }
+                            else
+                            {
+                                <span> No image Provided</span>
+                            } *@
+                            <div id="modalImageContainer">
+                                <img id="modalImage" style="max-width: 150px; min-height:150px; display: none;" />
+                            <div id="noImageMessage" style="display: none; max-width: 50px; ">No image Provided</div>
+                            </div>
+
+                    </div>
                     <div id="detailsResolutionPanel" style="display:none;">
                         <div class="resolution-panel">
                             <div class="resolution-header">
                                 <i class="fas fa-check-circle"></i> Resolution Details
                             </div>
+                           
+
                             <p><strong>Resolved on:</strong> <span id="detailsResolvedDate"></span></p>
                             <div class="border-top pt-2 mt-2" id="detailsResolutionDetails"></div>
 
@@ -313,11 +380,51 @@
             submenu.classList.toggle("show");
         });
 
-       
+
     </script>
     <script src="~/js/DashbordAdmin.js"></script>
     <script src="~/js/admin.js"></script>
+    <script>
+        const rows = document.querySelectorAll('.clickable-row');
 
-    
+        rows.forEach(row => {
+            row.addEventListener('click', function () {
+                const imageBase64 = this.getAttribute('data-image');
+                const imageType = this.getAttribute('data-imagetype');
+
+                const modalImage = document.getElementById('modalImage');
+                const noImageMessage = document.getElementById('noImageMessage');
+
+                if (imageBase64 && imageType) {
+                    modalImage.src = `data:${imageType};base64,${imageBase64}`;
+                    modalImage.style.display = 'block';
+                    noImageMessage.style.display = 'none';
+                } else {
+                    modalImage.src = '';
+                    modalImage.style.display = 'none';
+                    noImageMessage.style.display = 'block';
+                }
+            });
+
+
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalImage = document.getElementById('modalImage');
+
+            if (modalImage) {
+                modalImage.classList.add('zoomable-image');
+
+                modalImage.addEventListener('click', function () {
+                    modalImage.classList.toggle('zoomed-out');
+                });
+            }
+        });
+    </script>
+
+
+
 </body>
 </html>

@@ -11,7 +11,8 @@ public interface ISupervisorService : IUserActions, ILockerActions
     void ViewCovenantInfo();
     void CancelStudentReservation();
     void ManualReserve();
-    void ViewReportList();
+    //void ViewReportList();
+    Task<List<Report>> ViewReportedIssues();
     void UpdateReportStatus();
     void EscalateReport();
     void BlockStudent();

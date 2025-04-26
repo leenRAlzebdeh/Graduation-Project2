@@ -168,9 +168,60 @@ namespace JUSTLockers.Service
             return null; // No reservation found
         }
 
-        public void ReportProblem()
+        //public void ReportProblem()
+        //{
+        //    throw new NotImplementedException();
+        //}
+        public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject,string description, IFormFile imageFile)
         {
-            throw new NotImplementedException();
+            try
+            {
+                byte[] imageData = null;
+                string mimeType = null; // To store the MIME type
+
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    // Capture the MIME type
+                    mimeType = imageFile.ContentType;
+
+                    // Convert image to byte array
+                    using (var ms = new MemoryStream())
+                    {
+                        await imageFile.CopyToAsync(ms);
+                        imageData = ms.ToArray();
+                    }
+                }
+
+                // Save the report data including image data and MIME type
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ImageData, ImageMimeType) 
+                             VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ImageFile, @ImageMimeType)";
+
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ReportID", ReportID);
+                        command.Parameters.AddWithValue("@ReporterId", reporterId);
+                        command.Parameters.AddWithValue("@LockerId", LockerId);
+                        command.Parameters.AddWithValue("@ProblemType", problemType);
+                        command.Parameters.AddWithValue("@Subject", Subject);
+                        command.Parameters.AddWithValue("@Description", description);
+
+                        command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData;
+                        command.Parameters.AddWithValue("@ImageMimeType", mimeType);
+
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving report: {ex.Message}");
+                return false;
+            }
         }
 
         public void DeleteReport()
