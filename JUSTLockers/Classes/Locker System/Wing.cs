@@ -5,6 +5,8 @@ public class Wing
 {
     public required string Id { get; set; }
     public HashSet<Level> Levels { get; set; } = new();
-    public required string Section { get; set; }
+    //public required string Section { get; set; }
     public List<Department> Departments { get; set; } = new();
+
+ 
 }
