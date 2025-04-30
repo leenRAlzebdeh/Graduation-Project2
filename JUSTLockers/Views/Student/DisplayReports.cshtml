@@ -1,0 +1,235 @@
+﻿@model IEnumerable<JUSTLockers.Classes.Report>
+@using JUSTLockers.Classes
+
+@{
+    ViewData["Title"] = "My Reports";
+    int index = 0;
+}
+
+<title>@ViewData["Title"] | JUST Locker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="~/css/admin.css" />
+<link rel="stylesheet" href="~/css/message.css" />
+
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+    }
+
+    .main-content {
+        margin-left: 250px;
+        padding: 20px;
+    }
+
+    .hero-header {
+        position: relative;
+        background-image: url('/photos/images/lockers.png');
+        background-size: cover;
+        background-position: center;
+        height: 150px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+    }
+
+        .hero-header h2 {
+            font-size: 2em;
+            font-weight: 600;
+        }
+
+    .profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .profile img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+        }
+
+    .report-container {
+        background-color: white;
+        border: 2px solid #92B4D4;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 40px ;
+        padding: 20px;
+    }
+
+    .report-header {
+        background-color: #92B4D4;
+        color: white;
+        padding: 10px;
+        border-radius: 10px 10px 0 0;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+
+    tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .details-row {
+        background-color: #eef;
+    }
+
+    .details-content {
+        display: none;
+    }
+
+        .details-content.show {
+            display: table-row;
+        }
+
+    .delete-icon {
+        cursor: pointer;
+        color: #d9534f;
+        font-size: 1.2em;
+        transition: transform 0.2s ease;
+    }
+
+        .delete-icon:hover {
+            transform: scale(1.2);
+            color: #c9302c;
+        }
+
+    .report-button {
+        background-color: #92B4D4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 1em;
+        display: block;
+        margin: 0 auto;
+        transition: background-color 0.3s ease;
+    }
+
+        .report-button:hover {
+            background-color: #6d94bb;
+        }
+</style>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div class="brand">
+        <img src="/photos/images/logo.jpeg" alt="Logo" />
+        <h1>JUSTLocker</h1>
+    </div>
+    <ul class="menu">
+        <li class="nav-item"><a href="@Url.Action("StudentDashboard", "Student")"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li class="has-submenu">
+            <div class="submenu-toggle"><i class="fas fa-archive"></i> Report Management</div>
+            <ul class="pretty-submenu" id="cabinet-submenu">
+                <li><a href="@Url.Action("ReportProblems", "Student")">Report Problem </a></li>
+                <li><a href="@Url.Action()">Page</a></li>
+            </ul>
+        </li>
+        <li class="has-submenu">
+            <div class="submenu-toggle"><i class="fas fa-user-graduate"></i> Locker Management</div>
+            <ul class="pretty-submenu" id="Employee-submenu">
+                <li><a href="@Url.Action()">Page</a></li>
+            </ul>
+        </li>
+        <li class="nav-item"><a href="@Url.Action()"><i class="fas fa-cog"></i> Settings</a></li>
+    </ul>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+    <header class="hero-header">
+        <h2>Student Dashboard</h2>
+        <div class="profile">
+            <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+            <div class="admin-info">
+                <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                <span id="admin-name">leen raed</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="report-container">
+        <div class="report-header">My Reports</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Report</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in Model)
+                {
+                    var isReported = string.Equals(report.Status.ToString(), "REPORTED", StringComparison.OrdinalIgnoreCase);
+                    <tr onclick="toggleDetails(@index)">
+                        <td>@(index + 1)</td>
+                        <td>@report.Subject</td>
+                        <td>@report.Status</td>
+                        <td>
+                            @if (isReported)
+                            {
+                                <span class="delete-icon" title="Delete" onclick="deleteReport(@report.ReportId)">🗑️</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr id="details-@index" class="details-content">
+                        <td colspan="4" class="details-row">
+                            <strong>Statement:</strong> @report.Statement<br />
+                            <strong>Report Date:</strong> @report.ReportDate.ToString("yyyy-MM-dd")<br />
+                            <strong>Resolved Date:</strong> @(report.ResolvedDate?.ToString("yyyy-MM-dd") ?? "Not resolved")<br />
+                            <strong>Resolution Details:</strong> @(report.ResolutionDetails ?? "Not solved ")<br />
+                            @if (report.ImageData != null && !string.IsNullOrEmpty(report.ImageMimeType))
+                            {
+                                var base64 = Convert.ToBase64String(report.ImageData);
+                                var imgSrc = $"data:{report.ImageMimeType};base64,{base64}";
+                                <div><strong>Image:</strong><br /><img src="@imgSrc" alt="Report Image" style="max-width: 200px; border: 1px solid #ccc; margin-top: 5px;" /></div>
+                            }
+                        </td>
+                    </tr>
+                    index++;
+                }
+            </tbody>
+        </table>
+
+        <button class="report-button" onclick="location.href='@Url.Action("ReportProblem", "Student")'">Report New Problem</button>
+    </div>
+</main>
+
+<script>
+    function toggleDetails(index) {
+        const row = document.getElementById("details-" + index);
+        row.classList.toggle("show");
+    }
+
+    function deleteReport(reportId) {
+        event.stopPropagation();
+        if (confirm("Are you sure you want to delete this report?")) {
+            window.location.href = `/Student/DeleteReport/${reportId}`;
+        }
+    }
+</script>

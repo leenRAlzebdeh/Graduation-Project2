@@ -103,6 +103,22 @@ namespace JUSTLockers.Controllers
             // return View();
             return View("~/Views/Home/StudentDashboard.cshtml");
         }
+        [HttpGet]
+        public async Task<IActionResult> DisplayReports()
+        {
+            
+                var reports = await _studentService.ViewAllReports();
+      
+                return View("~/Views/Student/DisplayReports.cshtml", reports);
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> DeleteReport(int id)
+        {
+            await _studentService.DeleteReport(id);
+            return RedirectToAction("DisplayReports"); 
+        }
 
         [HttpPost]
         public async Task<IActionResult> SubmitProblemReport(IFormFile ImageFile, int ReportID, string LockerId, string ProblemType,string Subject, string Description)

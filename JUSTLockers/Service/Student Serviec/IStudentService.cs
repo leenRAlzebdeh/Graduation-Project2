@@ -11,8 +11,8 @@ public interface IStudentService : IUserActions, ILockerActions
     //void ReportProblem();
     Task<bool> SaveReportAsync(int ReportID,int reporterId, string LockerId, string problemType,string Subject, string description, IFormFile imageFile);
 
-    void DeleteReport();
-    void ViewAllReports();
+    public  Task DeleteReport(int reportId);
+    public Task<List<Report>> ViewAllReports();
     void CheckReportStatus();
   
 }

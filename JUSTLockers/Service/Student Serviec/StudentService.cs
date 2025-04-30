@@ -224,16 +224,106 @@ namespace JUSTLockers.Service
             }
         }
 
-        public void DeleteReport()
+        public async Task DeleteReport(int reportId)
         {
-            throw new NotImplementedException();
+            var query = "DELETE FROM Reports WHERE Id = @Id";
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", reportId);
+                await connection.OpenAsync();
+                await command.ExecuteNonQueryAsync();
+            }
         }
 
-        public void ViewAllReports()
+
+        public async Task<List<Report>> ViewAllReports()
         {
-            throw new NotImplementedException();
+            var reports = new List<Report>();
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                var query = "SELECT * FROM Reports";
+
+                using (var command = new MySqlCommand(query, connection))
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var report = new Report
+                        {
+                            Reporter = null,
+                            Locker = null,
+                            ReportId = reader.GetInt32("Id"),
+                            ReporterId = reader.GetInt32("ReporterId"),
+                            LockerId = reader.GetString("LockerId"),
+
+                            Type = Enum.TryParse(reader.GetString("Type"), out ReportType type) ? type : ReportType.OTHER,
+                            Status = Enum.TryParse(reader.GetString("Status"), out ReportStatus status) ? status : ReportStatus.REPORTED,
+
+                            Subject = reader.GetString("Subject"),
+                            Statement = reader.GetString("Statement"),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolvedDetails")) ? null : reader.GetString("ResolvedDetails"),
+                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
+                        };
+
+                       
+
+                        reports.Add(report);
+                    }
+                }
+            }
+
+            return reports;
         }
 
+        //public async Task<List<Report>> ViewReportedIssues()
+        //{
+        //    var reports = new List<Report>();
+        //    var query = "SELECT * FROM Reports";
+
+        //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //    {
+        //        await connection.OpenAsync();
+
+        //        using (var command = new MySqlCommand(query, connection))
+        //        using (var reader = await command.ExecuteReaderAsync())
+        //        {
+        //            while (await reader.ReadAsync())
+        //            {
+        //                reports.Add(new Report
+        //                {
+        //                    Reporter = null,
+        //                    Locker = null,
+
+        //                    ReportId = reader.GetInt32("Id"),
+        //                    ReporterId = reader.GetInt32("ReporterId"),
+        //                    LockerId = reader.GetString("LockerId"),
+
+        //                    // Converting string from DB to enums
+        //                    Type = Enum.Parse<ReportType>(reader.GetString("Type")),
+        //                    Status = Enum.Parse<ReportStatus>(reader.GetString("Status")),
+
+        //                    Subject = reader.GetString("Subject"),
+        //                    Statement = reader.GetString("Statement"),
+        //                    ReportDate = reader.GetDateTime("ReportDate"),
+        //                    ResolvedDate = reader.IsDBNull("ResolvedDate") ? null : reader.GetDateTime("ResolvedDate"),
+        //                    ResolutionDetails = reader.IsDBNull("ResolvedDetails") ? null : reader.GetString("ResolvedDetails"),
+        //                    ImageData = reader.IsDBNull("ImageData") ? null : (byte[])reader["ImageData"],
+        //                    ImageMimeType = reader.IsDBNull("ImageMimeType") ? null : reader.GetString("ImageMimeType")
+        //                });
+        //            }
+        //        }
+        //    }
+
+        //    return reports;
+        //}
         public void CheckReportStatus()
         {
             throw new NotImplementedException();
