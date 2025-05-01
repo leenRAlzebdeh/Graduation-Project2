@@ -141,9 +141,9 @@ document.addEventListener("DOMContentLoaded", function () {
                             showMessage(data.message || 'Operation failed', 'error');
                         }
                     })
-                    .catch(error => {
+                    .catch(error => {+
                         console.error('Error:', error);
-                        showMessage('An error occurred', 'error');
+                        showMessage('An error occurred', error);
                     });
             });
         }

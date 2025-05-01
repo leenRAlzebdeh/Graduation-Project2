@@ -314,6 +314,25 @@ namespace JUSTLockers.Controllers
 
 
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeReportStatus(int reportId)
+        {
+            try
+            {
+                var success = await _adminService.ReviewReport(reportId);
+                if (success)
+                {
+                    return Json(new { success = true, message = "Report marked as In Review successfully!" });
+                }
+                return Json(new { success = false, message = "Failed to update report status." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error updating report status: {ex.Message}" });
+            }
+        }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -370,25 +389,7 @@ namespace JUSTLockers.Controllers
                 return StatusCode(500, new { status = "Error", message = "Internal server error: " + ex.Message });
             }
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangeReportStatus(int reportId)
-        {
-            try
-            {
-                var success = await _adminService.ReviewReport(reportId);
-                if (success)
-                {
-                    return Json(new { success = true, message = "Report marked as In Review successfully!" });
-                }
-                return Json(new { success = false, message = "Failed to update report status." });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error updating report status: {ex.Message}" });
-            }
-        }
-
+       
 
         [HttpGet]
         public async Task<IActionResult> TestEmail()
