@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿@* <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -93,7 +93,7 @@
                     Everything is set and ready to go.<br />
                     You can now manage cabinets, approve requests, and monitor reports all in one place.
                 </p>
-            </div>
+            </div> *@
 
            @*  <h2>Manage Cabinets</h2>
             <table>
@@ -110,11 +110,104 @@
                     <!-- Data inserted dynamically -->
                 </tbody>
             </table> *@
-        </section>
+
+       @*  </section>
     </main>
 
     <script src="~/js/DashbordAdmin.js"></script>
     <script src="~/js/admin.js"></script> 
     
+</body>
+</html> *@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/admin.css" />
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("StudentDashboard", "Student")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Report Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem</a></li>
+                    <li><a href="@Url.Action("DisplayReports", "Student")">Display Reports</a></li>
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Locker Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })">Reserve Locker</a></li>
+                    <li><a href="@Url.Action("ViewReservationInfo", "Student")">My Reservation</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action("Settings", "Account")">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+        </ul>
+        <div class="logout-section text-center mb-3">
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero / Header Section -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Student Dashboard</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Welcome Section -->
+        <section class="management">
+            <div class="welcome-box">
+                <h2>Welcome Back, Student 👋</h2>
+                <p>
+                    Everything is set and ready to go.<br />
+                    You can now reserve lockers, view your reservations, and report issues all in one place.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
 </body>
 </html>

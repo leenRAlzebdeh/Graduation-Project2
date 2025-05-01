@@ -1,23 +1,19 @@
 namespace JUSTLockers.Classes;
 public class Cabinet
 {
-   // public required string Id { get; set; }
-    // public HashSet<Locker> Lockers { get; set; } = new();
-
+    public  string? Cabinet_id { get; set; }
     public int CabinetNumber { get; set; }
     public string? Location { get; set; }
     public string? Department { get; set; }
     public string? Wing { get; set; }
     public int Level { get; set; }
-    public int? EmployeeId { get; set; } // Nullable for optional data
+    public int? EmployeeId { get; set; }
     public string? EmployeeName { get; set; }
     public int Capacity { get; set; }
-
-    public string? Cabinet_id { get; set; }
-
+    public int ReservedLockers { get; set; } // Tracks number of reserved lockers
     public CabinetStatus? Status { get; set; }
 
-   
+
 }
 
 public enum CabinetStatus

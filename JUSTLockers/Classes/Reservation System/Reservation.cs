@@ -4,7 +4,7 @@ public class Reservation
 {
     public required string Id { get; set; }
     public DateTime Date { get; set; }
-    public required string StudentId { get; set; }
+    public required int StudentId { get; set; }
     public required string LockerId { get; set; }
     public required string StudentName { get; set; }
     public ReservationStatus Status { get; set; }

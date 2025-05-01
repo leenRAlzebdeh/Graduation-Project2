@@ -29,53 +29,94 @@ namespace JUSTLockers.Controllers
             return View();
         }
 
-        // View available lockers for a department
         [HttpGet]
-        public async Task<IActionResult> ViewAvailableLockers(string departmentName)
+        public async Task<IActionResult> ReservationView()
         {
-            if (string.IsNullOrEmpty(departmentName))
+            // Get student ID from session
+            int? studentId = HttpContext.Session.GetInt32("UserId");
+
+            if (studentId == null)
             {
-                return BadRequest("Department name is required");
+                return RedirectToAction("Login", "Account");
             }
 
-            try
+            // Get department info
+            DepartmentInfo departmentInfo = await _studentService.GetDepartmentInfo(studentId.Value);
+            if (departmentInfo == null)
             {
-                var availableLockers = await _studentService.ViewAvailableLockers(departmentName);
-                return Ok(availableLockers);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error retrieving available lockers: {ex.Message}");
-            }
-        }
-
-        // Reserve a locker
-        [HttpPost]
-        public async Task<IActionResult> ReserveLocker(int StudentId, string LockerId)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
+                return NotFound("Student not found");
             }
 
-            try
+            // Get available wings/levels
+            var wingsInfo = await _studentService.GetAvailableWingsAndLevels(departmentInfo.DepartmentName, departmentInfo.Location);
+
+            // Check for existing reservation
+            var reservation = await _studentService.GetCurrentReservationAsync(studentId.Value);
+
+            ViewBag.DepartmentName = departmentInfo.DepartmentName;
+            ViewBag.Location = departmentInfo.Location;
+            ViewBag.StudentId = studentId.Value;
+            ViewBag.HasReservation = reservation != null;
+
+            if (reservation != null)
             {
-                var result = await _studentService.ReserveLocker(StudentId,LockerId);
-                if (result)
+                ViewBag.ReservationInfo = new
                 {
-                    return Ok(new { Message = "Locker reserved successfully" });
+                    LockerId = reservation.LockerId,
+                    Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
+                    Status = reservation.Status.ToString()
+                };
+            }
+
+            return View(wingsInfo);
+        }
+
+        [HttpGet]
+        public IActionResult ReserveLocker()
+        {
+            return View("~/Views/Student/ReservationView.cshtml");
+        }
+
+
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReserveLocker([FromBody] ReservationRequest request)
+        {
+            try
+            {
+                // Validate request
+                if (request == null ||
+                    request.StudentId <= 0 ||
+                    string.IsNullOrEmpty(request.DepartmentName) ||
+                    string.IsNullOrEmpty(request.Location) ||
+                    string.IsNullOrEmpty(request.Wing) ||
+                    request.Level < 0)
+                {
+                    return BadRequest(new { success = false, message = "Invalid request parameters" });
                 }
-                return BadRequest("Locker is not available for reservation");
+
+                var lockerId = await _studentService.ReserveLockerInWingAndLevel(
+                    request.StudentId,
+                    request.DepartmentName,
+                    request.Location,
+                    request.Wing,
+                    request.Level);
+
+                if (lockerId != null)
+                {
+                    return Ok(new { success = true, lockerId });
+                }
+
+                return BadRequest(new { success = false, message = "No available lockers" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error reserving locker: {ex.Message}");
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
-
-        // View reservation information for a student
         [HttpGet]
-        public async Task<IActionResult> ViewReservationInfo(int studentId)
+        public async Task<IActionResult> GetCurrentReservation(int studentId)
         {
             if (studentId <= 0)
             {
@@ -84,18 +125,61 @@ namespace JUSTLockers.Controllers
 
             try
             {
-                var reservationInfo = await _studentService.ViewReservationInfo(studentId);
-                if (reservationInfo != null)
+                var reservation = await _studentService.GetCurrentReservationAsync(studentId);
+                if (reservation != null)
                 {
-                    return Ok(reservationInfo);
+                    return Ok(reservation);
                 }
-                return NotFound("No reservation found for this student");
+                return NotFound("No active reservation found");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving reservation: {ex.Message}");
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ViewReservationInfo(int studentId)
+        {
+
+            if (studentId <= 0)
+            {
+                return BadRequest("Invalid student ID");
+            }
+
+            try
+            {
+                
+                return await GetCurrentReservation(studentId);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error retrieving reservation info: {ex.Message}");
             }
         }
+
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelReservation(int studentId)
+        {
+            try
+            {
+                var result = await _studentService.CancelReservation(studentId);
+                if (result)
+                {
+                    return Ok(new { success = true });
+                }
+                return BadRequest(new { success = false, message = "No active reservation found" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        // Reserve a locker
+
         [HttpGet]
         public IActionResult StudentDashboard()
         {
@@ -204,31 +288,7 @@ namespace JUSTLockers.Controllers
             }
         }
 
-
-
-        // Cancel a reservation
-        [HttpDelete]
-        public async Task<IActionResult> CancelReservation(int studentId, string reservationId)
-        {
-            if (studentId <= 0 || string.IsNullOrEmpty(reservationId))
-            {
-                return BadRequest("Invalid student ID or reservation ID");
-            }
-
-            try
-            {
-                var result = await _studentService.CancelReservation(studentId, reservationId);
-                if (result)
-                {
-                    return Ok(new { Message = "Reservation canceled successfully" });
-                }
-                return NotFound("Reservation not found or already canceled");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error canceling reservation: {ex.Message}");
-            }
-        }
+        
     }
 
 }

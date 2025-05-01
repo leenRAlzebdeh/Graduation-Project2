@@ -287,4 +287,9 @@ public class SupervisorService : ISupervisorService
         {
             throw new NotImplementedException();
         }
+
+    public Task<bool> CancelReservation(int studentId)
+    {
+        throw new NotImplementedException();
     }
+}

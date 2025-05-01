@@ -1,6 +1,8 @@
 using System;
+using System.Data;
 using JUSTLockers.Classes;
 using JUSTLockers.Services;
+using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 
 namespace JUSTLockers.Service
@@ -135,18 +137,17 @@ namespace JUSTLockers.Service
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
-
-                var query = @"SELECT r.Id, r.LockerId, r.ReservationDate, r.Status, 
-                            l.DepartmentName, s.name AS StudentName , s.id as StudentId
-                            FROM Reservations r
-                            JOIN Lockers l ON r.LockerId = l.Id
-                            JOIN Students s ON r.StudentId = s.id
-                            WHERE r.StudentId = @StudentId";
+                var query = @"
+                    SELECT r.Id, r.LockerId, r.ReservationDate, r.Status, 
+                           l.Department, s.name AS StudentName, s.id AS StudentId
+                    FROM Reservations r
+                    JOIN Lockers l ON r.LockerId = l.Id
+                    JOIN Students s ON r.StudentId = s.id
+                    WHERE r.StudentId = @StudentId";
 
                 using (var command = new MySqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@StudentId", studentId);
-
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         if (await reader.ReadAsync())
@@ -158,21 +159,17 @@ namespace JUSTLockers.Service
                                 StudentName = reader.GetString("StudentName"),
                                 Date = reader.GetDateTime("ReservationDate"),
                                 Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status")),
-                                StudentId = reader.GetString("StudentId")
+                                StudentId = reader.GetInt32("StudentId")
                             };
                         }
                     }
                 }
             }
-
-            return null; // No reservation found
+            return null;
         }
 
-        //public void ReportProblem()
-        //{
-        //    throw new NotImplementedException();
-        //}
-        public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject,string description, IFormFile imageFile)
+        
+        public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
         {
             try
             {
@@ -273,7 +270,7 @@ namespace JUSTLockers.Service
                             ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
                         };
 
-                       
+
 
                         reports.Add(report);
                     }
@@ -339,7 +336,7 @@ namespace JUSTLockers.Service
             throw new NotImplementedException();
         }
         //leen
-        public async Task<bool> CancelReservation(int studentId, string reservationId)
+        public async Task<bool> CancelReservation(int studentId)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -348,52 +345,46 @@ namespace JUSTLockers.Service
                 {
                     try
                     {
-                        // 1. Get locker ID from reservation
+                        // Get the reservation to cancel
+                        var reservationQuery = @"SELECT Id, LockerId FROM Reservations 
+                                       WHERE StudentId = @StudentId AND Status = 'RESERVED'";
+
+                        string reservationId = null;
                         string lockerId = null;
-                        var getLockerQuery = @"SELECT LockerId FROM Reservations 
-                                             WHERE Id = @ReservationId 
-                                             AND StudentId = @StudentId";
 
-                        using (var getLockerCmd = new MySqlCommand(getLockerQuery, connection, transaction))
+                        using (var cmd = new MySqlCommand(reservationQuery, connection, transaction))
                         {
-                            getLockerCmd.Parameters.AddWithValue("@ReservationId", reservationId);
-                            getLockerCmd.Parameters.AddWithValue("@StudentId", studentId);
-
-                            lockerId = (await getLockerCmd.ExecuteScalarAsync())?.ToString();
-
-                            if (lockerId == null)
+                            cmd.Parameters.AddWithValue("@StudentId", studentId);
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                return false; // Reservation not found
+                                if (await reader.ReadAsync())
+                                {
+                                    reservationId = reader.GetString("Id");
+                                    lockerId = reader.GetString("LockerId");
+                                }
                             }
                         }
 
-                        // 2. Update locker status to EMPTY
-                        var updateLockerQuery = @"UPDATE Lockers 
-                                                SET Status = 'EMPTY' 
-                                                WHERE Id = @LockerId";
+                        if (lockerId == null) return false;
 
-                        using (var updateCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+                        // Update locker status
+                        var updateLockerQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE Id = @LockerId";
+                        using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
                         {
-                            updateCmd.Parameters.AddWithValue("@LockerId", lockerId);
-                            await updateCmd.ExecuteNonQueryAsync();
+                            lockerCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                            await lockerCmd.ExecuteNonQueryAsync();
                         }
 
-                        // 3. Update reservation status to CANCELED
-                        var updateReservationQuery = @"UPDATE Reservations 
-                                                      SET Status = 'CANCELED' 
-                                                      WHERE Id = @ReservationId";
-
+                        // Update reservation status
+                        var updateReservationQuery = "DELETE FROM Reservations WHERE Id = @ReservationId";
                         using (var reservationCmd = new MySqlCommand(updateReservationQuery, connection, transaction))
                         {
                             reservationCmd.Parameters.AddWithValue("@ReservationId", reservationId);
                             await reservationCmd.ExecuteNonQueryAsync();
                         }
 
-                        // 4. Remove locker reference from student
-                        var updateStudentQuery = @"UPDATE Students 
-                                                SET locker_id = NULL 
-                                                WHERE id = @StudentId";
-
+                        // Update student record
+                        var updateStudentQuery = "UPDATE Students SET locker_id = NULL WHERE id = @StudentId";
                         using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
                         {
                             studentCmd.Parameters.AddWithValue("@StudentId", studentId);
@@ -412,14 +403,90 @@ namespace JUSTLockers.Service
             }
         }
 
-        public async Task<Department> GetDepartmentInfo(int studentId)
+        public async Task<DepartmentInfo> GetDepartmentInfo(int studentId)
+        {
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+                var query = @"SELECT department, Location FROM Students WHERE id = @StudentId";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@StudentId", studentId);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return new DepartmentInfo
+                            {
+                                DepartmentName = reader.GetString("department"),
+                                Location = reader.GetString("Location")
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        public async Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string Location )
+        {
+            var wings = new List<WingInfo>();
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                // Group by wing and level, calculate available lockers based on capacity and reserved lockers
+                var query = @"
+            SELECT 
+                c.wing AS Wing, 
+                c.level AS Level, 
+                SUM(c.Capacity - COALESCE(c.ReservedLockers, 0)) AS AvailableLockers
+            FROM Cabinets c
+            WHERE c.department_name = @DepartmentName 
+                AND c.location = @Location
+                AND c.status = 'IN_SERVICE'
+                AND c.Capacity > COALESCE(c.ReservedLockers, 0)
+            GROUP BY c.wing, c.level
+            HAVING AvailableLockers > 0
+            ORDER BY c.wing, c.level";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@DepartmentName", departmentName);
+                    command.Parameters.AddWithValue("@Location", Location);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            wings.Add(new WingInfo
+                            {
+                                Wing = reader.GetString("Wing"),
+                                Level = reader.GetInt32("Level"),
+                                AvailableLockers = reader.GetInt32("AvailableLockers")
+                            });
+                        }
+                    }
+                }
+            }
+            return wings;
+        }
+
+        public async Task<Reservation> GetCurrentReservationAsync(int studentId)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
 
-                // Get student's department and location
-                var query = @"SELECT department, Location, total_wings FROM Students WHERE id = @StudentId";
+                var query = @"SELECT r.Id, r.LockerId, r.ReservationDate, r.Status, r.StudentId,
+                     l.DepartmentName, s.name AS StudentName
+                     FROM Reservations r
+                     JOIN Lockers l ON r.LockerId = l.Id
+                     JOIN Students s ON r.StudentId = s.id
+                     WHERE r.StudentId = @StudentId 
+                     AND r.Status = 'RESERVED'";
 
                 using (var command = new MySqlCommand(query, connection))
                 {
@@ -429,11 +496,14 @@ namespace JUSTLockers.Service
                     {
                         if (await reader.ReadAsync())
                         {
-                            return new Department
+                            return new Reservation
                             {
-                                Name = reader.GetString("department"),
-                                Location = reader.GetString("Location"),
-                                Total_Wings = reader.GetInt32("total_wings")
+                                StudentId=reader.GetInt32("StudentId"),
+                                Id = reader.GetString("Id"),
+                                LockerId = reader.GetString("LockerId"),
+                                StudentName = reader.GetString("StudentName"),
+                                Date = reader.GetDateTime("ReservationDate"),
+                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status"))
                             };
                         }
                     }
@@ -441,42 +511,184 @@ namespace JUSTLockers.Service
             }
             return null;
         }
-
-        public async Task<List<Wing>> GetAvailableWingsAndLevels(string departmentName)
+        public async Task<string> ReserveLockerInWingAndLevel(int studentId, string departmentName, string location, string wing, int level)
         {
-            var wings = new List<Wing>();
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
-
-                // Get all wings and levels for the department with available lockers
-                var query = @"SELECT c.wing, c.level, COUNT(l.Id) as AvailableLockers
-                            FROM Cabinets c
-                            JOIN Lockers l ON c.cabinet_id = l.cabinet_id
-                            WHERE c.department_name = @DepartmentName
-                            AND l.Status = 'EMPTY'
-                            GROUP BY c.wing, c.level
-                            ORDER BY c.wing, c.level";
-
-                using (var command = new MySqlCommand(query, connection))
+                using (var transaction = await connection.BeginTransactionAsync())
                 {
-                    command.Parameters.AddWithValue("@DepartmentName", departmentName);
-
-                    using (var reader = await command.ExecuteReaderAsync())
+                    try
                     {
-                        while (await reader.ReadAsync())
+                        
+                        // 1. Find a cabinet with available capacity in the specified wing and level
+                        var findCabinetQuery = @"
+                    SELECT cabinet_id, number_cab, Capacity, ReservedLockers
+                    FROM Cabinets
+                    WHERE department_name = @DepartmentName
+                        AND location = @Location
+                        AND wing = @Wing
+                        AND level = @Level
+                        AND status = 'IN_SERVICE'
+                        AND Capacity > COALESCE(ReservedLockers, 0)
+                    LIMIT 1";
+
+                        string cabinetId = null;
+                        int cabinetNumber = 0;
+                        int capacity = 0;
+                        int reservedLockers = 0;
+
+                        using (var findCmd = new MySqlCommand(findCabinetQuery, connection, transaction))
                         {
-                            wings.Add(new Wing
+                            findCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
+                            findCmd.Parameters.AddWithValue("@Location", location);
+                            findCmd.Parameters.AddWithValue("@Wing", wing);
+                            findCmd.Parameters.AddWithValue("@Level", level);
+
+                            using (var reader = await findCmd.ExecuteReaderAsync())
                             {
-                                Id = reader.GetString("wing"),
-                            });
+                                if (await reader.ReadAsync())
+                                {
+                                    cabinetId = reader.GetString("Cabinet_id");
+                                    cabinetNumber = reader.GetInt32("number_cab");
+                                    capacity = reader.GetInt32("Capacity");
+                                    reservedLockers = reader.GetInt32("ReservedLockers");
+                                }
+                            }
                         }
+
+                        if (cabinetId == null)
+                        {
+                            return null; // No cabinets with available capacity
+                        }
+
+                        // 2. Try to find an existing empty locker
+                        string lockerId = null;
+                        var findLockerQuery = @"
+                            SELECT Id
+                            FROM Lockers
+                            WHERE Cabinet_id = @CabinetId
+                            AND Status = 'EMPTY'
+                            LIMIT 1";
+
+                        using (var findLockerCmd = new MySqlCommand(findLockerQuery, connection, transaction))
+                        {
+                            findLockerCmd.Parameters.AddWithValue("@CabinetId", cabinetId);
+                            using (var reader = await findLockerCmd.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync())
+                                {
+                                    lockerId = reader.GetString("Id");
+                                }
+                            }
+                        }
+
+                        // 3. If no empty locker exists, create a new one
+                        if (lockerId == null)
+                        {
+                            if(reservedLockers<10)
+                            lockerId = cabinetId + " -L"+level+"0"+ reservedLockers;
+                            else lockerId = cabinetId + " -L" + level + reservedLockers;
+                            var insertLockerQuery = @"
+                                INSERT INTO Lockers (Id, DepartmentName, Cabinet_id, Status)
+                                VALUES (@LockerId, @Department, @CabinetId, 'RESERVED')";
+
+                            using (var insertCmd = new MySqlCommand(insertLockerQuery, connection, transaction))
+                            {
+                                insertCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                                insertCmd.Parameters.AddWithValue("@Department", departmentName);
+                                insertCmd.Parameters.AddWithValue("@CabinetId", cabinetId);
+                                await insertCmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        else
+                        {
+                            // Update existing locker to RESERVED
+                            var updateLockerQuery = @"
+                                UPDATE Lockers
+                                SET Status = 'RESERVED'
+                                WHERE Id = @LockerId";
+
+                            using (var updateCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+                            {
+                                updateCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                                await updateCmd.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        // 4. Update cabinet's ReservedLockers count
+                        var updateCabinetQuery = @"
+                            UPDATE Cabinets
+                    SET ReservedLockers = COALESCE(ReservedLockers, 0) + 1
+                    WHERE cabinet_id = @CabinetId";
+
+                        using (var cabinetCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+                        {
+                            cabinetCmd.Parameters.AddWithValue("@CabinetId", cabinetId);
+                            await cabinetCmd.ExecuteNonQueryAsync();
+                        }
+
+                        // 5. Create reservation record
+                        var reservationId = "R"+lockerId+" Student ID "+studentId;
+                        var reservationQuery = @" 
+                            INSERT INTO Reservations (Id, StudentId, LockerId, ReservationDate, Status)
+                            VALUES (@ReservationId, @StudentId, @LockerId, @ReservationDate, 'RESERVED')";
+
+                        using (var reservationCmd = new MySqlCommand(reservationQuery, connection, transaction))
+                        {
+                            reservationCmd.Parameters.AddWithValue("@ReservationId", reservationId);
+                            reservationCmd.Parameters.AddWithValue("@StudentId", studentId);
+                            reservationCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                            reservationCmd.Parameters.AddWithValue("@ReservationDate", DateTime.Now);
+                            await reservationCmd.ExecuteNonQueryAsync();
+                        }
+
+                        // 6. Update student's locker reference
+                        var updateStudentQuery = @"
+                            UPDATE Students
+                            SET locker_id = @LockerId
+                            WHERE id = @StudentId";
+
+                        using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
+                        {
+                            studentCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                            studentCmd.Parameters.AddWithValue("@StudentId", studentId);
+                            await studentCmd.ExecuteNonQueryAsync();
+                        }
+
+                        await transaction.CommitAsync();
+                        return lockerId;
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 }
             }
-            return wings;
         }
+    }
 
+        public class DepartmentInfo
+    {
+        public string DepartmentName { get; set; }
+        public string Location { get; set; }
+    }
+
+    public class WingInfo
+    {
+        public string Wing { get; set; }
+        public int Level { get; set; }
+        public int AvailableLockers { get; set; }
+    }
+
+    public class ReservationRequest
+    {
+        public int StudentId { get; set; }
+        public string DepartmentName { get; set; }
+        public string Location { get; set; }
+        public string Wing { get; set; }
+        public int Level { get; set; }
     }
 }
