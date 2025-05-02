@@ -7,6 +7,7 @@ using JUSTLockers.Services;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Channels;
+using JUSTLockers.Service;
 
 namespace JUSTLockers.Controllers
 {
@@ -61,7 +62,18 @@ namespace JUSTLockers.Controllers
             var reports = await _superService.ViewReportedIssues();
             return View("~/Views/Supervisor/ReportedIssues.cshtml", reports);
         }
+        [HttpGet]
+        public async Task<IActionResult> TheftIssues(string filter)
+        {
+            var reports = await _superService.TheftIssues(filter);
+            return View("~/Views/Supervisor/ReportedIssues.cshtml", reports);
+        }
 
+        public async Task<IActionResult> SendToAdmin(int reportId)
+        {
+            await _superService.SendToAdmin(reportId);
+            return RedirectToAction("ReportedIssues");
+        }
 
         [HttpGet]
         public IActionResult ReallocationRequestForm()

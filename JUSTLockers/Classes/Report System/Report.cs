@@ -19,6 +19,7 @@ public class Report
     public  string? ResolutionDetails { get; set; }
     public byte[]? ImageData { get; set; } // nullable (BLOB)
     public string? ImageMimeType { get; set; } // nullable
+    public bool SentToAdmin { get; set; }
 }
 
 public enum ReportType
