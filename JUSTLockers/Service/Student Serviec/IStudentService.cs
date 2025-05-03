@@ -21,7 +21,7 @@ public interface IStudentService : IUserActions, ILockerActions
     public Task<DepartmentInfo> GetDepartmentInfo(int studentId);
     public Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string Location);
     public Task<string> ReserveLockerInWingAndLevel(int studentId, string departmentName, string location, string wing, int level);
-
+    public  Task<bool> IsStudentBlocked(int studentId);
    public Task<Reservation> GetCurrentReservationAsync(int studentId);
 
 }

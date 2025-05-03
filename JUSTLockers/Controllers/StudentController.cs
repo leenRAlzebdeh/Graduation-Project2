@@ -29,6 +29,48 @@ namespace JUSTLockers.Controllers
             return View();
         }
 
+        //[HttpGet]
+        //public async Task<IActionResult> ReservationView()
+        //{
+        //    // Get student ID from session
+        //    int? studentId = HttpContext.Session.GetInt32("UserId");
+
+        //    if (studentId == null)
+        //    {
+        //        return RedirectToAction("Login", "Account");
+        //    }
+
+        //    // Get department info
+        //    DepartmentInfo departmentInfo = await _studentService.GetDepartmentInfo(studentId.Value);
+        //    if (departmentInfo == null)
+        //    {
+        //        return NotFound("Student not found");
+        //    }
+
+        //    // Get available wings/levels
+        //    var wingsInfo = await _studentService.GetAvailableWingsAndLevels(departmentInfo.DepartmentName, departmentInfo.Location);
+
+        //    // Check for existing reservation
+        //    var reservation = await _studentService.GetCurrentReservationAsync(studentId.Value);
+
+        //    ViewBag.DepartmentName = departmentInfo.DepartmentName;
+        //    ViewBag.Location = departmentInfo.Location;
+        //    ViewBag.StudentId = studentId.Value;
+        //    ViewBag.HasReservation = reservation != null;
+
+        //    if (reservation != null)
+        //    {
+        //        ViewBag.ReservationInfo = new
+        //        {
+        //            LockerId = reservation.LockerId,
+        //            Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
+        //            Status = reservation.Status.ToString()
+        //        };
+        //    }
+
+        //    return View(wingsInfo);
+        //}
+
         [HttpGet]
         public async Task<IActionResult> ReservationView()
         {
@@ -39,6 +81,10 @@ namespace JUSTLockers.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
+
+            // Check if student is blocked
+            bool isBlocked = await _studentService.IsStudentBlocked(studentId.Value);
+            ViewBag.IsBlocked = isBlocked;
 
             // Get department info
             DepartmentInfo departmentInfo = await _studentService.GetDepartmentInfo(studentId.Value);
