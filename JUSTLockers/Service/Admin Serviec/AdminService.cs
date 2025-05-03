@@ -593,7 +593,7 @@ public class AdminService : IAdminService
                 r.ReportDate AS ReportDate,
                 r.ResolvedDate AS ResolvedDate,
                 r.ResolvedDetails AS ResolutionDetails,
-r.ImageData AS ImageData,
+                r.ImageData AS ImageData,
                 r.ImageMimeType AS ImageMimeType,
                 l.Id AS LockerNumber,
                 l.Status AS LockerStatus,
@@ -610,8 +610,9 @@ r.ImageData AS ImageData,
                 Students u ON r.ReporterId = u.id
             JOIN 
                 Departments d ON l.DepartmentName = d.name
-where r.Type='THEFT'
-          ";
+where r.Type='THEFT' and r.SentToAdmin=1
+            ORDER BY 
+                r.ReportDate DESC"; 
 
             using (var command = new MySqlCommand(query, connection))
             using (var reader = await command.ExecuteReaderAsync())

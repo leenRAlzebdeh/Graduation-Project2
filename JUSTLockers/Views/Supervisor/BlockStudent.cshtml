@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Block Student";
+}
+
+<title>@ViewData["Title"] | JUST Locker</title>
+<link rel="stylesheet" href="~/css/message.css" />
+<link rel="stylesheet" href="~/css/blocklist.css" />
+<script src="~/js/blocklist.js"></script>
+<div class="block-student-container">
+    <h3 class="section-header">🔒 Block Student</h3>
+
+    <div class="input-section">
+        <label for="studentIdInput">Student ID</label>
+        <input type="number" id="studentIdInput" placeholder="Enter Student ID" />
+        <button onclick="searchStudent()" class="btn search-btn">Search</button>
+    </div>
+    @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
+    {
+        <div class="message-box error">@TempData["Message"]</div>
+       
+    }
+
+    else if (TempData["Message"] != null )
+    {
+        <div class="message-box success">@TempData["Message"]</div>
+    }
+    <div id="studentInfo" class="student-box" style="display: none;">
+        <fieldset>
+            <legend>📘 Student Info</legend>
+@*             <p><strong>Id:</strong> <span id="s_id"></span></p>
+ *@            <p><strong>Name:</strong> <span id="s_name"></span></p>
+            <p><strong>Email:</strong> <span id="s_email"></span></p>
+            <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
+           
+            <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
+            <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
+
+            <div class="action-buttons">
+                
+                <div id="blockActionBtn" class="inline-form">
+                   
+
+                </div>
+                <div> <button onclick="cancelStudentInfo()" class="btn search-btn" style="color:aliceblue;">Cancel</button></div>
+            </div>
+        </fieldset>
+    </div>
+
+    <div id="notFoundMsg" class="alert-msg">Student does not exist.</div>
+</div>
+
+
+
+
+<script>
+    setTimeout(function () {
+        const msgBox = document.querySelector('.message-box');
+        if (msgBox) {
+            msgBox.classList.add('fade-out');
+            setTimeout(() => msgBox.style.display = 'none', 600); // match fade duration
+        }
+    }, 4000); // 4 second delay before fade
+</script> 

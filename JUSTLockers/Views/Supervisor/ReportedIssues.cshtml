@@ -12,12 +12,26 @@
     <title>JUSTLocker | @ViewData["Title"]</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+@*     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+ *@    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/message.css" />
     <link rel="stylesheet" href="~/css/reports.css" />
     <style>
+        .sendToAdminBtn {
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+            .sendToAdminBtn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            }
 
 
         .zoomable-image {
@@ -66,7 +80,7 @@
         </div>
         <ul class="menu">
             <li class="nav-item">
-                <a href="@Url.Action("StudentDashboard", "Student")">
+                <a href="@Url.Action("SupervisorDashboard", "Supervisor")">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
             </li>
@@ -75,8 +89,8 @@
                     <i class="fas fa-archive"></i> Report Management
                 </div>
                 <ul class="pretty-submenu" id="cabinet-submenu">
-                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem </a></li>
-                    <li><a href="@Url.Action("ReportedIssues","Supervisor")">Test for image</a></li>
+                    <li><a href="@Url.Action("", "")">page </a></li>
+                    <li><a href="@Url.Action("ReportedIssues","Supervisor")">ReportedIssues</a></li>
                     <li><a href="@Url.Action()">page</a></li>
 
                 </ul>
@@ -152,17 +166,35 @@
                         <option value="rejected">Rejected</option>
                     </select>
                 </div>
+               
                 <button id="toggleSolved" class="btn btn-outline-secondary">
                     <i class="fas fa-eye"></i> Show Resolved/Rejected
                 </button>
+               
+
             </div>
+           @*  @{
+                bool isFiltered = Context.Request.Query["filter"] == "theft";
+                string buttonText = isFiltered ? "Show All Problems" : "Show Only Theft";
+                string buttonClass = isFiltered ? "btn btn-secondary" : "btn btn-outline-secondary";
+                string nextFilter = isFiltered ? "" : "theft";
+            }
+
+            <form asp-action="TheftIssues" asp-controller="Supervisor" method="get">
+                <input type="hidden" name="filter" value="@nextFilter" />
+                <button type="submit" class="@buttonClass" style="border-radius:20px;">
+                    @buttonText
+                </button>
+            </form> *@
+
+
 
             <table class="table table-hover table-striped">
                 <thead>
                     <tr>
                        
                         <th>Locker #</th>
-                      @*   <th>Problem</th> *@
+                       <th>Type</th> 
                         <th>Status</th>
                         <th>Reported On</th>
                         <th>Actions</th>
@@ -183,8 +215,26 @@
                             data-resolved-date="@(report.ResolvedDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")"
                             data-resolution-details="@report.ResolutionDetails"
                             data-imagetype="@report.ImageMimeType"
-                            data-image="@(report.ImageData != null ? Convert.ToBase64String(report.ImageData) : "")">
+                            data-image="@(report.ImageData != null ? Convert.ToBase64String(report.ImageData) : "")"
+                            data-sentToadmin="@report.SentToAdmin">
                             <td>@report.Locker.LockerId</td>
+                            <td>
+                                @if (report.Type == ReportType.THEFT)
+                                {
+                                    <span class="badge badge-danger" style="color:black;">Theft</span>
+                                }
+                                else if (report.Type == ReportType.LOCKED_LOCKER)
+                                {
+                                    <span class="badge badge-warning" style="color:black;">Locked </span>
+                                }
+                                else if (report.Type == ReportType.MAINTENANCE)
+                                {
+                                    <span class="badge badge-info" style="color:black;">Maintenance</span>
+                                }
+                                else if (report.Type == ReportType.OTHER)
+                                {
+                                    <span class="badge badge-secondary" style="color:black;">@report.Subject</span>
+                                }
                            @*  <td>@report.Subject</td> *@
                             <td>
                                 <span class="status-badge @report.Status.ToString().ToLower()">
@@ -193,6 +243,17 @@
                             </td>
                             <td>@report.ReportDate.ToString("MMM dd, yyyy hh:mm tt")</td>
                             <td>
+                                @if (report.Type == ReportType.THEFT && !report.SentToAdmin)
+                                {
+                                    <button type="button" class="btn btn-warning sendToAdminBtn" onclick="SendToAdmin(@report.ReportId,this)">
+                                        Send to Admin
+                                    </button>
+                                }
+                                else if (report.Type == ReportType.THEFT && report.SentToAdmin)
+                                {
+                                    
+                                }
+                               else
                                 @if (report.Status == ReportStatus.REPORTED)
                                 {
                                     <button class="action-btn review-btn"
@@ -252,17 +313,7 @@
                     <div>
 
                         <p class="col-sm-3">Image:</p>
-@*                         <p class="col-sm-9" id="modalImageContainer">
- *@@*                             <img id="modalImage" class="img-thumbnail" alt="Report Image" style="max-width: 150px; max-height: 150px; cursor: pointer;" />
- *@
-                          @*   @if (Model.Any(r => r.ImageData != null))
-                            {
-                                <img id="modalImage" class="img-thumbnail" alt="Report Image" style="max-width: 150px; max-height: 150px; cursor: pointer;" />
-                            }
-                            else
-                            {
-                                <span> No image Provided</span>
-                            } *@
+
                             <div id="modalImageContainer">
                                 <img id="modalImage" style="max-width: 150px; min-height:150px; display: none;" />
                             <div id="noImageMessage" style="display: none; max-width: 50px; ">No image Provided</div>
@@ -428,6 +479,26 @@
         });
     </script>
 
+    <script>
+    function SendToAdmin(reportId, btn) {
+        fetch(`/Supervisor/SendToAdmin?reportId=${reportId}`, {
+            method: "POST"
+        })
+        .then(res => {
+            if (res.ok) {
+               
+                btn.disabled = true;
+                btn.innerText = "Sent";
+            } else {
+                alert("Failed to send.");
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Error occurred.");
+        });
+    }
+</script>
 
 
 </body>

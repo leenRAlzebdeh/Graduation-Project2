@@ -42,7 +42,7 @@ namespace WebApplication5.Controllers
 
             {
                 HttpContext.Session.SetInt32("UserId", id);
-                return RedirectToAction("SupervisorDashboard");
+                return View("~/Views/Home/SupervisorDashboard.cshtml");
             }
             else if (role == "Student")
             {

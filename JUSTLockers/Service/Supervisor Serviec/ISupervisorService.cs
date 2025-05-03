@@ -10,12 +10,14 @@ public interface ISupervisorService : IUserActions, ILockerActions
     Task<string> ReallocationRequest(Reallocation model);
     void ViewCovenantInfo();
     void CancelStudentReservation();
+    public  Task<List<Report>> TheftIssues(string filter);
+    public  Task SendToAdmin(int reportId);
     void ManualReserve();
     //void ViewReportList();
     Task<List<Report>> ViewReportedIssues();
     void UpdateReportStatus();
     void EscalateReport();
-    void BlockStudent();
-    void UnblockStudent();
+    public string UnblockStudent(int id, int? userId);
+    public string BlockStudent(int id, int? userId);
     void ViewBlockList();
 }

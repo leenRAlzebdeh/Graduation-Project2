@@ -249,7 +249,7 @@ namespace JUSTLockers.Controllers
             await _studentService.DeleteReport(id);
             return RedirectToAction("DisplayReports"); 
         }
-
+      
         [HttpPost]
         public async Task<IActionResult> SubmitProblemReport(IFormFile ImageFile, int ReportID, string LockerId, string ProblemType,string Subject, string Description)
         {

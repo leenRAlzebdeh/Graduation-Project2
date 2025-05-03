@@ -237,6 +237,7 @@ namespace JUSTLockers.Service
                 await command.ExecuteNonQueryAsync();
             }
         }
+       
 
 
         public async Task<List<Report>> ViewAllReports()

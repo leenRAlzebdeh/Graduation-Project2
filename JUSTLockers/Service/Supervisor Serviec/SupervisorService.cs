@@ -110,6 +110,7 @@ public class SupervisorService : ISupervisorService
                 r.ResolvedDetails AS ResolutionDetails,
                 r.ImageData AS ImageData,
                 r.ImageMimeType AS ImageMimeType,
+                r.SentToAdmin AS SentToAdmin,
                 l.Id AS LockerNumber,
                 l.Status AS LockerStatus,
                 u.id AS ReporterId,
@@ -125,6 +126,7 @@ public class SupervisorService : ISupervisorService
                 Students u ON r.ReporterId = u.id
             JOIN 
                 Departments d ON l.DepartmentName = d.name
+          
           ";
 
             using (var command = new MySqlCommand(query, connection))
@@ -140,6 +142,7 @@ public class SupervisorService : ISupervisorService
                             reader.GetString("ReporterName"),
                             reader.GetString("ReporterEmail"),
                             reader.GetString("DepartmentName")
+
 
                         // Department is fetched from Lockers
                         ),
@@ -157,12 +160,91 @@ public class SupervisorService : ISupervisorService
                         ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
                         ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
                         ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                        ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
+                        ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                        SentToAdmin = reader.GetBoolean("SentToAdmin")
+
                     });
                 }
             }
         }
         return reports;
+    }
+
+    public async Task<List<Report>> TheftIssues(string filter)
+    {
+        var reports = new List<Report>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"
+        SELECT 
+            r.Id AS ReportId,
+            r.Subject AS ProblemDescription,
+            r.Statement AS DetailedDescription,
+            r.Type AS ReportType,
+            r.Status AS ReportStatus,
+            r.ReportDate AS ReportDate,
+            r.ResolvedDate AS ResolvedDate,
+            r.ResolvedDetails AS ResolutionDetails,
+            r.ImageData AS ImageData,
+            r.ImageMimeType AS ImageMimeType,
+            r.SentToAdmin AS SentToAdmin,
+            l.Id AS LockerNumber,
+            l.Status AS LockerStatus,
+            u.id AS ReporterId,
+            u.name AS ReporterName,
+            u.email AS ReporterEmail,
+            d.name AS DepartmentName
+        FROM 
+            Reports r
+        JOIN Lockers l ON r.LockerId = l.Id
+        JOIN Students u ON r.ReporterId = u.id
+        JOIN Departments d ON l.DepartmentName = d.name
+        WHERE (@Filter IS NULL OR r.Type = @Filter)
+    ";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        reports.Add(new Report
+                        {
+                            ReportId = reader.GetInt32("ReportId"),
+                            Reporter = new Student(
+                                reader.GetInt32("ReporterId"),
+                                reader.GetString("ReporterName"),
+                                reader.GetString("ReporterEmail"),
+                                reader.GetString("DepartmentName")
+                            ),
+                            Locker = new Locker
+                            {
+                                LockerId = reader.GetString("LockerNumber"),
+                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                Department = reader.GetString("DepartmentName"),
+                            },
+                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                            Subject = reader.GetString("ProblemDescription"),
+                            Statement = reader.GetString("DetailedDescription"),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                            SentToAdmin = reader.GetBoolean("SentToAdmin")
+                        });
+                    }
+                }
+            }
+        }
+        return reports;
+
     }
 
 
@@ -231,8 +313,28 @@ public class SupervisorService : ISupervisorService
             return $"Error sending request: {ex.Message}";
         }
     }
+    public async Task SendToAdmin(int reportId)
+    {
+        try
+        {
+            var query = "Update Reports set SentToAdmin=1  WHERE Id = @Id";
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", reportId);
+                await connection.OpenAsync();
+                await command.ExecuteNonQueryAsync();
+                
 
 
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error sending report to admin: {ex.Message}");
+        }
+    }
     public void ViewCovenantInfo()
         {
             throw new NotImplementedException();
@@ -292,4 +394,149 @@ public class SupervisorService : ISupervisorService
     {
         throw new NotImplementedException();
     }
+
+    public Student GetStudentById(int id)
+    {
+        Student student = null;
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string query = "SELECT * FROM Students WHERE id = @id";
+            var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            connection.Open();
+            using var reader = command.ExecuteReader();
+
+            if (reader.Read())
+            {
+                student = new Student(
+                    Convert.ToInt32(reader["id"]),
+                    reader["name"].ToString(),
+                    reader["email"].ToString(),
+                    reader["department"]?.ToString() ?? "",
+                   reader["Location"]?.ToString() ?? ""
+                )
+                {
+                    LockerId = reader["locker_id"].ToString() ,
+                    IsBlocked = IsStudentBlocked(id)
+                };
+            }
+        }
+
+        return student;
+    }
+
+    public bool IsStudentBlocked(int id)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string query = "SELECT COUNT(*) FROM BlockList WHERE student_id = @id";
+            var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            connection.Open();
+            var result = Convert.ToInt32(command.ExecuteScalar());
+            return result > 0;
+        }
+    }
+
+    //public void BlockStudent(int id,int? userId)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        string query1 = "select count(*) ";
+    //        string query = "INSERT INTO BlockList (student_id,blocked_by) VALUES (@id,@userId)";
+    //        var command = new MySqlCommand(query, connection);
+    //        command.Parameters.AddWithValue("@id", id);
+    //        command.Parameters.AddWithValue("@userId", userId);
+
+    //        connection.Open();
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
+    public string BlockStudent(int id, int? userId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM Students s
+            JOIN Supervisors u ON u.id = @userId
+            WHERE s.id = @studentId 
+              AND s.department = u.supervised_department 
+              AND s.Location = u.location";
+
+            var checkCommand = new MySqlCommand(checkQuery, connection);
+            checkCommand.Parameters.AddWithValue("@studentId", id);
+            checkCommand.Parameters.AddWithValue("@userId", userId);
+
+            connection.Open();
+            int matchCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+            if (matchCount > 0)
+            {
+                string insertQuery = "INSERT INTO BlockList (student_id, blocked_by) VALUES (@id, @userId)";
+                var insertCommand = new MySqlCommand(insertQuery, connection);
+                insertCommand.Parameters.AddWithValue("@id", id);
+                insertCommand.Parameters.AddWithValue("@userId", userId);
+
+                insertCommand.ExecuteNonQuery();
+                return "Student successfully blocked.";
+            }
+            else
+            {
+                return "Cannot block student outside your department/location.";
+            }
+        }
+    }
+
+    public string UnblockStudent(int id, int? userId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM Students s
+            JOIN Supervisors u ON u.id = @userId
+            WHERE s.id = @studentId 
+              AND s.department = u.supervised_department 
+              AND s.Location = u.location";
+
+            var checkCommand = new MySqlCommand(checkQuery, connection);
+            checkCommand.Parameters.AddWithValue("@studentId", id);
+            checkCommand.Parameters.AddWithValue("@userId", userId);
+
+            connection.Open();
+            int matchCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+            if (matchCount > 0)
+            {
+                string insertQuery = "DELETE FROM BlockList WHERE student_id = @id";
+                var insertCommand = new MySqlCommand(insertQuery, connection);
+                insertCommand.Parameters.AddWithValue("@id", id);
+                insertCommand.Parameters.AddWithValue("@userId", userId);
+
+                insertCommand.ExecuteNonQuery();
+                return "Student successfully Unblocked.";
+            }
+            else
+            {
+                return "Cannot Unblock student outside your department/location.";
+            }
+        }
+    }
+
+    //public void UnblockStudent(int id)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        string query = "DELETE FROM BlockList WHERE student_id = @id";
+    //        var command = new MySqlCommand(query, connection);
+    //        command.Parameters.AddWithValue("@id", id);
+
+    //        connection.Open();
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
 }
