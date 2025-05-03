@@ -32,7 +32,13 @@ namespace JUSTLockers.Controllers
         //{
         //    return View("~/Views/Supervisor/ReportedIssues.cshtml");
         //}
-
+        [HttpGet]
+        public IActionResult SupervisorDashboard()
+        {
+            // Logic to show the Assign Cabinet page
+            // return View();
+            return View("~/Views/Home/SupervisorDashboard.cshtml");
+        }
 
         [HttpPost]
         public async Task<IActionResult> ReallocationRequest(Reallocation model)
@@ -63,6 +69,12 @@ namespace JUSTLockers.Controllers
             return View("~/Views/Supervisor/ReportedIssues.cshtml", reports);
         }
         [HttpGet]
+        public async Task<IActionResult> BlockStudent()
+        {
+          
+            return View("~/Views/Supervisor/BlockStudent.cshtml");
+        }
+        [HttpGet]
         public async Task<IActionResult> TheftIssues(string filter)
         {
             var reports = await _superService.TheftIssues(filter);
@@ -80,6 +92,58 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Supervisor/ReallocationRequest.cshtml");
         }
+       
+    [HttpPost]
+    public JsonResult SearchStudent(int id)
+    {
+        var student = _superService.GetStudentById(id);
+        if (student == null)
+            return Json(new { exists = false });
+
+        return Json(new
+        {
+            exists = true,
+            student = new
+            {
+                id = student.Id,
+                name = student.Name,
+                email = student.Email,
+                department = student.Department,
+                location = student.Location,
+                lockerId = student.LockerId,
+                isBlocked = student.IsBlocked
+            }
+        });
+    }
+
+        [HttpPost]
+        public IActionResult ToggleBlock(int id, bool block)
+        {
+            int? supervisorId = HttpContext.Session.GetInt32("UserId");
+
+
+            if (block)
+            {
+                string message = _superService.BlockStudent(id, supervisorId);
+                TempData["Message"] = message;
+                //int? userId = HttpContext.Session.GetInt32("UserId");
+                //_superService.BlockStudent(id, userId);
+                //TempData["SuccessMessage"] = "Student blocked successfully.";
+
+            }
+            else
+            {
+                string message = _superService.UnblockStudent(id, supervisorId);
+                TempData["Message"] = message;
+                //_superService.UnblockStudent(id);
+                //TempData["SuccessMessage"] = "Student unblocked successfully.";
+            }
+
+            return RedirectToAction("BlockStudent");
+        }
+
+
+
 
     }
 }

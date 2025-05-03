@@ -394,4 +394,149 @@ public class SupervisorService : ISupervisorService
     {
         throw new NotImplementedException();
     }
+
+    public Student GetStudentById(int id)
+    {
+        Student student = null;
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string query = "SELECT * FROM Students WHERE id = @id";
+            var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            connection.Open();
+            using var reader = command.ExecuteReader();
+
+            if (reader.Read())
+            {
+                student = new Student(
+                    Convert.ToInt32(reader["id"]),
+                    reader["name"].ToString(),
+                    reader["email"].ToString(),
+                    reader["department"]?.ToString() ?? "",
+                   reader["Location"]?.ToString() ?? ""
+                )
+                {
+                    LockerId = reader["locker_id"].ToString() ,
+                    IsBlocked = IsStudentBlocked(id)
+                };
+            }
+        }
+
+        return student;
+    }
+
+    public bool IsStudentBlocked(int id)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string query = "SELECT COUNT(*) FROM BlockList WHERE student_id = @id";
+            var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+
+            connection.Open();
+            var result = Convert.ToInt32(command.ExecuteScalar());
+            return result > 0;
+        }
+    }
+
+    //public void BlockStudent(int id,int? userId)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        string query1 = "select count(*) ";
+    //        string query = "INSERT INTO BlockList (student_id,blocked_by) VALUES (@id,@userId)";
+    //        var command = new MySqlCommand(query, connection);
+    //        command.Parameters.AddWithValue("@id", id);
+    //        command.Parameters.AddWithValue("@userId", userId);
+
+    //        connection.Open();
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
+    public string BlockStudent(int id, int? userId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM Students s
+            JOIN Supervisors u ON u.id = @userId
+            WHERE s.id = @studentId 
+              AND s.department = u.supervised_department 
+              AND s.Location = u.location";
+
+            var checkCommand = new MySqlCommand(checkQuery, connection);
+            checkCommand.Parameters.AddWithValue("@studentId", id);
+            checkCommand.Parameters.AddWithValue("@userId", userId);
+
+            connection.Open();
+            int matchCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+            if (matchCount > 0)
+            {
+                string insertQuery = "INSERT INTO BlockList (student_id, blocked_by) VALUES (@id, @userId)";
+                var insertCommand = new MySqlCommand(insertQuery, connection);
+                insertCommand.Parameters.AddWithValue("@id", id);
+                insertCommand.Parameters.AddWithValue("@userId", userId);
+
+                insertCommand.ExecuteNonQuery();
+                return "Student successfully blocked.";
+            }
+            else
+            {
+                return "Cannot block student outside your department/location.";
+            }
+        }
+    }
+
+    public string UnblockStudent(int id, int? userId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM Students s
+            JOIN Supervisors u ON u.id = @userId
+            WHERE s.id = @studentId 
+              AND s.department = u.supervised_department 
+              AND s.Location = u.location";
+
+            var checkCommand = new MySqlCommand(checkQuery, connection);
+            checkCommand.Parameters.AddWithValue("@studentId", id);
+            checkCommand.Parameters.AddWithValue("@userId", userId);
+
+            connection.Open();
+            int matchCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+            if (matchCount > 0)
+            {
+                string insertQuery = "DELETE FROM BlockList WHERE student_id = @id";
+                var insertCommand = new MySqlCommand(insertQuery, connection);
+                insertCommand.Parameters.AddWithValue("@id", id);
+                insertCommand.Parameters.AddWithValue("@userId", userId);
+
+                insertCommand.ExecuteNonQuery();
+                return "Student successfully Unblocked.";
+            }
+            else
+            {
+                return "Cannot Unblock student outside your department/location.";
+            }
+        }
+    }
+
+    //public void UnblockStudent(int id)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        string query = "DELETE FROM BlockList WHERE student_id = @id";
+    //        var command = new MySqlCommand(query, connection);
+    //        command.Parameters.AddWithValue("@id", id);
+
+    //        connection.Open();
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
 }

@@ -1,0 +1,255 @@
+﻿@{
+    ViewData["Title"] = "Block Student";
+}
+
+<title>@ViewData["Title"] | JUST Locker</title>
+<link rel="stylesheet" href="~/css/message.css" />
+
+<div class="block-student-container">
+    <h3 class="section-header">🔒 Block Student</h3>
+
+    <div class="input-section">
+        <label for="studentIdInput">Student ID</label>
+        <input type="number" id="studentIdInput" placeholder="Enter Student ID" />
+        <button onclick="searchStudent()" class="btn search-btn">Search</button>
+    </div>
+    @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
+    {
+        <div class="message-box error">@TempData["Message"]</div>
+       
+    }
+
+    else if (TempData["Message"] != null )
+    {
+        <div class="message-box success">@TempData["Message"]</div>
+    }
+    <div id="studentInfo" class="student-box" style="display: none;">
+        <fieldset>
+            <legend>📘 Student Info</legend>
+@*             <p><strong>Id:</strong> <span id="s_id"></span></p>
+ *@            <p><strong>Name:</strong> <span id="s_name"></span></p>
+            <p><strong>Email:</strong> <span id="s_email"></span></p>
+            <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
+           
+            <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
+            <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
+
+            <div class="action-buttons">
+                
+                <div id="blockActionBtn" class="inline-form">
+                   
+
+                </div>
+                <div> <button onclick="cancelStudentInfo()" class="btn search-btn" style="color:aliceblue;">Cancel</button></div>
+            </div>
+        </fieldset>
+    </div>
+
+    <div id="notFoundMsg" class="alert-msg">Student does not exist.</div>
+</div>
+
+<style>
+    .student-info-box {
+        transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+        .student-info-box.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+    .block-student-container {
+        border: 2px solid #a2b8d8;
+        border-radius: 15px;
+        padding: 25px;
+        max-width: 700px;
+        margin: auto;
+        background-color: #f9f9ff;
+        font-family: Arial, sans-serif;
+    }
+
+    .section-header {
+        background: #6a9cc8;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 10px;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+    .input-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+        .input-section input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+    .btn.search-btn {
+        background: #7ca9c7;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .student-box {
+        background-color: #dbe2f4;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #a28ae5;
+    }
+
+    fieldset {
+        border: none;
+    }
+
+    legend {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .student-box {
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+        .student-box.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+    .cancel-btn {
+        font-weight: bold;
+        text-decoration: none;
+        color: #000;
+    }
+
+    .inline-form button {
+        background-color: #7ca9c7;
+        color: white;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .alert-msg {
+        margin-top: 15px;
+        color: #a94442;
+        background-color: #f2dede;
+        padding: 10px;
+        border-radius: 8px;
+        display: none;
+    }
+</style>
+
+
+<script>
+    function searchStudent() {
+        const id = document.getElementById("studentIdInput").value;
+
+        fetch('/Supervisor/SearchStudent', {
+            method: 'POST',
+            body: new URLSearchParams({ id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const studentInfo = document.getElementById("studentInfo");
+            const notFoundMsg = document.getElementById("notFoundMsg");
+
+            if (!data.exists) {
+                /* studentInfo.style.display = "none";  */ // Hide student info box
+                notFoundMsg.style.display = "block"; // Show error message
+                notFoundMsg.classList.add("fade-in");
+                    studentInfo.classList.remove("show");
+    studentInfo.style.display = "none";
+
+                setTimeout(() => notFoundMsg.classList.remove("fade-in"), 500);
+            } else {
+                const s = data.student;
+
+                // document.getElementById("s_id").textContent = s.id;
+                document.getElementById("s_name").textContent = s.name;
+                document.getElementById("s_email").textContent = s.email;
+                document.getElementById("s_department").textContent = s.department;
+                document.getElementById("s_location").textContent = s.location;
+                document.getElementById("s_lockerId").textContent = s.lockerId || "No Locker";
+                document.getElementById("s_blockStatus").textContent = s.isBlocked ? "Blocked" : "Not Blocked";
+
+                notFoundMsg.style.display = "none";  // Hide error message
+                    studentInfo.classList.remove("show");
+    studentInfo.style.display = "block";
+    setTimeout(() => studentInfo.classList.add("show"), 10);
+
+                const actionDiv = document.getElementById("blockActionBtn");
+                actionDiv.innerHTML = ""; // Reset action button
+
+                const form = document.createElement('form');
+                form.method = "POST";
+                form.action = "/Supervisor/ToggleBlock";
+
+                const idField = document.createElement('input');
+                idField.type = "hidden";
+                idField.name = "id";
+                idField.value = s.id;
+
+                const blockField = document.createElement('input');
+                blockField.type = "hidden";
+                blockField.name = "block";
+                blockField.value = s.isBlocked ? "false" : "true";
+
+                const button = document.createElement('button');
+                button.className = s.isBlocked ? "btn btn-success" : "btn btn-danger";
+                button.textContent = s.isBlocked ? "Remove from Block List" : "Add to Block List";
+
+                form.appendChild(idField);
+                form.appendChild(blockField);
+                form.appendChild(button);
+                actionDiv.appendChild(form);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+
+
+
+           
+
+    }
+     function cancelStudentInfo() {
+        const studentInfo = document.getElementById("studentInfo");
+        studentInfo.classList.remove("show"); // trigger transition out
+        setTimeout(() => {
+            studentInfo.style.display = "none";
+        }, 500); // match the CSS transition duration
+    }
+
+</script>
+<script>
+    setTimeout(function () {
+        const msgBox = document.querySelector('.message-box');
+        if (msgBox) {
+            msgBox.classList.add('fade-out');
+            setTimeout(() => msgBox.style.display = 'none', 600); // match fade duration
+        }
+    }, 4000); // 4 second delay before fade
+</script>
