@@ -1,0 +1,106 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    display: flex;
+    min-height: 100vh; /* ✅ Let it grow as needed */
+    background: linear-gradient(to bottom, #ffffff, #fdf9e8);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 80px;
+    background-color: #F0C419;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 20px;
+    transition: width 0.3s ease;
+    z-index: 1000; /* Make sure it stays above */
+}
+
+
+    .sidebar:hover {
+        width: 200px;
+    }
+
+    .sidebar i {
+        font-size: 24px;
+        color: #333;
+        transition: transform 0.3s ease;
+        margin-bottom: 5px;
+    }
+
+    .sidebar:hover i {
+        transform: rotate(10deg);
+    }
+
+.menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+    .menu-item:hover {
+        transform: scale(1.1);
+        color: #222;
+    }
+
+    .menu-item span {
+        font-size: 12px;
+        margin-top: 5px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+.sidebar:hover .menu-item span {
+    opacity: 1;
+}
+/* Header combining Welcome and Student Info */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.welcome {
+    font-size: 32px;
+    font-weight: 600;
+    color: #333;
+}
+
+.student-info {
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+    .student-info .info-box {
+        background: #fdf9e8;
+        padding: 6px 10px;
+        border-radius: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #444;
+    }

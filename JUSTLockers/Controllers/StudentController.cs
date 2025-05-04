@@ -110,6 +110,7 @@ namespace JUSTLockers.Controllers
                 {
                     LockerId = reservation.LockerId,
                     Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
+
                     Status = reservation.Status.ToString()
                 };
             }
