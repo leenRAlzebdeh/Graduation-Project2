@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using JUSTLockers.Services;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
+    //[Authorize]
     public class StudentController : Controller
     {
         private readonly IStudentService _studentService;
@@ -29,47 +31,7 @@ namespace JUSTLockers.Controllers
             return View();
         }
 
-        //[HttpGet]
-        //public async Task<IActionResult> ReservationView()
-        //{
-        //    // Get student ID from session
-        //    int? studentId = HttpContext.Session.GetInt32("UserId");
-
-        //    if (studentId == null)
-        //    {
-        //        return RedirectToAction("Login", "Account");
-        //    }
-
-        //    // Get department info
-        //    DepartmentInfo departmentInfo = await _studentService.GetDepartmentInfo(studentId.Value);
-        //    if (departmentInfo == null)
-        //    {
-        //        return NotFound("Student not found");
-        //    }
-
-        //    // Get available wings/levels
-        //    var wingsInfo = await _studentService.GetAvailableWingsAndLevels(departmentInfo.DepartmentName, departmentInfo.Location);
-
-        //    // Check for existing reservation
-        //    var reservation = await _studentService.GetCurrentReservationAsync(studentId.Value);
-
-        //    ViewBag.DepartmentName = departmentInfo.DepartmentName;
-        //    ViewBag.Location = departmentInfo.Location;
-        //    ViewBag.StudentId = studentId.Value;
-        //    ViewBag.HasReservation = reservation != null;
-
-        //    if (reservation != null)
-        //    {
-        //        ViewBag.ReservationInfo = new
-        //        {
-        //            LockerId = reservation.LockerId,
-        //            Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
-        //            Status = reservation.Status.ToString()
-        //        };
-        //    }
-
-        //    return View(wingsInfo);
-        //}
+        
 
         [HttpGet]
         public async Task<IActionResult> ReservationView()
@@ -116,6 +78,8 @@ namespace JUSTLockers.Controllers
 
             return View(wingsInfo);
         }
+
+        
 
         [HttpGet]
         public IActionResult ReserveLocker()
@@ -229,8 +193,6 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public IActionResult StudentDashboard()
         {
-            // Logic to show the Assign Cabinet page
-            // return View();
             return View("~/Views/Home/StudentDashboard.cshtml");
         }
         [HttpGet]
@@ -334,7 +296,83 @@ namespace JUSTLockers.Controllers
             }
         }
 
-        
+        [HttpGet]
+        public async Task<IActionResult> AllAvailableLockers(string location = null, string department = null, string wing = null, int? level = null)
+        {
+            int? studentId = HttpContext.Session.GetInt32("UserId");
+            if (studentId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Check if student is blocked
+            bool isBlocked = await _studentService.IsStudentBlocked(studentId.Value);
+            ViewBag.IsBlocked = isBlocked;
+
+            // Get filter options
+            var filterOptions = await _studentService.GetFilterOptions();
+            ViewBag.FilterOptions = filterOptions;
+
+            // Get current reservation if exists
+            var reservation = await _studentService.GetCurrentReservationAsync(studentId.Value);
+            ViewBag.HasReservation = reservation != null;
+
+            if (reservation != null)
+            {
+                ViewBag.ReservationInfo = new
+                {
+                    LockerId = reservation.LockerId,
+                    Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
+                    Status = reservation.Status.ToString()
+                };
+            }
+
+            // Get available lockers
+            var wingsInfo = await _studentService.GetAllAvailableLockerCounts(location, department, wing, level);
+
+            // Pass current filter values to view
+            ViewBag.CurrentLocation = location;
+            ViewBag.CurrentDepartment = department;
+            ViewBag.CurrentWing = wing;
+            ViewBag.CurrentLevel = level;
+
+            return View("~/Views/Student/ViewAllAvailableLockers.cshtml", wingsInfo);
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetDepartments(string location)
+        {
+            var options = await _studentService.GetFilterOptions();
+            if (options.DepartmentsByLocation.ContainsKey(location))
+            {
+                return Json(options.DepartmentsByLocation[location]);
+            }
+            return Json(new List<string>());
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetWings(string location, string department)
+        {
+            var options = await _studentService.GetFilterOptions();
+            var key = $"{location}|{department}";
+            if (options.WingsByDeptLocation.ContainsKey(key))
+            {
+                return Json(options.WingsByDeptLocation[key]);
+            }
+            return Json(new List<string>());
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetLevels(string location, string department, string wing)
+        {
+            var options = await _studentService.GetFilterOptions();
+            var key = $"{location}|{department}|{wing}";
+            if (options.LevelsByWingDeptLocation.ContainsKey(key))
+            {
+                return Json(options.LevelsByWingDeptLocation[key]);
+            }
+            return Json(new List<int>());
+        }
     }
 
 }

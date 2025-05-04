@@ -7,10 +7,11 @@ using JUSTLockers.Services;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Channels;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
-
+    //[Authorize]
     public class AdminController : Controller
     {
         
@@ -204,24 +205,30 @@ namespace JUSTLockers.Controllers
         {
             bool success = await _adminService.ApproveRequestReallocation(requestId);
 
-            if (!success)
+            if (success)
+            {
+                TempData["Success"] = "Reallocation request approved successfully.";
+            }
+            else
             {
                 TempData["Error"] = "Failed to approve the reallocation request.";
             }
             return RedirectToAction("ReallocationResponse", "Admin");
-            //  return View("~/Views/Admin/ReallocationResponse.cshtml");// or return View(...) if you want to show a custom result page
         }
         [HttpPost]
         public async Task<IActionResult> RejectRequestReallocation(int requestId)
         {
             bool success = await _adminService.RejectRequestReallocation(requestId);
 
-            if (!success)
+            if (success)
+            {
+                TempData["Success"] = "Reallocation request rejected successfully.";
+            }
+            else
             {
                 TempData["Error"] = "Failed to reject the reallocation request.";
             }
             return RedirectToAction("ReallocationResponse", "Admin");
-            //  return View("~/Views/Admin/ReallocationResponse.cshtml");// or return View(...) if you want to show a custom result page
         }
 
 

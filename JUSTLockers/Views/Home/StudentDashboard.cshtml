@@ -160,7 +160,7 @@
                 </div>
                 <ul class="pretty-submenu" id="Employee-submenu">
                     <li><a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })">Reserve Locker</a></li>
-                    <li><a href="@Url.Action("ViewReservationInfo", "Student")">My Reservation</a></li>
+                    <li><a href="@Url.Action("AllAvailableLockers", "Student")">Available Lockers</a></li>
                 </ul>
             </li>
             <li class="nav-item">

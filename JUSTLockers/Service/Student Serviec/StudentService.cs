@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.IO;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using JUSTLockers.Classes;
@@ -58,83 +59,7 @@ namespace JUSTLockers.Service
             return availableLockers;
         }
         //leen
-        //public async Task<bool> ReserveLocker(int studentId, string lockerId)
-        //{
-        //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        //    {
-        //        await connection.OpenAsync();
-        //        using (var transaction = await connection.BeginTransactionAsync())
-        //        {
-        //            try
-        //            {
-        //                // 1. Check if locker is available
-        //                var checkQuery = @"SELECT COUNT(*) FROM Lockers 
-        //                                WHERE Id = @LockerId 
-        //                                AND Status = 'EMPTY'";
-
-        //                using (var checkCmd = new MySqlCommand(checkQuery, connection, transaction))
-        //                {
-        //                    checkCmd.Parameters.AddWithValue("@LockerId", lockerId);
-        //                    var count = Convert.ToInt32(await checkCmd.ExecuteScalarAsync());
-
-        //                    if (count == 0)
-        //                    {
-        //                        return false; // Locker not available
-        //                    }
-        //                }
-
-        //                // 2. Update locker status
-        //                var updateLockerQuery = @"UPDATE Lockers 
-        //                                         SET Status = 'RESERVED' 
-        //                                         WHERE Id = @LockerId";
-
-        //                using (var updateCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
-        //                {
-        //                    updateCmd.Parameters.AddWithValue("@LockerId", lockerId);
-        //                    await updateCmd.ExecuteNonQueryAsync();
-        //                }
-
-        //                // 3. Create reservation record
-        //                var reservationQuery = @"INSERT INTO Reservations 
-        //                                        (Id, StudentId, LockerId, ReservationDate, Status) 
-        //                                        VALUES 
-        //                                        (@ReservationId, @StudentId, @LockerId, @ReservationDate, 'RESERVED')";
-
-        //                using (var reservationCmd = new MySqlCommand(reservationQuery, connection, transaction))
-        //                {
-        //                    reservationCmd.Parameters.AddWithValue("@ReservationId", Guid.NewGuid().ToString());
-        //                    reservationCmd.Parameters.AddWithValue("@StudentId", studentId);
-        //                    reservationCmd.Parameters.AddWithValue("@LockerId", lockerId);
-        //                    reservationCmd.Parameters.AddWithValue("@ReservationDate", DateTime.Now);
-
-        //                    await reservationCmd.ExecuteNonQueryAsync();
-        //                }
-
-        //                // 4. Update student's locker reference
-        //                var updateStudentQuery = @"UPDATE Students 
-        //                                        SET locker_id = @LockerId 
-        //                                        WHERE id = @StudentId";
-
-        //                using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
-        //                {
-        //                    studentCmd.Parameters.AddWithValue("@LockerId", lockerId);
-        //                    studentCmd.Parameters.AddWithValue("@StudentId", studentId);
-
-        //                    await studentCmd.ExecuteNonQueryAsync();
-        //                }
-
-        //                await transaction.CommitAsync();
-        //                return true;
-        //            }
-        //            catch
-        //            {
-        //                await transaction.RollbackAsync();
-        //                throw;
-        //            }
-        //        }
-        //    }
-        //}
-        //leen
+        
         //may not use it 
         public async Task<Reservation> ViewReservationInfo(int studentId)
         {
@@ -667,7 +592,7 @@ namespace JUSTLockers.Service
                         }
 
                         // Create reservation record
-                        var reservationId = "R" + lockerId + " Student ID " + studentId;
+                        var reservationId = "R-" + lockerId + "-" + studentId;
                         var reservationQuery = @" 
                     INSERT INTO Reservations (Id, StudentId, LockerId, ReservationDate, Status)
                     VALUES (@ReservationId, @StudentId, @LockerId, @ReservationDate, 'RESERVED')";
@@ -719,9 +644,190 @@ namespace JUSTLockers.Service
                 }
             }
         }
-    }
 
-        public class DepartmentInfo
+        public async Task<List<WingInfo>> GetAllAvailableLockerCounts(string location = null, string department = null, string wing = null, int? level = null)
+        {
+            var wings = new List<WingInfo>();
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                // First query: Calculate available lockers per cabinet
+                var subquery = @"
+            SELECT 
+                c.cabinet_id,
+                c.location,
+                c.department_name,
+                c.wing,
+                c.level,
+                GREATEST(c.Capacity - COALESCE(c.ReservedLockers, 0), 0) + 
+                COUNT(CASE WHEN l.Status = 'EMPTY' THEN l.Id END) AS CabinetAvailableLockers
+            FROM Cabinets c
+            LEFT JOIN Lockers l ON c.cabinet_id = l.cabinet_id
+            WHERE c.status = 'IN_SERVICE'";
+
+                var parameters = new List<MySqlParameter>();
+
+                // Add filters to subquery
+                if (!string.IsNullOrEmpty(location))
+                {
+                    subquery += " AND c.location = @Location";
+                    parameters.Add(new MySqlParameter("@Location", location));
+                }
+                if (!string.IsNullOrEmpty(department))
+                {
+                    subquery += " AND c.department_name = @Department";
+                    parameters.Add(new MySqlParameter("@Department", department));
+                }
+                if (!string.IsNullOrEmpty(wing))
+                {
+                    subquery += " AND c.wing = @Wing";
+                    parameters.Add(new MySqlParameter("@Wing", wing));
+                }
+                if (level.HasValue)
+                {
+                    subquery += " AND c.level = @Level";
+                    parameters.Add(new MySqlParameter("@Level", level.Value));
+                }
+
+                subquery += " GROUP BY c.cabinet_id, c.location, c.department_name, c.wing, c.level";
+
+                // Second query: Aggregate by location, department, wing, and level
+                var query = @"
+            SELECT 
+                location,
+                department_name AS Department,
+                wing AS Wing, 
+                level AS Level, 
+                SUM(CabinetAvailableLockers) AS AvailableLockers
+            FROM (" + subquery + @") AS subquery
+            GROUP BY location, department_name, wing, level
+            HAVING AvailableLockers > 0
+            ORDER BY location, department_name, wing, level";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            wings.Add(new WingInfo
+                            {
+                                Location = reader.GetString("location"),
+                                Department = reader.GetString("Department"),
+                                Wing = reader.GetString("Wing"),
+                                Level = reader.GetInt32("Level"),
+                                AvailableLockers = reader.GetInt32("AvailableLockers")
+                            });
+                        }
+                    }
+                }
+            }
+            return wings;
+        }
+
+        public async Task<FilterOptions> GetFilterOptions()
+        {
+            var options = new FilterOptions();
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+
+                // Get all locations
+                var locationQuery = "SELECT DISTINCT location FROM Departments";
+                using (var cmd = new MySqlCommand(locationQuery, connection))
+                {
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            options.Locations.Add(reader.GetString("location"));
+                        }
+                    }
+                }
+
+                // Get departments by location
+                var deptQuery = "SELECT DISTINCT name, location FROM Departments";
+                using (var cmd = new MySqlCommand(deptQuery, connection))
+                {
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var dept = reader.GetString("name");
+                            var loc = reader.GetString("location");
+                            if (!options.DepartmentsByLocation.ContainsKey(loc))
+                            {
+                                options.DepartmentsByLocation[loc] = new List<string>();
+                            }
+                            options.DepartmentsByLocation[loc].Add(dept);
+                        }
+                    }
+                }
+
+                // Get wings by department and location
+                var wingQuery = "SELECT DISTINCT wing, department_name, location FROM Cabinets";
+                using (var cmd = new MySqlCommand(wingQuery, connection))
+                {
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var wing = reader.GetString("wing");
+                            var dept = reader.GetString("department_name");
+                            var loc = reader.GetString("location");
+
+                            var key = $"{loc}|{dept}";
+                            if (!options.WingsByDeptLocation.ContainsKey(key))
+                            {
+                                options.WingsByDeptLocation[key] = new List<string>();
+                            }
+                            options.WingsByDeptLocation[key].Add(wing);
+                        }
+                    }
+                }
+
+                // Get levels by wing, department and location
+                var levelQuery = "SELECT DISTINCT level, wing, department_name, location FROM Cabinets";
+                using (var cmd = new MySqlCommand(levelQuery, connection))
+                {
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var level = reader.GetInt32("level");
+                            var wing = reader.GetString("wing");
+                            var dept = reader.GetString("department_name");
+                            var loc = reader.GetString("location");
+
+                            var key = $"{loc}|{dept}|{wing}";
+                            if (!options.LevelsByWingDeptLocation.ContainsKey(key))
+                            {
+                                options.LevelsByWingDeptLocation[key] = new List<int>();
+                            }
+                            options.LevelsByWingDeptLocation[key].Add(level);
+                        }
+                    }
+                }
+            }
+
+            return options;
+        }
+
+
+    }
+    public class FilterOptions
+    {
+        public List<string> Locations { get; set; } = new List<string>();
+        public Dictionary<string, List<string>> DepartmentsByLocation { get; set; } = new Dictionary<string, List<string>>();
+        public Dictionary<string, List<string>> WingsByDeptLocation { get; set; } = new Dictionary<string, List<string>>();
+        public Dictionary<string, List<int>> LevelsByWingDeptLocation { get; set; } = new Dictionary<string, List<int>>();
+    }
+    public class DepartmentInfo
     {
         public string DepartmentName { get; set; }
         public string Location { get; set; }
@@ -729,8 +835,10 @@ namespace JUSTLockers.Service
 
     public class WingInfo
     {
+        public string Location { get; set; }
         public string Wing { get; set; }
         public int Level { get; set; }
+        public string Department { get; set; }
         public int AvailableLockers { get; set; }
     }
 
@@ -738,6 +846,17 @@ namespace JUSTLockers.Service
     {
         public int StudentId { get; set; }
         public string DepartmentName { get; set; }
+        public string Location { get; set; }
+        public string Wing { get; set; }
+        public int Level { get; set; }
+    }
+
+    public class LockerInfo
+    {
+        public string Id { get; set; }
+        public string DepartmentName { get; set; }
+        public LockerStatus Status { get; set; }
+        public string CabinetId { get; set; }
         public string Location { get; set; }
         public string Wing { get; set; }
         public int Level { get; set; }
