@@ -368,7 +368,7 @@
 
 
 
-<!DOCTYPE html>
+@* <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -571,6 +571,511 @@
 
     <script src="~/js/DashbordAdmin.js"></script>
     <script src="~/js/admin.js"></script>
+    <script>
+        const studentId = @ViewBag.StudentId;
+        document.addEventListener("DOMContentLoaded", function () {
+            const reserveButtons = document.querySelectorAll('.reserve-btn');
+            const currentReservationDiv = document.getElementById('currentReservation');
+            const cancelReservationBtn = document.getElementById('cancelReservationBtn');
+            const cancelStatusDiv = document.getElementById('cancelStatus');
+            const lockersTable = document.getElementById('lockersTable');
+            const noReservationMessage = document.getElementById('noReservationMessage');
+            const hasReservation = @Json.Serialize(ViewBag.HasReservation);
+            const isBlocked = @Json.Serialize(ViewBag.IsBlocked);
+
+            // Function to update UI based on reservation and block status
+            function updateUI(hasReservation, isBlocked) {
+                if (isBlocked) {
+                    if (lockersTable) lockersTable.style.display = 'none';
+                    noReservationMessage.style.display = 'none';
+                    currentReservationDiv.style.display = 'none';
+                    reserveButtons.forEach(btn => {
+                        btn.disabled = true;
+                        btn.textContent = 'Blocked';
+                    });
+                    cancelReservationBtn.disabled = true;
+                } else if (hasReservation) {
+                    if (lockersTable) lockersTable.style.display = 'none';
+                    noReservationMessage.style.display = 'block';
+                    reserveButtons.forEach(btn => {
+                        btn.disabled = true;
+                        btn.textContent = 'Already Reserved';
+                    });
+                    currentReservationDiv.style.display = 'block';
+                    cancelReservationBtn.disabled = false;
+                } else {
+                    if (lockersTable) lockersTable.style.display = 'block';
+                    noReservationMessage.style.display = 'none';
+                    reserveButtons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.textContent = 'Reserve';
+                    });
+                    currentReservationDiv.style.display = 'none';
+                    cancelReservationBtn.disabled = false;
+                }
+            }
+
+            // Initialize UI based on server-side data
+            updateUI(hasReservation, isBlocked);
+
+            // Perform client-side check to ensure consistency
+            if (!hasReservation && !isBlocked) {
+                checkReservation();
+            }
+
+            // Check if student has existing reservation
+            async function checkReservation() {
+                try {
+                    const response = await fetch(`/Student/GetCurrentReservation?studentId=${studentId}`);
+                    if (response.ok) {
+                        const reservation = await response.json();
+                        if (reservation && reservation.status === 'RESERVED') {
+                            document.getElementById('reservationLockerId').textContent = reservation.lockerId;
+                            document.getElementById('reservationDate').textContent = new Date(reservation.date).toLocaleString();
+                            document.getElementById('reservationStatus').textContent = reservation.status;
+                            updateUI(true, isBlocked);
+                            return true;
+                        } else {
+                            updateUI(false, isBlocked);
+                            return false;
+                        }
+                    } else {
+                        updateUI(false, isBlocked);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Error checking reservation:', error);
+                    updateUI(false, isBlocked);
+                    return false;
+                }
+            }
+
+            // Handle reservation button clicks
+            reserveButtons.forEach(button => {
+                button.addEventListener('click', async function () {
+                    if (isBlocked) return; // Prevent action if blocked
+
+                    const wing = this.dataset.wing;
+                    const level = this.dataset.level;
+                    const statusDiv = document.getElementById(`status-${wing}-${level}`);
+
+                    if (await checkReservation()) {
+                        statusDiv.textContent = 'You already have an active reservation';
+                        statusDiv.className = 'status-message error-message';
+                        return;
+                    }
+
+                    this.disabled = true;
+                    statusDiv.textContent = 'Processing...';
+                    statusDiv.className = 'status-message';
+
+                    try {
+                        const data = {
+                            studentId: studentId,
+                            departmentName: '@ViewBag.DepartmentName',
+                            location: '@ViewBag.Location',
+                            wing: wing,
+                            level: parseInt(level)
+                        };
+
+                        const response = await fetch('/Student/ReserveLocker', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Reservation failed');
+                        }
+
+                        if (result.success) {
+                            statusDiv.textContent = `Reserved successfully! Locker ID: ${result.lockerId}`;
+                            statusDiv.className = 'status-message success-message';
+                            document.getElementById('reservationLockerId').textContent = result.lockerId;
+                            document.getElementById('reservationDate').textContent = new Date().toLocaleString();
+                            document.getElementById('reservationStatus').textContent = 'RESERVED';
+                            updateUI(true, isBlocked);
+                        } else {
+                            throw new Error(result.message || 'Reservation failed');
+                        }
+                    } catch (error) {
+                        statusDiv.textContent = error.message;
+                        statusDiv.className = 'status-message error-message';
+                        this.disabled = false;
+                        console.error('Reservation error:', error);
+                    }
+                });
+            });
+
+            // Handle cancel reservation
+            if (cancelReservationBtn) {
+                cancelReservationBtn.addEventListener('click', async function () {
+                    if (isBlocked || !confirm('Are you sure you want to cancel your reservation?')) {
+                        return;
+                    }
+
+                    cancelReservationBtn.disabled = true;
+                    cancelStatusDiv.textContent = 'Processing...';
+                    cancelStatusDiv.className = 'status-message';
+
+                    try {
+                        const response = await fetch(`/Student/CancelReservation?studentId=${studentId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            updateUI(false, isBlocked);
+                            cancelStatusDiv.textContent = 'Reservation cancelled successfully';
+                            cancelStatusDiv.className = 'status-message success-message';
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            throw new Error(result.message || 'Failed to cancel reservation');
+                        }
+                    } catch (error) {
+                        console.error('Error canceling reservation:', error);
+                        cancelStatusDiv.textContent = error.message || 'Failed to cancel reservation';
+                        cancelStatusDiv.className = 'status-message error-message';
+                        cancelReservationBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> *@
+@{
+    ViewBag.Title = "Reserve a Locker";
+    var hasReservation = ViewBag.HasReservation ?? false;
+    var isBlocked = ViewBag.IsBlocked ?? false;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>JUSTLocker - Reserve a Locker</title>
+    <link rel="stylesheet" href="~/css/student.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background: linear-gradient(to bottom, #fffdfa, #f6f6f6);
+        }
+
+        .content-wrapper {
+            margin-left: 80px; /* same as sidebar width */
+            padding: 40px;
+            width: 100%;
+        }
+
+        .main-content {
+            max-width: 1100px;
+            margin: auto;
+        }
+       
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+           
+        }
+
+        .welcome {
+            font-size: 32px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .student-info {
+            display: flex;
+            gap: 10px;
+        }
+
+        .info-box {
+            background: #fdf9e8;
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+
+        .reservation-section {
+            background: #fdf6e3;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+            .reservation-section h2 {
+                font-size: 24px;
+                color: #333;
+                margin-bottom: 25px;
+            }
+
+        .blocked-message {
+            background-color: #fff4f4;
+            color: #c0392b;
+            padding: 15px;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .reservation-info {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-left: 5px solid #F0C419;
+            margin-bottom: 25px;
+            border-radius: 12px;
+
+        }
+
+        .table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+            .table th, .table td {
+                padding: 12px;
+                border-bottom: 1px solid #eee;
+                text-align: center;
+            }
+
+        fieldset {
+            border: 2px solid #F0C419;
+            border-radius: 15px;
+            padding: 20px;
+            background-color: #FAF8EF;
+        }
+
+        legend {
+            padding: 0 10px;
+            font-weight: 600;
+            color: #3B3B3B;
+        }
+
+        .reserve-btn {
+            background-color: #f0c419;
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+            .reserve-btn:hover {
+                background-color: #e0b000;
+            }
+
+        .status-message {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+            .status-message.success-message {
+                color: green;
+            }
+
+            .status-message.error-message {
+                color: red;
+            }
+
+        .btn-cancel {
+            background: #dc3545;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+            .btn-cancel:disabled {
+                background: #ccc;
+            }
+
+        .reservation-summary-card {
+            background: #FFF9E3;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .next-steps {
+            background: #FFF4D6; /* Soft light blue */
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            margin-top: 20px;
+        }
+        .faq {
+            background: #FAF8EF;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            color: #333;
+        }
+
+            .faq summary {
+                font-weight: 600;
+                color: #000000;
+            }
+
+        .faq-section h5 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #000000;
+        }
+
+
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar (same as dashboard) -->
+    <div class="sidebar">
+        <i class="fas fa-bars"></i>
+        <a href="#" class="menu-item"><i class="fas fa-lock"></i><span>Reserve</span></a>
+        <a href="#" class="menu-item"><i class="fas fa-th-large"></i><span>Lockers</span></a>
+        <a href="#" class="menu-item"><i class="fas fa-bookmark"></i><span>My Reservation</span></a>
+        <a href="#" class="menu-item"><i class="fas fa-exclamation-circle"></i><span>Reports</span></a>
+    </div>
+    <div class="content-wrapper">
+    <div class="main-content">
+        <div class="header">
+            <div class="welcome">Reserve a Locker</div>
+            <div class="student-info">
+                <div class="info-box"><i class="fas fa-user"></i> @ViewBag.StudentName</div>
+                <div class="info-box"><i class="fas fa-building"></i> @ViewBag.DepartmentName</div>
+            </div>
+        </div>
+
+        <div class="reservation-section">
+           
+
+            @if (ViewBag.IsBlocked)
+            {
+                <div class="blocked-message">
+                    You are currently blocked from reserving lockers. Please contact an administrator.
+                </div>
+            }
+
+                <div id="currentReservation" class="reservation-summary-card" style="display: @(ViewBag.HasReservation ? "block" : "none")">
+                    <h4><i class="fas fa-lock"></i> You’ve reserved Locker <strong id="reservationLockerId">@ViewBag.ReservationInfo?.LockerId</strong></h4>
+                    <p><i class="fas fa-calendar-alt"></i> Reserved on: <span id="reservationDate">@ViewBag.ReservationInfo?.Date</span></p>
+                    <p><i class="fas fa-check-circle"></i> Status: <span id="reservationStatus">@ViewBag.ReservationInfo?.Status</span></p>
+                    <button id="cancelReservationBtn" class="btn-cancel" @(ViewBag.IsBlocked ? "disabled" : "")>Cancel Reservation</button>
+                    <div id="cancelStatus" class="status-message"></div>
+                </div>
+                <fieldset>
+                    <legend>Available Lockers</legend>
+
+                    <div id="noReservationMessage" style="display: @(ViewBag.HasReservation ? "block" : "none")">
+                        <div class="status-message">You already have a reservation. Please cancel before making a new one.</div>
+                    </div>
+
+                    @if (Model.Count == 0 || ViewBag.IsBlocked)
+                    {
+                        <div class="status-message error-message">
+                            @(ViewBag.IsBlocked ? "You are blocked from reserving lockers." : "No available lockers.")
+                        </div>
+                    }
+                    else
+                    {
+                        <div id="lockersTable" style="display: @(ViewBag.HasReservation || ViewBag.IsBlocked ? "none" : "block")">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Wing</th>
+                                        <th>Level</th>
+                                        <th>Available</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var wingInfo in Model)
+                                    {
+                                        <tr>
+                                            <td>@wingInfo.Wing</td>
+                                            <td>@wingInfo.Level</td>
+                                            <td>@wingInfo.AvailableLockers</td>
+                                            <td>
+                                                @Html.AntiForgeryToken()
+                                                <button class="reserve-btn"
+                                                        data-wing="@wingInfo.Wing"
+                                                        data-level="@wingInfo.Level"
+                                                @(ViewBag.HasReservation || ViewBag.IsBlocked ? "disabled" : "")>
+                                                    @(ViewBag.HasReservation || ViewBag.IsBlocked ? "Already Reserved" : "Reserve")
+                                                </button>
+                                                <div class="status-message" id="status-@wingInfo.Wing-@wingInfo.Level"></div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </fieldset>
+
+                <!-- Tips Section -->
+                <div class="next-steps">
+                    <h5>Tips for a Better Experience:</h5>
+                    <ul>
+                        <li>🔒 Use a personal lock to secure your items.</li>
+                        <li>🛠️ Report any locker issues immediately.</li>
+                        <li>📦 Empty your locker before the semester ends.</li>
+                        <li>🙅‍♀️ Don’t share your locker with others.</li>
+                    </ul>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section" style="margin-top: 20px;">
+                    <h5>Frequently Asked Questions</h5>
+
+                    <details class="faq">
+                        <summary><strong>Can I reserve more than one locker?</strong></summary>
+                        <p>No, each student is allowed only one active reservation at a time.</p>
+                    </details>
+
+                    <details class="faq">
+                        <summary><strong>What happens if I don't cancel?</strong></summary>
+                        <p>Your locker remains locked under your name. Cancel if you no longer need it so others can use it.</p>
+                    </details>
+
+                    <details class="faq">
+                        <summary><strong>Who do I contact if my locker is broken?</strong></summary>
+                        <p>Use the <strong>Reports</strong> section to report the problem directly. A supervisor will review it.</p>
+                    </details>
+                </div>
+
+             
+
+        </div>
+    </div>
+    </div>
     <script>
         const studentId = @ViewBag.StudentId;
         document.addEventListener("DOMContentLoaded", function () {

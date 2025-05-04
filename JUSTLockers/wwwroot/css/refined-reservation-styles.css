@@ -1,0 +1,96 @@
+﻿
+/* 🔧 Refined Design for Reservation Box */
+.reservation-box {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px 30px;
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* 💡 Improve readability of headers */
+h2, h4 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* ✏️ Reservation info box with slight border and soft background */
+.reservation-info {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    margin-bottom: 25px;
+}
+
+/* 🟨 Yellow Buttons */
+.reserve-btn {
+    background-color: #f0c419;
+    color: #222;
+    padding: 8px 16px;
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+    .reserve-btn:hover {
+        background-color: #e0b800;
+    }
+
+/* ❌ Cancel button consistent with other styles */
+.btn-danger {
+    background-color: #dc3545;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+/* 📢 Status box and alert improvements */
+.status-message, .alert {
+    font-size: 14px;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+}
+
+.alert-info {
+    background-color: #eef7ff;
+    border: 1px solid #b6e0fe;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+}
+
+/* 🪄 Section wrapper */
+fieldset {
+    border: 2px solid #f0c419;
+    padding: 1.2em;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+legend {
+    padding: 0 10px;
+    font-weight: 600;
+    color: #4b0082;
+}
+
+/* 📄 Table spacing */
+table.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+    table.table th, table.table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
