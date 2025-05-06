@@ -434,10 +434,11 @@ namespace JUSTLockers.Service
                 await connection.OpenAsync();
 
                 var query = @"SELECT r.Id, r.LockerId, r.ReservationDate, r.Status, r.StudentId,
-                     l.DepartmentName, s.name AS StudentName
+                     l.DepartmentName,c.location,c.wing, c.level, s.name AS StudentName
                      FROM Reservations r
                      JOIN Lockers l ON r.LockerId = l.Id
                      JOIN Students s ON r.StudentId = s.id
+                     JOIN Cabinets c ON l.Cabinet_id = c.cabinet_id
                      WHERE r.StudentId = @StudentId 
                      AND r.Status = 'RESERVED'";
 
@@ -456,7 +457,11 @@ namespace JUSTLockers.Service
                                 LockerId = reader.GetString("LockerId"),
                                 StudentName = reader.GetString("StudentName"),
                                 Date = reader.GetDateTime("ReservationDate"),
-                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status"))
+                                Department = reader.GetString("DepartmentName"),
+                                Location = reader.GetString("location"),
+                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status")),
+                                Wing = reader.GetString("wing"),
+                                Level = reader.GetInt32("level")
                             };
                         }
                     }

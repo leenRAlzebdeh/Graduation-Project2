@@ -1,0 +1,711 @@
+﻿@* @model JUSTLockers.Classes.Reservation
+@{
+    ViewData["Title"] = "Reservation Info";
+    var hasReservation = Model != null;
+    var isBlocked = ViewBag.IsBlocked as bool? ?? false;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker | @ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <style>
+        .reservation-box {
+            margin-top: 40px;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .status-message {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            color: #28a745;
+        }
+
+        .error-message {
+            color: #dc3545;
+        }
+
+        .reservation-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4B0082;
+        }
+
+        .blocked-message {
+            display: @(isBlocked ? "block" : "none");
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .table th {
+            background-color: #0072ff;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .table td,
+        .table th {
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("StudentDashboard", "Student")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Report Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem</a></li>
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Locker Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ReservationView", "Student")">Reserve Locker</a></li>
+                    <li><a href="@Url.Action("AllAvailableLockers", "Student")">Available Lockers</a></li>
+                    <li><a href="@Url.Action("ViewReservationInfo", "Student")">View Reservation Info</a></li>
+                </ul>
+            </li>
+
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero / Header Section -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Reservation Information</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Student</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Reservation Info Section -->
+        <section class="management">
+            <div class="reservation-container">
+                <h2 class="reservation-header">Your Locker Reservation</h2>
+
+                <!-- Block List Message -->
+                <div class="blocked-message" style="display: @(isBlocked ? "block" : "none")">
+                    <i class="fas fa-lock me-2"></i>You are currently blocked from managing reservations. Please contact an administrator for assistance.
+                </div>
+
+                @if (hasReservation)
+                {
+                    <!-- Active Reservation Card -->
+                    <div class="reservation-card">
+                        <h4><i class="fas fa-key me-2"></i>Reservation Details</h4>
+                        <div class="table-responsive mt-4">
+                            <table class="table reservation-table">
+                                <tbody>
+                                    <tr>
+                                        <th width="30%">Locker ID</th>
+                                        <td>@Model.LockerId</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Reservation Date</th>
+                                        <td>@Model.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                          if( @Model.Status.ToString()=="RESERVED")
+											{
+											<span class="badge bg-success">Reserved</span>
+											}
+											else if(@Model.Status.ToString()=="BLOCKED")
+											{
+											<span class="badge bg-danger">Blocked</span>
+											}
+											else
+											{
+											<span class="badge bg-warning">Pending</span>
+											}
+                                           
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Location</th>
+                                        <td>@Model.Location</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Department</th>
+                                        <td>@Model.Department</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Wing</th>
+                                        <td>@Model.Wing</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Level</th>
+                                        <td>Level @Model.Level</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button id="cancelReservationBtn" class="btn-cancel" @(isBlocked ? "disabled" : "")>
+                                <i class="fas fa-times-circle me-2"></i>Cancel Reservation
+                            </button>
+                            <div id="cancelStatus" class="status-message"></div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- No Reservation Card -->
+                    <div class="no-reservation-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <h3>No Active Reservation Found</h3>
+                        <p class="text-muted">You don't currently have a locker reservation.</p>
+
+                        @if (!isBlocked)
+                        {
+                            <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="btn btn-reserve">
+                                <i class="fas fa-plus-circle me-2"></i>Reserve a Locker Now
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="text-danger mt-3">
+                                <i class="fas fa-ban me-2"></i>You cannot reserve a locker while you are blocked.
+                            </p>
+                        }
+
+                        <div class="feature-list">
+                            <h5 class="mt-4 mb-3">Locker Benefits:</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check-circle"></i> Secure storage for your belongings</li>
+                                <li><i class="fas fa-check-circle"></i> Convenient access during campus hours</li>
+                                <li><i class="fas fa-check-circle"></i> Assigned to your department location</li>
+                                <li><i class="fas fa-check-circle"></i> 24/7 security monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
+    <script>
+        const studentId = @ViewBag.StudentId;
+        document.addEventListener("DOMContentLoaded", function () {
+            const cancelReservationBtn = document.getElementById('cancelReservationBtn');
+            const cancelStatusDiv = document.getElementById('cancelStatus');
+            const isBlocked = @Json.Serialize(ViewBag.IsBlocked);
+
+            if (cancelReservationBtn) {
+                cancelReservationBtn.addEventListener('click', async function () {
+                    if (isBlocked || !confirm('Are you sure you want to cancel your reservation?')) {
+                        return;
+                    }
+
+                    cancelReservationBtn.disabled = true;
+                    cancelStatusDiv.textContent = 'Processing...';
+                    cancelStatusDiv.className = 'status-message';
+
+                    try {
+                        const response = await fetch(`/Student/CancelReservation?studentId=${studentId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            cancelStatusDiv.textContent = 'Reservation cancelled successfully';
+                            cancelStatusDiv.className = 'status-message success-message';
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            throw new Error(result.message || 'Failed to cancel reservation');
+                        }
+                    } catch (error) {
+                        console.error('Error canceling reservation:', error);
+                        cancelStatusDiv.textContent = error.message || 'Failed to cancel reservation';
+                        cancelStatusDiv.className = 'status-message error-message';
+                        cancelReservationBtn.disabled = false;
+                    }
+                });
+            }
+
+            // Dark Mode Toggle
+            document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
+                document.body.classList.toggle("dark-mode");
+                const icon = this.querySelector("i");
+                icon.classList.toggle("fa-moon");
+                icon.classList.toggle("fa-sun");
+
+                // Save preference to localStorage
+                const isDarkMode = document.body.classList.contains("dark-mode");
+                localStorage.setItem("darkMode", isDarkMode);
+            });
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+                const icon = document.getElementById("dark-mode-toggle")?.querySelector("i");
+                if (icon) {
+                    icon.classList.remove("fa-moon");
+                    icon.classList.add("fa-sun");
+                }
+            }
+        });
+    </script>
+</body>
+</html> *@
+
+
+
+
+            @model JUSTLockers.Classes.Reservation
+@{
+    ViewData["Title"] = "Reservation Info";
+    var hasReservation = Model != null;
+    var isBlocked = ViewBag.IsBlocked as bool? ?? false;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUSTLocker | @ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <style>
+        .reservation-container {
+            margin-top: 40px;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .reservation-header {
+            color: #4B0082;
+            margin-bottom: 20px;
+        }
+
+        .blocked-message {
+            display: @(isBlocked ? "block" : "none");
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .reservation-card, .no-reservation-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4B0082;
+            margin-bottom: 20px;
+        }
+
+        .reservation-table th {
+            font-weight: 500;
+            width: 30%;
+            vertical-align: top;
+            color: #333;
+        }
+
+        .reservation-table td {
+            color: #555;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            border-radius: 10px;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .badge-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .badge-warning {
+            background-color: #ffc107;
+            color: #fff;
+        }
+
+        .btn-cancel {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+            .btn-cancel:hover {
+                background-color: #c82333;
+            }
+
+            .btn-cancel:disabled {
+                background-color: #6c757d;
+                cursor: not-allowed;
+            }
+
+        .status-message {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            color: #28a745;
+        }
+
+        .error-message {
+            color: #dc3545;
+        }
+
+        .no-reservation-card .feature-icon {
+            font-size: 2.5rem;
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .no-reservation-card h3 {
+            color: #4B0082;
+            text-align: center;
+        }
+
+        .no-reservation-card p.text-muted {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-reserve {
+            background-color: #0072ff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+            .btn-reserve:hover {
+                background-color: #005ecb;
+            }
+
+        .no-reservation-card .feature-list {
+            margin-top: 20px;
+            padding-left: 20px;
+        }
+
+            .no-reservation-card .feature-list li {
+                margin-bottom: 10px;
+                color: #555;
+            }
+
+            .no-reservation-card .feature-list i {
+                color: #28a745;
+                margin-right: 8px;
+            }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("StudentDashboard", "Student")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Report Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("ReportProblem", "Student")">Report Problem</a></li>
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Locker Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ReservationView", "Student")">Reserve Locker</a></li>
+                    <li><a href="@Url.Action("AllAvailableLockers", "Student")">Available Lockers</a></li>
+                    <li><a href="@Url.Action("ViewReservationInfo", "Student")">View Reservation Info</a></li>
+                </ul>
+            </li>
+
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero / Header Section -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Reservation Information</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Student</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Reservation Info Section -->
+        <section class="management">
+            <div class="reservation-container">
+                <h2 class="reservation-header">Your Locker Reservation</h2>
+
+                <!-- Block List Message -->
+                <div class="blocked-message">
+                    <i class="fas fa-lock me-2"></i>You are currently blocked from managing reservations. Please contact an administrator for assistance.
+                </div>
+
+                @if (hasReservation)
+                {
+                    <!-- Active Reservation Card -->
+                    <div class="reservation-card">
+                        <h4><i class="fas fa-key me-2"></i>Reservation Details</h4>
+                        <div class="table-responsive mt-4">
+                            <table class="table reservation-table">
+                                <tbody>
+                                    <tr>
+                                        <th>Locker ID</th>
+                                        <td>@Model.LockerId</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Reservation Date</th>
+                                        <td>@Model.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            @{
+                                                var status = Model.Status.ToString();
+                                                <span class="badge @(status == "RESERVED" ? "bg-success" : status == "BLOCKED" ? "bg-danger" : "bg-warning")">
+                                                    @(status == "RESERVED" ? "Reserved" : status == "BLOCKED" ? "Blocked" : "Pending")
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Location</th>
+                                        <td>@Model.Location</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Department</th>
+                                        <td>@Model.Department</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Wing</th>
+                                        <td>@Model.Wing</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Level</th>
+                                        <td>Level @Model.Level</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        @* <div class="text-end mt-4">
+                            <button id="cancelReservationBtn" class="btn-cancel" @(isBlocked ? "disabled" : "")>
+                                <i class="fas fa-times-circle me-2"></i>Cancel Reservation
+                            </button>
+                            <div id="cancelStatus" class="status-message"></div>
+                        </div> *@
+                    </div>
+                }
+                else
+                {
+                    <!-- No Reservation Card -->
+                    <div class="no-reservation-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <h3>No Active Reservation Found</h3>
+                        <p class="text-muted">You don't currently have a locker reservation.</p>
+
+                        @if (!isBlocked)
+                        {
+                            <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="btn btn-reserve">
+                                <i class="fas fa-plus-circle me-2"></i>Reserve a Locker Now
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="text-danger mt-3">
+                                <i class="fas fa-ban me-2"></i>You cannot reserve a locker while you are blocked.
+                            </p>
+                        }
+
+                        <div class="feature-list">
+                            <h5 class="mt-4 mb-3">Locker Benefits:</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check-circle"></i> Secure storage for your belongings</li>
+                                <li><i class="fas fa-check-circle"></i> Convenient access during campus hours</li>
+                                <li><i class="fas fa-check-circle"></i> Assigned to your department location</li>
+                                <li><i class="fas fa-check-circle"></i> 24/7 security monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
+    <script>
+        const studentId = @ViewBag.StudentId;
+        document.addEventListener("DOMContentLoaded", function () {
+            const cancelReservationBtn = document.getElementById('cancelReservationBtn');
+            const cancelStatusDiv = document.getElementById('cancelStatus');
+            const isBlocked = @Json.Serialize(ViewBag.IsBlocked);
+
+            if (cancelReservationBtn) {
+                cancelReservationBtn.addEventListener('click', async function () {
+                    if (isBlocked || !confirm('Are you sure you want to cancel your reservation?')) {
+                        return;
+                    }
+
+                    cancelReservationBtn.disabled = true;
+                    cancelStatusDiv.textContent = 'Processing...';
+                    cancelStatusDiv.className = 'status-message';
+
+                    try {
+                        const response = await fetch(`/Student/CancelReservation?studentId=${studentId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            cancelStatusDiv.textContent = 'Reservation cancelled successfully';
+                            cancelStatusDiv.className = 'status-message success-message';
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            throw new Error(result.message || 'Failed to cancel reservation');
+                        }
+                    } catch (error) {
+                        console.error('Error canceling reservation:', error);
+                        cancelStatusDiv.textContent = error.message || 'Failed to cancel reservation';
+                        cancelStatusDiv.className = 'status-message error-message';
+                        cancelReservationBtn.disabled = false;
+                    }
+                });
+            }
+
+            // Dark Mode Toggle
+            document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
+                document.body.classList.toggle("dark-mode");
+                const icon = this.querySelector("i");
+                icon.classList.toggle("fa-moon");
+                icon.classList.toggle("fa-sun");
+
+                // Save preference to localStorage
+                const isDarkMode = document.body.classList.contains("dark-mode");
+                localStorage.setItem("darkMode", isDarkMode);
+            });
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+                const icon = document.getElementById("dark-mode-toggle")?.querySelector("i");
+                if (icon) {
+                    icon.classList.remove("fa-moon");
+                    icon.classList.add("fa-sun");
+                }
+            }
+        });
+    </script>
+</body>
+</html>

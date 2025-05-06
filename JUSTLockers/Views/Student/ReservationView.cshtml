@@ -970,7 +970,7 @@
 
             <span>Lockers</span>
         </a>
-        <a href="@Url.Action("ViewReservationInfo", "Student")" class="menu-item">
+        <a href="@Url.Action("ViewReservationInfo", "Student" , new { studentId = Context.Session.GetInt32("UserId") })" class="menu-item">
             <i class="fas fa-bookmark"></i>
             <span>My Reservation</span>
         </a>

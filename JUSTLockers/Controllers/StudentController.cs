@@ -162,8 +162,9 @@ namespace JUSTLockers.Controllers
 
             try
             {
-                
-                return await GetCurrentReservation(studentId);
+                var reservation = await _studentService.GetCurrentReservationAsync(studentId);
+                return View("~/Views/Student/ViewReservationInfo.cshtml", reservation);
+
             }
             catch (Exception ex)
             {
