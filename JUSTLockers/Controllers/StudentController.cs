@@ -265,7 +265,7 @@ namespace JUSTLockers.Controllers
 
                
                 string query = @"SELECT COUNT(*) FROM Reservations 
-                 WHERE Id = @StudentId
+                 WHERE StudentId = @userId
                  AND LockerId IS NOT NULL 
                 ";
 
@@ -274,7 +274,7 @@ namespace JUSTLockers.Controllers
                     connection.Open();
                     using (var cmd = new MySqlCommand(query, connection))
                     {
-                        cmd.Parameters.AddWithValue("@StudentId", userId);
+                        cmd.Parameters.AddWithValue("@userId", userId);
 
                         count = Convert.ToInt32(cmd.ExecuteScalar());
                         hasLocker = count > 0;
