@@ -182,18 +182,19 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <a href="@Url.Action("StudentDashboard", "Student")" class="menu-item">
-            <i class="fas fa-bars"></i>
-            <span>Dashboard</span>
+            <i class="fas fa-bars"> </i>
+            <span>DashBoard</span>
         </a>
         <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="menu-item">
             <i class="fas fa-lock"></i>
             <span>Reserve</span>
         </a>
-        <a href="@Url.Action("AllAvailableLockers", "Student")" class="menu-item">
+        <a href=" @Url.Action("AllAvailableLockers", "Student")" class="menu-item">
             <i class="fas fa-th-large"></i>
+
             <span>Lockers</span>
         </a>
-        <a href="@Url.Action("ViewReservationInfo", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="menu-item">
+        <a href="@Url.Action("ViewReservationInfo", "Student",new { studentId = Context.Session.GetInt32("UserId") })" class="menu-item">
             <i class="fas fa-bookmark"></i>
             <span>My Reservation</span>
         </a>
@@ -201,12 +202,15 @@
             <i class="fas fa-exclamation-circle"></i>
             <span>Reports</span>
         </a>
+
+
         <form asp-action="Logout" asp-controller="Account" method="post" style="width: 100%;">
             <button type="submit" class="menu-item" style="all: unset; display: flex; flex-direction: column; align-items: center; width: 100%; cursor: pointer;">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </button>
         </form>
+
     </div>
 
     <!-- Main Content -->
@@ -215,7 +219,7 @@
         <div class="header">
             <div class="welcome">Welcome to JUSTLocker!</div>
             <div class="student-info">
-                <div class="info-box"><i class="fas fa-user"></i> <span id="admin-name">Loading...</span></div>
+                <div class="info-box"><i class="fas fa-user"></i>  <span id="admin-name">Loading...</span></div>
                 <div class="info-box"><i class="fas fa-building"></i> <span id="major-name">Loading...</span></div>
             </div>
         </div>
@@ -492,21 +496,36 @@
                 });
             }
 
-            fetch('/Dashboard/GetMajorJson')
-                .then(response => response.json())
-                .then(data => {
-                    const majorNameElement = document.getElementById("major-name");
-                    if (majorNameElement) {
-                        majorNameElement.textContent = data || "Unknown major";
-                    }
-                })
-                .catch(() => {
-                    const majorNameElement = document.getElementById("major-name");
-                    if (majorNameElement) {
-                        majorNameElement.textContent = "Error fetching major name";
-                    }
-                });
+           
         });
     </script>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+        fetch('/Dashboard/GetMajorJson')
+        .then(response => response.json())
+        .then(data => {
+            const adminNameElement = document.getElementById("major-name");
+            if (adminNameElement) {
+                adminNameElement.textContent = data || "Unknown major";
+            }
+        })
+        .catch(() => {
+            const adminNameElement = document.getElementById("major-name");
+            if (adminNameElement) {
+                adminNameElement.textContent = "Error fetching major name";
+            }
+        });
+
+
+
+        });
+
+
+    </script>
+
 </body>
 </html>
