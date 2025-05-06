@@ -1,10 +1,20 @@
-﻿<!DOCTYPE html>
+﻿@model IEnumerable<JUSTLockers.Classes.Report>
+@using JUSTLockers.Classes
+
+@{
+    int index = 0;
+    
+    bool hasLocker = ViewBag.HasLocker != null && (bool)ViewBag.HasLocker;
+
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JUSTLocker - Student Dashboard</title>
-
+   
     <!-- Font Awesome CDN for icons -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -12,6 +22,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/student.css" />
+    <link rel="stylesheet" href="~/css/reports - Student.css" />
     <style>
 
 
@@ -78,8 +89,10 @@
         }
 
             .progress-step.active {
-                background: #f0c419;
+                background: green;
                 font-weight: bold;
+                color:white;
+                
             }
 
         .countdown-timer {
@@ -147,6 +160,18 @@
             .tips-section h3 {
                 margin-bottom: 10px;
                 color: #444;
+            }
+
+        .status-tag {
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+            .status-tag.reported {
+                background: #f4d55e;
+                color: #7a5a00;
             }
 
         /* Animations */
@@ -236,6 +261,15 @@
             <i class="fas fa-exclamation-circle"></i>
             <span>Reports</span>
         </a>
+
+       
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i> 
+                    <span>Logout</span>
+                </button>
+            </form>
+        
     </div>
 
 
@@ -261,10 +295,10 @@
             <div class="card timeline">
                 <h3>Reservation Status</h3>
                 <div class="progress-bar">
-                    <div class="progress-step active">No Reservation</div>
-                    <div class="progress-step">Reserved</div>
-                    <div class="progress-step">Active</div>
-                    <div class="progress-step">Expiring Soon</div>
+                    <div class="progress-step @(hasLocker ? "" : "active")">No Reservation</div>
+                    <div class="progress-step @(hasLocker ? "active" : "")">Reserved</div>
+                    <div class="progress-step @(hasLocker ? "active" : "")">Active</div>
+                    <div class="progress-step @(false ? "active" : "")">Expiring Soon</div> 
                 </div>
             </div>
 
@@ -276,31 +310,82 @@
         </div>
 
         <!-- Reports Section -->
+        <div class="report-container">
         <div class="reports-section">
             <h2>My Reports</h2>
-            <table class="reports-table">
+            <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Report Type</th>
-                        <th>Description</th>
+                        <th>No</th>
+                        <th>Report</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Broken Locker</td>
-                        <td>Lock not closing properly</td>
-                        <td><span class="status pending">Pending</span></td>
-                    </tr>
-                    <tr>
-                        <td>Lost Key</td>
-                        <td>Key misplaced during class</td>
-                        <td><span class="status fixed">Fixed</span></td>
-                    </tr>
+
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="details-row">
+                                    <span >No Reports Founds. </span>
+                                <a href="@Url.Action("ReportProblem", "Student")">
+                                    <span class="status-tag reported">Add Report</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+
+                    else
+                    {
+
+                        @foreach (var report in Model)
+                        {
+
+@*                             var isReported = string.Equals(report.Status.ToString(), "REPORTED", StringComparison.OrdinalIgnoreCase);
+ *@                            <tr onclick="toggleDetails(@index)">
+                                <td>@(index + 1)</td>
+                                <td>@report.Subject</td>
+                                @*   <td class="status-tag reported">@report.Status</td> *@
+                                <td><span class="status-tag reported">@report.Status</span></td>
+                                @* <td>
+                                    @if (isReported)
+                                    {
+                                        <span class="delete-icon" title="Delete" onclick="deleteReport(@report.ReportId)" event.stopPropagation();>🗑️</span>
+                                    }
+                                </td> *@
+                            </tr>
+
+
+
+                            @*  <tr onclick="toggleDetails(0)">
+                            <td>1</td>
+                            <td>Broken Locker</td>
+                            <td><span class="status-tag reported">REPORTED</span></td>
+                            <td><span class="delete-icon" title="Delete" onclick="deleteReport(1); event.stopPropagation();">🗑️</span></td>
+                        </tr> *@
+                          
+
+
+
+                            @* 
+                        <tr id="details-0" class="details-content">
+                            <td colspan="4" class="details-row">
+                                <strong>Statement:</strong> Lock not working properly<br />
+                                <strong>Report Date:</strong> 2025-04-10<br />
+                                <strong>Resolved Date:</strong> Not resolved<br />
+                                <strong>Resolution Details:</strong> Not solved<br />
+                                <div><strong>Image:</strong><br /><img src="locker-example.jpg" style="max-width: 200px; border: 1px solid #ccc; margin-top: 5px;" /></div>
+                            </td>
+                        </tr> *@
+
+
+                        }
+                    }
                 </tbody>
             </table>
-        </div>
-
+            </div>
+            <br />
         <!-- Tips Section -->
         <div class="tips-section">
             <h3>Tip of the Day 💡</h3>

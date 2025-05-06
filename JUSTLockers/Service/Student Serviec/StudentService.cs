@@ -165,7 +165,7 @@ namespace JUSTLockers.Service
        
 
 
-        public async Task<List<Report>> ViewAllReports()
+        public async Task<List<Report>> ViewAllReports(int? studentId)
         {
             var reports = new List<Report>();
 
@@ -173,36 +173,40 @@ namespace JUSTLockers.Service
             {
                 await connection.OpenAsync();
 
-                var query = "SELECT * FROM Reports";
+                var query = "SELECT * FROM Reports where ReporterId=@studentId";
+
 
                 using (var command = new MySqlCommand(query, connection))
-                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    while (await reader.ReadAsync())
+                    command.Parameters.AddWithValue("@studentId", studentId);
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        var report = new Report
+                        while (await reader.ReadAsync())
                         {
-                            Reporter = null,
-                            Locker = null,
-                            ReportId = reader.GetInt32("Id"),
-                            ReporterId = reader.GetInt32("ReporterId"),
-                            LockerId = reader.GetString("LockerId"),
+                            var report = new Report
+                            {
+                                Reporter = null,
+                                Locker = null,
+                                ReportId = reader.GetInt32("Id"),
+                                ReporterId = reader.GetInt32("ReporterId"),
+                                LockerId = reader.GetString("LockerId"),
 
-                            Type = Enum.TryParse(reader.GetString("Type"), out ReportType type) ? type : ReportType.OTHER,
-                            Status = Enum.TryParse(reader.GetString("Status"), out ReportStatus status) ? status : ReportStatus.REPORTED,
+                                Type = Enum.TryParse(reader.GetString("Type"), out ReportType type) ? type : ReportType.OTHER,
+                                Status = Enum.TryParse(reader.GetString("Status"), out ReportStatus status) ? status : ReportStatus.REPORTED,
 
-                            Subject = reader.GetString("Subject"),
-                            Statement = reader.GetString("Statement"),
-                            ReportDate = reader.GetDateTime("ReportDate"),
-                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? null : reader.GetDateTime("ResolvedDate"),
-                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolvedDetails")) ? null : reader.GetString("ResolvedDetails"),
-                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
-                        };
+                                Subject = reader.GetString("Subject"),
+                                Statement = reader.GetString("Statement"),
+                                ReportDate = reader.GetDateTime("ReportDate"),
+                                ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? null : reader.GetDateTime("ResolvedDate"),
+                                ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolvedDetails")) ? null : reader.GetString("ResolvedDetails"),
+                                ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                                ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
+                            };
 
 
 
-                        reports.Add(report);
+                            reports.Add(report);
+                        }
                     }
                 }
             }

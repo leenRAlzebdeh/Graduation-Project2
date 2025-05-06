@@ -131,6 +131,13 @@
                     <li><a href="@Url.Action("AllAvailableLockers", "Student")">Available Lockers</a></li>
                 </ul>
             </li>
+
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </ul>
     </aside>
 

@@ -1,0 +1,200 @@
+﻿
+.main-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+    max-width: 1100px;
+    margin: auto;
+}
+
+.form-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+    .form-group label {
+        font-weight: 500;
+        color: #333;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .form-group input[type="text"],
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid #ddd;
+        border-radius: 10px;
+        transition: border 0.3s;
+    }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #F0C419;
+            outline: none;
+        }
+
+.problem-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.problem-option {
+    background: #fff9e0;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s ease;
+    font-size: 14px;
+    color: #444;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+    .problem-option:hover {
+        background-color: #fff5c3;
+    }
+
+    .problem-option.selected {
+        border-color: #F0C419;
+        background-color: #fff3ac;
+        box-shadow: 0 0 0 3px #f0c41933;
+    }
+
+.submit-btn {
+    background: #F0C419;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    color: #222;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.3s ease;
+}
+
+    .submit-btn:hover {
+        background: #e0b900;
+    }
+
+/* Custom file upload */
+.custom-file-upload {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    padding: 10px 14px;
+    position: relative;
+}
+
+    .custom-file-upload input[type="file"] {
+        display: none;
+    }
+
+.upload-btn {
+    background: #F0C419;
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: #222;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+    .upload-btn:hover {
+        background: #e0b900;
+    }
+
+.file-name {
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+}
+
+.report-container {
+    margin-top: 50px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.report-header {
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .report-table th,
+    .report-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #f0c419;
+        text-align: left;
+        font-size: 14px;
+        color: #444;
+    }
+
+    .report-table tr:hover {
+        background-color: #fffce6;
+        cursor: pointer;
+    }
+
+.status-tag {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+    .status-tag.reported {
+        background: #f4d55e;
+        color: #7a5a00;
+    }
+
+    .status-tag.fixed {
+        background: #a0e3b2;
+        color: #2e7d32;
+    }
+
+.delete-icon {
+    cursor: pointer;
+    font-size: 18px;
+    transition: color 0.3s ease;
+}
+
+    .delete-icon:hover {
+        color: red;
+    }
+
+.details-content {
+    display: none;
+    background-color: #fffdf0;
+}
+
+.details-row {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #333;
+}
+
+

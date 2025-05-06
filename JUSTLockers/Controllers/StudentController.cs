@@ -193,18 +193,21 @@ namespace JUSTLockers.Controllers
         // Reserve a locker
 
         [HttpGet]
-        public IActionResult StudentDashboard()
+        public async Task<IActionResult> StudentDashboard()
         {
-            return View("~/Views/Home/StudentDashboard.cshtml");
+            int? studentId = HttpContext.Session.GetInt32("UserId");
+            var reports = await _studentService.ViewAllReports(studentId);
+            ViewBag.HasLocker = HasLocker(studentId);
+            return View("~/Views/Home/StudentDashboard.cshtml",reports);
         }
-        [HttpGet]
-        public async Task<IActionResult> DisplayReports()
-        {
+        //[HttpGet]
+        //public async Task<IActionResult> DisplayReports()
+        //{
             
-                var reports = await _studentService.ViewAllReports();
+        //        var reports = await _studentService.ViewAllReports();
       
-                return View("~/Views/Student/DisplayReports.cshtml", reports);
-        }
+        //        return View("~/Views/Student/DisplayReports.cshtml", reports);
+        //}
 
 
         [HttpGet]
@@ -239,17 +242,28 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<IActionResult> ReportProblem()
         {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            ViewBag.HasLocker = HasLocker(userId);
+            var reports = await _studentService.ViewAllReports(userId);
+            return View("~/Views/Student/ReportProblem.cshtml",reports);
+            
+           
+        }
+
+        public bool HasLocker(int? userId)
+        { 
+            
+            bool hasLocker = false;
+
             try
+
             {
                 int count;
-                int? userId = HttpContext.Session.GetInt32("UserId");
+               
 
-                if (userId == null)
-                {
-                    return RedirectToAction("Login", "Account");
-                }
+              
 
-                bool hasLocker = false;
+               
                 string query = @"SELECT COUNT(*) FROM Reservations 
                  WHERE Id = @StudentId
                  AND LockerId IS NOT NULL 
@@ -261,32 +275,25 @@ namespace JUSTLockers.Controllers
                     using (var cmd = new MySqlCommand(query, connection))
                     {
                         cmd.Parameters.AddWithValue("@StudentId", userId);
-                      
+
                         count = Convert.ToInt32(cmd.ExecuteScalar());
                         hasLocker = count > 0;
-                        //TempData["SuccessMessage"] = "You must have a locker to report a problem. (Matched rows: " + hasLocker + ", UserId: " + userId + ")";
 
                     }
                 }
 
-                //if (!hasLocker)
-                //{
-                //    TempData["ErrorMessage"] = "You must have a locker to report a problem. (Matched rows: " + count + ", UserId: " + userId + ")";
-                //}
-                ViewBag.HasLocker = hasLocker;
-
-                var reports = await _studentService.ViewAllReports();
-
-
-
-                return View("~/Views/Student/ReportProblem.cshtml", reports);
+              
             }
             catch (Exception ex)
             {
+
                 TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
-                return View("~/Views/Student/ReportProblem.cshtml");
             }
+
+
+            return hasLocker;
         }
+
         [HttpGet]
         public JsonResult GetLastReportIDJson()
         {
