@@ -100,3 +100,41 @@ body {
         gap: 6px;
         color: #444;
     }
+.sidebar form.logout-form {
+    width: 100%;
+    margin-top: auto; /* Pushes it to bottom if sidebar uses flex-grow */
+}
+
+.logout-form button.menu-item {
+    all: unset;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    padding-top: 10px;
+}
+
+    .logout-form button.menu-item i {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 5px;
+        transition: transform 0.3s ease;
+    }
+
+    .logout-form button.menu-item span {
+        font-size: 12px;
+        margin-top: 5px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        color: #333;
+    }
+
+.sidebar:hover .logout-form button.menu-item i {
+    transform: rotate(10deg);
+}
+
+.sidebar:hover .logout-form button.menu-item span {
+    opacity: 1;
+}
+
