@@ -262,13 +262,13 @@
             <span>Reports</span>
         </a>
 
-       
-            <form asp-action="Logout" asp-controller="Account" method="post">
-                <button type="submit" class="menu-item">
-                    <i class="fas fa-sign-out-alt"></i> 
-                    <span>Logout</span>
-                </button>
-            </form>
+
+        <form asp-action="Logout" asp-controller="Account" method="post" style="width: 100%;">
+            <button type="submit" class="menu-item" style="all: unset; display: flex; flex-direction: column; align-items: center; width: 100%; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </form>
         
     </div>
 
