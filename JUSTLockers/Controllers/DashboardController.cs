@@ -128,7 +128,37 @@ namespace JUSTLockers.Controllers
 
 
 
+        [HttpGet]
+        public JsonResult GetMajorJson()
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
 
+            if (userId == null)
+                return Json("User ID not found in session");
+
+            try
+            {
+                string query = @"
+            
+            SELECT Major FROM Students WHERE id = @userId";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@userId", userId);
+
+                        var result = command.ExecuteScalar();
+                        return Json(result?.ToString() ?? "Major not found");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json("Error fetching : " + ex.Message);
+            }
+        }
 
         [HttpGet]
         public JsonResult GetLastCabinetNumberJson()

@@ -87,9 +87,10 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Student/ReservationView.cshtml");
         }
+       
 
 
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReserveLocker([FromBody] ReservationRequest request)
@@ -210,11 +211,11 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> DeleteReport(int id)
         {
             await _studentService.DeleteReport(id);
-            return RedirectToAction("DisplayReports"); 
+            return RedirectToAction("ReportProblem"); 
         }
       
         [HttpPost]
-        public async Task<IActionResult> SubmitProblemReport(IFormFile ImageFile, int ReportID, string LockerId, string ProblemType,string Subject, string Description)
+        public async Task<IActionResult> SubmitProblemReport(IFormFile ImageFile, int ReportID, string LockerId, string Subject, string Description , string ProblemType= "OTHER")
         {
             int? reporterId = HttpContext.Session.GetInt32("UserId");
             if (reporterId == null)
@@ -229,16 +230,62 @@ namespace JUSTLockers.Controllers
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to send the report. Please try again.";
-                return StatusCode(500, "Failed to save the report.");
+                TempData["ErrorMessage"] = "Failed! Make Sure You are filled all Data Required. Please try again!.";
+                return RedirectToAction("ReportProblem", "Student");
             }
         }
 
-       
+
         [HttpGet]
-        public IActionResult ReportProblem()
+        public async Task<IActionResult> ReportProblem()
         {
-            return View("~/Views/Student/ReportProblem.cshtml");
+            try
+            {
+                int count;
+                int? userId = HttpContext.Session.GetInt32("UserId");
+
+                if (userId == null)
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+
+                bool hasLocker = false;
+                string query = @"SELECT COUNT(*) FROM Reservations 
+                 WHERE Id = @StudentId
+                 AND LockerId IS NOT NULL 
+                ";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var cmd = new MySqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@StudentId", userId);
+                      
+                        count = Convert.ToInt32(cmd.ExecuteScalar());
+                        hasLocker = count > 0;
+                        //TempData["SuccessMessage"] = "You must have a locker to report a problem. (Matched rows: " + hasLocker + ", UserId: " + userId + ")";
+
+                    }
+                }
+
+                //if (!hasLocker)
+                //{
+                //    TempData["ErrorMessage"] = "You must have a locker to report a problem. (Matched rows: " + count + ", UserId: " + userId + ")";
+                //}
+                ViewBag.HasLocker = hasLocker;
+
+                var reports = await _studentService.ViewAllReports();
+
+
+
+                return View("~/Views/Student/ReportProblem.cshtml", reports);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
+                return View("~/Views/Student/ReportProblem.cshtml");
+            }
         }
         [HttpGet]
         public JsonResult GetLastReportIDJson()
@@ -270,7 +317,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                string query = "SELECT LockerId FROM Reports WHERE ReporterId = @ReporterId";
+                string query = "SELECT locker_id FROM Students WHERE id = @ReporterId";
 
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
@@ -339,6 +386,10 @@ namespace JUSTLockers.Controllers
 
             return View("~/Views/Student/ViewAllAvailableLockers.cshtml", wingsInfo);
         }
+
+
+
+
 
         [HttpGet]
         public async Task<JsonResult> GetDepartments(string location)

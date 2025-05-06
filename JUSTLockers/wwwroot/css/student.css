@@ -7,7 +7,7 @@
 
 body {
     display: flex;
-    min-height: 100vh; /* ✅ Let it grow as needed */
+    min-height: 100vh; /*  Let it grow as needed */
     background: linear-gradient(to bottom, #ffffff, #fdf9e8);
     overflow-y: auto;
     overflow-x: hidden;
@@ -17,10 +17,6 @@ body {
 
 /* Sidebar */
 .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
     width: 80px;
     background-color: #F0C419;
     display: flex;
@@ -29,9 +25,8 @@ body {
     padding: 20px 0;
     gap: 20px;
     transition: width 0.3s ease;
-    z-index: 1000; /* Make sure it stays above */
+    position: sticky;
 }
-
 
     .sidebar:hover {
         width: 200px;
@@ -56,6 +51,7 @@ body {
     color: #333;
     margin-top: 10px;
     transition: all 0.3s ease;
+    position: sticky;
 }
 
     .menu-item:hover {

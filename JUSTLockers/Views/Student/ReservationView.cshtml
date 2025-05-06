@@ -957,20 +957,38 @@
 <body>
     <!-- Sidebar (same as dashboard) -->
     <div class="sidebar">
-        <i class="fas fa-bars"></i>
-        <a href="#" class="menu-item"><i class="fas fa-lock"></i><span>Reserve</span></a>
-        <a href="#" class="menu-item"><i class="fas fa-th-large"></i><span>Lockers</span></a>
-        <a href="#" class="menu-item"><i class="fas fa-bookmark"></i><span>My Reservation</span></a>
-        <a href="#" class="menu-item"><i class="fas fa-exclamation-circle"></i><span>Reports</span></a>
+        <a href="@Url.Action("StudentDashboard", "Student")" class="menu-item">
+            <i class="fas fa-bars"> </i>
+            <span>DashBoard</span>
+        </a>
+        <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="menu-item">
+            <i class="fas fa-lock"></i>
+            <span>Reserve</span>
+        </a>
+        <a href=" @Url.Action("AllAvailableLockers", "Student")" class="menu-item">
+            <i class="fas fa-th-large"></i>
+
+            <span>Lockers</span>
+        </a>
+        <a href="@Url.Action("ViewReservationInfo", "Student")" class="menu-item">
+            <i class="fas fa-bookmark"></i>
+            <span>My Reservation</span>
+        </a>
+        <a href="@Url.Action("ReportProblem", "Student")" class="menu-item">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Reports</span>
+        </a>
     </div>
+
+
     <div class="content-wrapper">
     <div class="main-content">
         <div class="header">
             <div class="welcome">Reserve a Locker</div>
-            <div class="student-info">
-                <div class="info-box"><i class="fas fa-user"></i> @ViewBag.StudentName</div>
-                <div class="info-box"><i class="fas fa-building"></i> @ViewBag.DepartmentName</div>
-            </div>
+                <div class="student-info">
+                    <div class="info-box"><i class="fas fa-user"></i>  <span id="admin-name">Loading...</span></div>
+                    <div class="info-box"><i class="fas fa-building"></i> <span id="major-name">Loading...</span></div>
+                </div>
         </div>
 
         <div class="reservation-section">
@@ -1255,6 +1273,33 @@
                 });
             }
         });
+    </script>
+     <script src="~/js/DashbordAdmin.js"></script>
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+        fetch('/Dashboard/GetMajorJson')
+        .then(response => response.json())
+        .then(data => {
+            const adminNameElement = document.getElementById("major-name");
+            if (adminNameElement) {
+                adminNameElement.textContent = data || "Unknown major";
+            }
+        })
+        .catch(() => {
+            const adminNameElement = document.getElementById("major-name");
+            if (adminNameElement) {
+                adminNameElement.textContent = "Error fetching major name";
+            }
+        });
+
+
+
+        });
+
+
     </script>
 </body>
 </html>
