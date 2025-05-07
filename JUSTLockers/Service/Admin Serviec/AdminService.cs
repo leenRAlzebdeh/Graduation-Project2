@@ -797,7 +797,9 @@ public class AdminService : IAdminService
                 {
                     await transaction.RollbackAsync();
                     Console.WriteLine($"Error approving reallocation: {ex.Message}");
-                    throw;
+
+                    throw; 
+
                 }
             }
         }

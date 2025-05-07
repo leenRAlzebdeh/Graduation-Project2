@@ -37,10 +37,26 @@ namespace JUSTLockers.Controllers
         {
             // Logic to show the Assign Cabinet page
             // return View();
-            return View("~/Views/Home/SupervisorDashboard.cshtml");
+
+            if(HasConvinent(HttpContext.Session.GetInt32("UserId")))
+            {
+                return View("~/Views/Home/SupervisorDashboard.cshtml");
+            }
+            else
+            {
+                //TempData["ErrorMessage"] = "You don't have a convenient department assigned. Contact the Admin To Re assign!";
+                return RedirectToAction("SupervisorDashboardNoCon","Supervisor");
+            }
+           
+        }
+        [HttpGet]
+        public IActionResult SupervisorDashboardNoCon()
+        {
+            return View("~/Views/Supervisor/SupervisorDashboardNoCon.cshtml");
+
         }
 
-        [HttpPost]
+            [HttpPost]
         public async Task<IActionResult> ReallocationRequest(Reallocation model)
         {
             if (ModelState.IsValid)
@@ -65,7 +81,8 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<IActionResult> ReportedIssues()
         {
-            var reports = await _superService.ViewReportedIssues();
+            int? userId=HttpContext.Session.GetInt32("UserId");
+            var reports = await _superService.ViewReportedIssues(userId);
             return View("~/Views/Supervisor/ReportedIssues.cshtml", reports);
         }
         [HttpGet]
@@ -142,6 +159,47 @@ namespace JUSTLockers.Controllers
             return RedirectToAction("BlockStudent");
         }
 
+
+
+        public bool HasConvinent(int? userId)
+        {
+
+            bool hasConvinent = false;
+
+            try
+
+            {
+                int count;
+
+                string query = @"SELECT COUNT(*) FROM Supervisors 
+                 WHERE id = @userId
+                 AND supervised_department IS NOT NULL 
+                ";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var cmd = new MySqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@userId", userId);
+
+                        count = Convert.ToInt32(cmd.ExecuteScalar());
+                        hasConvinent = count > 0;
+
+                    }
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+
+                TempData["ErrorMessage"] = "An error occurred while checking super Convinent status: " + ex.Message;
+            }
+
+
+            return hasConvinent;
+        }
 
 
 

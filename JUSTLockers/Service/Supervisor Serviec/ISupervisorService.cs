@@ -14,7 +14,7 @@ public interface ISupervisorService : IUserActions, ILockerActions
     public  Task SendToAdmin(int reportId);
     void ManualReserve();
     //void ViewReportList();
-    Task<List<Report>> ViewReportedIssues();
+    Task<List<Report>> ViewReportedIssues(int? userId);
     void UpdateReportStatus();
     void EscalateReport();
     public string UnblockStudent(int id, int? userId);

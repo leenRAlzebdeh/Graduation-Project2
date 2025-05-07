@@ -91,79 +91,88 @@ public class SupervisorService : ISupervisorService
 
     //    return reports;
     //}
-    public async Task<List<Report>> ViewReportedIssues()
+    public async Task<List<Report>> ViewReportedIssues(int? userId)
     {
         var reports = new List<Report>();
-
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             connection.Open();
             var query = @"
-            SELECT 
-                r.Id AS ReportId,
-                r.Subject AS ProblemDescription,
-                r.Statement AS DetailedDescription,
-                r.Type AS ReportType,
-                r.Status AS ReportStatus,
-                r.ReportDate AS ReportDate,
-                r.ResolvedDate AS ResolvedDate,
-                r.ResolvedDetails AS ResolutionDetails,
-                r.ImageData AS ImageData,
-                r.ImageMimeType AS ImageMimeType,
-                r.SentToAdmin AS SentToAdmin,
-                l.Id AS LockerNumber,
-                l.Status AS LockerStatus,
-                u.id AS ReporterId,
-                u.name AS ReporterName,
-                u.email AS ReporterEmail,
-                d.name AS DepartmentName
-       
-            FROM 
-                Reports r
-            JOIN 
-                Lockers l ON r.LockerId = l.Id
-            JOIN 
-                Students u ON r.ReporterId = u.id
-            JOIN 
-                Departments d ON l.DepartmentName = d.name
+           SELECT 
+    r.Id AS ReportId,
+    r.Subject AS ProblemDescription,
+    r.Statement AS DetailedDescription,
+    r.Type AS ReportType,
+    r.Status AS ReportStatus,
+    r.ReportDate AS ReportDate,
+    r.ResolvedDate AS ResolvedDate,
+    r.ResolvedDetails AS ResolutionDetails,
+    r.ImageData AS ImageData,
+    r.ImageMimeType AS ImageMimeType,
+    r.SentToAdmin AS SentToAdmin,
+    l.Id AS LockerNumber,
+    l.Status AS LockerStatus,
+    u.id AS ReporterId,
+    u.name AS ReporterName,
+    u.email AS ReporterEmail,
+    d.name AS DepartmentName
+
+FROM 
+    Reports r
+JOIN 
+    Lockers l ON r.LockerId = l.Id
+JOIN 
+    Cabinets c ON l.Cabinet_id = c.cabinet_id
+JOIN 
+    Students u ON r.ReporterId = u.id
+JOIN 
+    Departments d ON l.DepartmentName = d.name
+
+WHERE 
+    d.name = (SELECT supervised_department FROM Supervisors WHERE id = @userId) AND
+    c.Location = (SELECT location FROM Supervisors WHERE id = @userId)
+
+
           
           ";
 
-            using (var command = new MySqlCommand(query, connection))
-            using (var reader = await command.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
+            using (var command = new MySqlCommand(query, connection)) {
+                command.Parameters.AddWithValue("@userId", userId);
+                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    reports.Add(new Report
+                    while (await reader.ReadAsync())
                     {
-                        ReportId = reader.GetInt32("ReportId"),
-                        Reporter = new Student(
-                            reader.GetInt32("ReporterId"),
-                            reader.GetString("ReporterName"),
-                            reader.GetString("ReporterEmail"),
-                            reader.GetString("DepartmentName")
-
-
-                        // Department is fetched from Lockers
-                        ),
-                        Locker = new Locker
+                        reports.Add(new Report
                         {
-                            LockerId = reader.GetString("LockerNumber"),
-                            Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
-                            Department = reader.GetString("DepartmentName"),
-                        },
-                        Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
-                        Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
-                        Subject = reader.GetString("ProblemDescription"),
-                        Statement = reader.GetString("DetailedDescription"),
-                        ReportDate = reader.GetDateTime("ReportDate"),
-                        ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
-                        ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
-                        ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                        ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
-                        SentToAdmin = reader.GetBoolean("SentToAdmin")
+                            ReportId = reader.GetInt32("ReportId"),
+                            Reporter = new Student(
+                                reader.GetInt32("ReporterId"),
+                                reader.GetString("ReporterName"),
+                                reader.GetString("ReporterEmail"),
+                                reader.GetString("DepartmentName")
 
-                    });
+
+                            // Department is fetched from Lockers
+                            ),
+                            Locker = new Locker
+                            {
+                                LockerId = reader.GetString("LockerNumber"),
+                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                Department = reader.GetString("DepartmentName"),
+                            },
+                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                            Subject = reader.GetString("ProblemDescription"),
+                            Statement = reader.GetString("DetailedDescription"),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                            SentToAdmin = reader.GetBoolean("SentToAdmin")
+
+                        });
+                    }
                 }
             }
         }

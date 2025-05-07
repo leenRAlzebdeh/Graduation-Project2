@@ -31,22 +31,22 @@ namespace WebApplication5.Controllers
         public IActionResult Login(int id, string password)
         {
             string role = IsValidUser(id, password);
-          
+            HttpContext.Session.SetInt32("UserId", id);
 
             if (role == "Admin")
             {
-                HttpContext.Session.SetInt32("UserId", id);
+               // HttpContext.Session.SetInt32("UserId", id);
                 return View("~/Views/Home/AdminDashboard.cshtml");
             }
             else if (role == "Supervisor")
 
             {
-                HttpContext.Session.SetInt32("UserId", id);
-                return View("~/Views/Home/SupervisorDashboard.cshtml");
+               // HttpContext.Session.SetInt32("UserId", id);
+                return RedirectToAction("SupervisorDashboard", "Supervisor");
             }
             else if (role == "Student")
             {
-                HttpContext.Session.SetInt32("UserId", id);
+               // HttpContext.Session.SetInt32("UserId", id);
                 //return View("~/Views/Home/StudentDashboard.cshtml");
                 return RedirectToAction("StudentDashboard", "Student");
             }
