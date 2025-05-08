@@ -9,6 +9,7 @@ using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using JUSTLockers.Controllers;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 namespace JUSTLockers.Services;
 
 
@@ -241,16 +242,60 @@ WHERE
     }
 
 
-   
 
-  
 
-        public void ViewAllStudentReservations()
+
+    public async Task<List<Student>> ViewAllStudentReservations(int? userId, int? searchstu = null)
+    {
+        var students = new List<Student>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
-            throw new NotImplementedException();
+            await connection.OpenAsync();
+
+            var query = @"
+            SELECT s.id, s.name, s.email, s.Major, s.locker_id
+            FROM Students s
+            JOIN Supervisors su 
+              ON s.department = su.supervised_department 
+              AND s.Location = su.location
+            WHERE su.id = @userId";
+
+            if (searchstu.HasValue)
+            {
+                query += " AND s.id = @searchstu";
+            }
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@userId", userId);
+
+                if (searchstu.HasValue)
+                {
+                    command.Parameters.AddWithValue("@searchstu", searchstu.Value);
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        students.Add(new Student
+                        {
+                            Id = reader.GetInt32("id"),
+                            Name = reader.GetString("name"),
+                            Email = reader.GetString("email"),
+                            Major = reader.GetString("Major"),
+                            LockerId = reader.IsDBNull(reader.GetOrdinal("locker_id")) ? null : reader.GetString("locker_id")
+                        });
+                    }
+                }
+            }
         }
 
-        public void Notify()
+        return students;
+    }
+
+    public void Notify()
         {
             throw new NotImplementedException();
         }

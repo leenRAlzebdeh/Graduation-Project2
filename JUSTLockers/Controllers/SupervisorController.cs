@@ -109,6 +109,17 @@ namespace JUSTLockers.Controllers
           var BlockedStudents = await _superService.BlockedStudents();
             return View("~/Views/Supervisor/BlockStudent.cshtml", BlockedStudents);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ViewStudentInfo(int? searchstu )
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+
+            var students = await _superService.ViewAllStudentReservations(userId, searchstu);
+            return View("~/Views/Supervisor/ViewStudentInfo.cshtml", students);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> TheftIssues(string filter)
         {
