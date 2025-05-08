@@ -1,0 +1,586 @@
+﻿@model IEnumerable<JUSTLockers.Classes.Cabinet>
+@using JUSTLockers.Classes
+@{
+    ViewData["Title"] = "Cabinets List";
+}
+@{
+    var userId = Context.Session.GetInt32("UserId");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | JUSTLocker </title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/SupervisorView.css" />
+
+
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
+    <style>
+
+        .fullwidth-search-container {
+            position: relative;
+            margin-top: 10px;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .fullwidth-search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: none;
+            border-bottom: 1.5px solid #ccc;
+            font-size: 1rem;
+            background-color: transparent;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+            .fullwidth-search-input:focus {
+                border-color: #4361ee;
+            }
+
+        .search-icon-left {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            color: #aaa;
+        }
+
+
+        body.dark-mode .table-cabinets tbody tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+
+        body.dark-mode .table-cabinets tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .status-in_service {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-damaged {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-in_maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-out_of_service {
+            background-color: #d6d8d9;
+            color: #383d41;
+        }
+
+        a {
+            text-decoration: none;
+            color: #eee;
+        }
+
+        
+        .filter-bar {
+            background-color: #f9fbfd;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .filter-bar label {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .table-cabinets th {
+            background-color: #0072ff;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .table-cabinets td,
+        .table-cabinets th {
+            font-size: 0.95rem;
+        }
+
+        @@media screen and (max-width: 768px) {
+            .filter-bar .row .col-md-3,
+            .filter-bar .row .col-md-2 {
+                margin-bottom: 15px;
+            }
+        }
+
+        
+
+        /* Equal-width filter inputs & button */
+        .filter-section .form-select,
+        .filter-section .filter-button {
+            width: 100%;
+        }
+
+        /* Make the button same style as thead */
+        .filter-button {
+            background-color: #0072ff !important;
+            border: none;
+            color: white !important;
+            padding: 12px 0;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+            .filter-button:hover {
+                background-color: #005ecb !important;
+            }
+
+
+
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("SupervisorDashboard", "Supervisor")">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i> Report Management
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("BlockStudent", "Supervisor")">Block Student</a></li>
+                    <li><a href="@Url.Action("ReportedIssues","Supervisor")">Reported Issues</a></li>
+
+                </ul>
+            </li>
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i> Reallocation Management
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ReallocationRequestForm", "Supervisor")">Reallocation Request</a></li>
+                    <li><a href="@Url.Action("", "")">page</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action("Settings", "Account")">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+        </ul>
+        <div class="logout-section text-center mb-3">
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Cabinet Information</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">@(User.Identity?.Name ?? "Admin")</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Section -->
+        <section class="management">
+           
+
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="message-box success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="message-box error">@TempData["ErrorMessage"]</div>
+            }
+            <!--newwww-->
+            <!-- Filter and Search Controls -->
+
+            <form method="get" asp-controller="Supervisor" asp-action="ViewCabinetInfoSuper">
+
+            <div class="filter-section container-fluid px-4 mt-4 mb-3">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label for="locationFilter" class="form-label">Location</label>
+
+                        <select id="location" name="Location" class="form-select">
+                            <option value="">All</option>
+                            
+                        </select>
+                    </div>
+                 
+                   
+                    <div class="col-md-2">
+                        <label for="departmentFilter" class="form-label">Department</label>
+                        <select id="department" name="department" class="form-select">
+                                <option value="">All Deps</option>
+                           
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="wingFilter" class="form-label">Wing</label>
+                            <select id="wing" name="wing" class="form-select">
+                                <option value="">All wings</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="levelFilter" class="form-label">Level</label>
+                            <select id="level" name="Level" class="form-select">
+                                <option value="">All levels</option>
+                            <option>0</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="levelFilter" class="form-label">Status</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value=""> All Status </option>
+                            @foreach (var status in Enum.GetNames(typeof(JUSTLockers.Classes.CabinetStatus)))
+                            {
+                                <option value="@status">@status</option>
+                            }
+
+
+                        </select>
+                    </div>
+                        
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" id="filterButton" class="btn filter-button w-100">
+                            <i class="fas fa-filter me-2"></i> Filter
+                        </button>
+                    
+                    </div>
+                </div>
+            </div>
+            </form>
+            <form method="get" asp-controller="Supervisor" asp-action="ViewCabinetInfoSuper">
+
+            <section class="management">
+                <div class="fullwidth-search-container mb-3">
+                    <i class="fas fa-search search-icon-left"></i>
+                        <input type="text" id="searchInput" name="searchCab" value="@Context.Request.Query["searchCab"]" class="fullwidth-search-input" placeholder="Filter by Cabinet ID ..." />
+                    </div>
+
+                <!-- Search Button -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" id="searchButton" class="btn filter-button w-50">
+                       Search
+                    </button>
+                </div>
+
+
+            </section>
+
+          </form>
+                 
+
+
+                <!-- Cabinet Table -->
+                <div class="table-responsive">
+                <table id="cabinetTable" class="table table-hover align-middle">
+
+                        <thead class="table-dark">
+                            <tr>
+@*                                 <th>Cabinet Number</th>
+ *@ 
+                                <th>Cabinet ID</th>
+                                <th>Location</th>
+                                <th>Department</th>
+                                <th>Wing</th>
+                                <th>Level</th>
+                               @*  <th>Cabinet ID</th> *@
+                                <th>Capacity</th>
+                                <th>Status</th>
+                            <th>Edit</th>
+
+                            </tr>
+                        </thead>
+                    @if (Model != null && Model.Any())
+                    {
+
+                        <tbody>
+                            @foreach (var cab in Model)
+                            {
+                                <tr>
+                                    @* <td>@cab.CabinetNumber</td> *@
+                                <td>@cab.Cabinet_id</td>
+                                    <td>@cab.Location</td>
+                                    <td>@cab.Department</td>
+                                    <td>@cab.Wing</td>
+                                    <td>@cab.Level</td>
+                                   @*  <td>@cab.Cabinet_id</td> *@
+                                    <td>@cab.Capacity</td>
+                                    <td>
+                                        @{
+                                            var statusClass = "badge ";
+                                            switch (cab.Status)
+                                            {
+                                                case CabinetStatus.IN_SERVICE:
+                                                    statusClass += "bg-success";
+                                                    break;
+                                                case CabinetStatus.DAMAGED:
+                                                    statusClass += "bg-danger";
+                                                    break;
+                                                case CabinetStatus.IN_MAINTENANCE:
+                                                    statusClass += "bg-warning";
+                                                    break;
+                                                case CabinetStatus.OUT_OF_SERVICE:
+                                                    statusClass += "bg-secondary";
+                                                    break;
+                                                default:
+                                                    statusClass += "bg-secondary";
+                                                    break;
+                                            }
+                                            var statusText = cab.Status?.ToString().Replace("_", " ");
+                                        }
+                                        <span class="@statusClass status-badge">@statusText</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary edit-btn"
+                                                data-id="@cab.Cabinet_id"
+                                                data-status="@cab.Status">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    }
+                    else
+                    {
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center">No cabinets found.</td>
+                            </tr>
+                        </tbody>
+                    }
+                    </table>
+                <div class="modal fade" id="editStatusModal" tabindex="-1" aria-labelledby="editStatusLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form id="editStatusForm">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editStatusLabel">Edit Cabinet Status</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="hidden" id="editCabinetId" />
+                                    <div class="mb-3">
+                                        <label for="cabinetStatus" class="form-label">Status</label>
+                                        <select id="cabinetStatus" class="form-select">
+                                            <option value="IN_SERVICE">In Service</option>
+                                            <option value="DAMAGED">Damaged</option>
+                                            <option value="IN_MAINTENANCE">In Maintenance</option>
+                                            <option value="OUT_OF_SERVICE">Out of Service</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-success">Save</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+
+          
+          
+        </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/admin.js"></script>
+    <script>
+        // Sidebar submenu toggle
+        document.getElementById("cabinet-management-toggle")?.addEventListener("click", function () {
+            const submenu = document.getElementById("cabinet-submenu");
+            submenu.classList.toggle("show");
+        });
+
+        document.getElementById("Employee-management-toggle")?.addEventListener("click", function () {
+            const submenu = document.getElementById("Employee-submenu");
+            submenu.classList.toggle("show");
+        });
+
+        // Dark Mode Toggle
+        document.getElementById("dark-mode-toggle")?.addEventListener("click", function () {
+            document.body.classList.toggle("dark-mode");
+            const icon = this.querySelector("i");
+            icon.classList.toggle("fa-moon");
+            icon.classList.toggle("fa-sun");
+
+            // Save preference to localStorage
+            const isDarkMode = document.body.classList.contains("dark-mode");
+            localStorage.setItem("darkMode", isDarkMode);
+        });
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem("darkMode") === "true") {
+            document.body.classList.add("dark-mode");
+            const icon = document.getElementById("dark-mode-toggle")?.querySelector("i");
+            if (icon) {
+                icon.classList.remove("fa-moon");
+                icon.classList.add("fa-sun");
+            }
+        }
+    </script>
+    <script>
+        const userId = @userId;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const locationSelect = document.getElementById("location");
+            const departmentSelect = document.getElementById("department");
+            const wingSelect = document.getElementById("wing");
+
+            // Get supervisor's location and department
+            if (userId) {
+                fetch(`/Supervisor/GetUserLocationAndDepartment?userId=${userId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error("Failed to fetch location/department");
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data) {
+                            // Set location and department dropdowns
+                            locationSelect.innerHTML = `<option selected value="${data.location}">${data.location}</option>`;
+                            departmentSelect.innerHTML = `<option selected value="${data.department}">${data.department}</option>`;
+
+                            // Load wings immediately
+                            loadWings(data.department);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // Department change event
+            departmentSelect.addEventListener("change", function () {
+                const department = this.value;
+                loadWings(department);
+            });
+
+                   function loadWings(department) {
+            if (!department) return;
+            wingSelect.innerHTML = ""; // Clear previous
+
+            // Add default option
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "All wings";
+            wingSelect.appendChild(defaultOption);
+
+            fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(wing => {
+                        const option = document.createElement("option");
+                        option.value = wing;
+                        option.textContent = wing;
+                        wingSelect.appendChild(option);
+                    });
+                });
+        }
+
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const editButtons = document.querySelectorAll(".edit-btn");
+            const modal = new bootstrap.Modal(document.getElementById("editStatusModal"));
+            const form = document.getElementById("editStatusForm");
+
+            editButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    const cabinetId = button.getAttribute("data-id");
+                    const status = button.getAttribute("data-status");
+
+                    document.getElementById("editCabinetId").value = cabinetId;
+                    document.getElementById("cabinetStatus").value = status;
+
+                    modal.show();
+                });
+            });
+
+                   form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const cabinetId = document.getElementById("editCabinetId").value;
+            const newStatus = document.getElementById("cabinetStatus").value;
+
+            fetch(`/Cabinet/UpdateStatus?cabinetId=${encodeURIComponent(cabinetId)}&status=${encodeURIComponent(newStatus)}`, {
+                method: "POST",
+                headers: {
+                    "RequestVerificationToken": document.querySelector('[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload(); // Reload to see the updated status
+                } else {
+                    alert("Failed to update status");
+                }
+            });
+        });
+
+        });
+    </script>
+
+
+
+    <script src="~/js/DashbordAdmin.js"></script>
+    <script src="~/js/admin.js"></script>
+
+
+</body>
+</html>

@@ -20,6 +20,25 @@ namespace JUSTLockers.Controllers
             _configuration = configuration;
           
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateStatus(string cabinetId, string status)
+        {
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                string query = "UPDATE Cabinets SET status = @status WHERE cabinet_id = @id";
+
+                using (var cmd = new MySqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@status", status);
+                    cmd.Parameters.AddWithValue("@id", cabinetId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            return Ok();
+        }
 
         [HttpGet]
         public JsonResult GetCabinet(string cabinet_id)
