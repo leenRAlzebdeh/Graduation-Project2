@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class Student : User
 {
     public String LockerId { get; set; }
+    public string? Major { get; set; } // Nullable
     public Reservation? Reservation { get; set; }
     public HashSet<Report> Reports { get; set; }
     public string Department { get; set; }
@@ -24,7 +25,14 @@ public class Student : User
         Reports = new HashSet<Report>();
         Location = location;
     }
-
+   public Student(int id, string name, string email, string major, string department, string? location)
+    : base(id, name, email)
+{
+    Department = department;
+    Location = location;
+    Major = major;
+    Reports = new HashSet<Report>();
+}
     public Student(int id, string name, string email/*, string password*/, string department)
        : base(id, name, email/*, password*/)
     {

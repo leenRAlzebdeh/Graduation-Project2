@@ -6,7 +6,7 @@ public interface IStudentService : IUserActions, ILockerActions
 {
     //done
     void Login();
-   
+    public bool HasLocker(int? userId);
     public Task<Reservation> ViewReservationInfo(int studentId);
 
     //void ReportProblem();

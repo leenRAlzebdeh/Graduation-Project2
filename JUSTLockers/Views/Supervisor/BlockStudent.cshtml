@@ -1,63 +1,222 @@
-﻿@{
-    ViewData["Title"] = "Block Student";
+﻿@model IEnumerable<JUSTLockers.Classes.BlockedStudent>
+@using JUSTLockers.Classes
+@{
+    ViewData["Title"] = "Manage Blocked Students";
 }
-
-<title>@ViewData["Title"] | JUST Locker</title>
+<title>JUST Locker |@ViewData["Title"] </title>
 <link rel="stylesheet" href="~/css/message.css" />
-<link rel="stylesheet" href="~/css/blocklist.css" />
-<script src="~/js/blocklist.js"></script>
-<div class="block-student-container">
-    <h3 class="section-header">🔒 Block Student</h3>
 
-    <div class="input-section">
-        <label for="studentIdInput">Student ID</label>
-        <input type="number" id="studentIdInput" placeholder="Enter Student ID" />
-        <button onclick="searchStudent()" class="btn search-btn">Search</button>
-    </div>
-    @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
-    {
-        <div class="message-box error">@TempData["Message"]</div>
-       
+<style>
+    /* Table Styling */
+    .table thead {
+        background-color: #3F46C0;
+        color: white;
+        text-transform: uppercase;
+        font-weight: bold;
     }
 
-    else if (TempData["Message"] != null )
-    {
-        <div class="message-box success">@TempData["Message"]</div>
+    .table th, .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        white-space: nowrap;
     }
-    <div id="studentInfo" class="student-box" style="display: none;">
-        <fieldset>
-            <legend>📘 Student Info</legend>
-@*             <p><strong>Id:</strong> <span id="s_id"></span></p>
- *@            <p><strong>Name:</strong> <span id="s_name"></span></p>
-            <p><strong>Email:</strong> <span id="s_email"></span></p>
-            <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
-           
-            <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
-            <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
 
-            <div class="action-buttons">
-                
-                <div id="blockActionBtn" class="inline-form">
-                   
+    .table tbody tr {
+        background-color: #ffffff;
+        transition: box-shadow 0.2s ease;
+    }
 
-                </div>
-                <div> <button onclick="cancelStudentInfo()" class="btn search-btn" style="color:aliceblue;">Cancel</button></div>
-            </div>
-        </fieldset>
-    </div>
-
-    <div id="notFoundMsg" class="alert-msg">Student does not exist.</div>
-</div>
-
-
-
-
-<script>
-    setTimeout(function () {
-        const msgBox = document.querySelector('.message-box');
-        if (msgBox) {
-            msgBox.classList.add('fade-out');
-            setTimeout(() => msgBox.style.display = 'none', 600); // match fade duration
+        .table tbody tr:hover {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-    }, 4000); // 4 second delay before fade
-</script> 
+
+    /* Department Badge */
+    .badge-department {
+        background-color: #3B82F6;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+        border-radius: 10px;
+        display: inline-block;
+        font-size: 0.875rem;
+    }
+
+    /* Status Badge */
+    .badge-status {
+        background-color: #16A34A;
+        color: white;
+        font-weight: 600;
+        padding: 0.4rem 0.8rem;
+        border-radius: 999px;
+        display: inline-block;
+        font-size: 0.875rem;
+    }
+
+    /* Card Header */
+    .card-header {
+        font-weight: bold;
+        font-size: 1.125rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Unblock Button */
+    .btn-danger.btn-sm {
+        padding: 0.3rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 5px;
+    }
+
+    /* Form and Fieldset Styling */
+    fieldset {
+        border: 1px solid #ccc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    legend {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+
+
+
+</style>
+
+
+
+
+
+
+
+
+<div class="container mt-5">
+    <!-- Block Student Form -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="bi bi-lock-fill me-2"></i>
+            <h5 class="mb-0">Block Student</h5>
+        </div>
+        <div class="card-body">
+            <form id="blockStudentForm" class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                <label for="studentIdInput" class="form-label mb-0">Student ID</label>
+                <input type="number" id="studentIdInput" class="form-control w-auto" placeholder="Enter Student ID" />
+                <button type="button" onclick="searchStudent()" class="btn btn-primary">Search</button>
+            </form>
+
+            @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
+            {
+                <div class="message-box error">@TempData["Message"]</div>
+
+            }
+
+            else if (TempData["Message"] != null)
+            {
+                <div class="message-box success">@TempData["Message"]</div>
+            }
+            <!-- Student Info -->
+            <div id="studentInfo" class="border rounded p-3 mt-3" style="display: none;">
+                <fieldset>
+                    <legend class="fw-bold">📘 Student Info</legend>
+                    <p><strong>Name:</strong> <span id="s_name"></span></p>
+                    <p><strong>Email:</strong> <span id="s_email"></span></p>
+                    <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
+                    <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
+                    <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
+
+                    <div class="d-flex gap-3 mt-2">
+                        <div id="blockActionBtn"></div>
+                        <button onclick="cancelStudentInfo()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- Not Found Message -->
+            <div id="notFoundMsg" class="message-box error" style="display: none;">
+                Student does not exist.
+            </div>
+        </div>
+    </div>
+
+    <!-- Blocked Students Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Blocked Students</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Location</th>
+                            <th>Major</th>
+                            <th>Blocked By</th>
+                      @*       <th>Blocked Until</th>
+                            <th>Actions</th> *@
+                        </tr>
+                    </thead>
+                    @if (Model != null && Model.Any())
+                    {
+                        <tbody>
+                            @foreach (var blocked in Model)
+                            {
+                                <tr>
+                                    <td>@blocked.StudentId</td>
+                                    <td>@blocked.Student.Name</td>
+                                    <td>@blocked.Student.Department</td>
+                                    <td>@blocked.Student.Location</td>
+                                    <td>@blocked.Student.Major</td>
+                                    <td>@blocked.BlockedBy</td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    }
+                    else
+                    {
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center p-3">No students found.</td>
+                            </tr>
+                        </tbody>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="logout-section text-center mb-3">
+    <form asp-action="Logout" asp-controller="Account" method="post">
+        <button type="submit" class="btn btn-danger w-100">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </form>
+</div>
+<script src="~/js/blocklist.js"></script>
+
+
+   
+          <script>
+        function cancelStudentInfo() {
+            document.getElementById("studentInfo").style.display = "none";
+            document.getElementById("notFoundMsg").style.display = "none";
+        }
+    </script>
+
+    <script>
+        setTimeout(function () {
+            const msgBox = document.querySelector('.message-box');
+            if (msgBox) {
+                msgBox.classList.add('fade-out');
+                setTimeout(() => msgBox.style.display = 'none', 600); // match fade duration
+            }
+        }, 4000); // 4 second delay before fade
+    </script>
+
+

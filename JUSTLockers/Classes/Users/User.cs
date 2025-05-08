@@ -11,6 +11,12 @@ public class User
     {
         // Default constructor
     }
+    public User(int id, string name)
+    {
+        Id = id;
+        Name = name;
+       
+    }
     public User(int id, string name, string email/*, string password*/)
     {
         Id = id;

@@ -198,7 +198,7 @@ namespace JUSTLockers.Controllers
         {
             int? studentId = HttpContext.Session.GetInt32("UserId");
             var reports = await _studentService.ViewAllReports(studentId);
-            ViewBag.HasLocker = HasLocker(studentId);
+            ViewBag.HasLocker = _studentService.HasLocker(studentId);
             return View("~/Views/Home/StudentDashboard.cshtml",reports);
         }
         //[HttpGet]
@@ -244,56 +244,56 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> ReportProblem()
         {
             int? userId = HttpContext.Session.GetInt32("UserId");
-            ViewBag.HasLocker = HasLocker(userId);
+            ViewBag.HasLocker = _studentService.HasLocker(userId);
             var reports = await _studentService.ViewAllReports(userId);
             return View("~/Views/Student/ReportProblem.cshtml",reports);
             
            
         }
 
-        public bool HasLocker(int? userId)
-        { 
+        //public bool HasLocker(int? userId)
+        //{ 
             
-            bool hasLocker = false;
+        //    bool hasLocker = false;
 
-            try
+        //    try
 
-            {
-                int count;
+        //    {
+        //        int count;
                
 
               
 
                
-                string query = @"SELECT COUNT(*) FROM Reservations 
-                 WHERE StudentId = @userId
-                 AND LockerId IS NOT NULL 
-                ";
+        //        string query = @"SELECT COUNT(*) FROM Reservations 
+        //         WHERE StudentId = @userId
+        //         AND LockerId IS NOT NULL 
+        //        ";
 
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    connection.Open();
-                    using (var cmd = new MySqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@userId", userId);
+        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //        {
+        //            connection.Open();
+        //            using (var cmd = new MySqlCommand(query, connection))
+        //            {
+        //                cmd.Parameters.AddWithValue("@userId", userId);
 
-                        count = Convert.ToInt32(cmd.ExecuteScalar());
-                        hasLocker = count > 0;
+        //                count = Convert.ToInt32(cmd.ExecuteScalar());
+        //                hasLocker = count > 0;
 
-                    }
-                }
+        //            }
+        //        }
 
               
-            }
-            catch (Exception ex)
-            {
+        //    }
+        //    catch (Exception ex)
+        //    {
 
-                TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
-            }
+        //        TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
+        //    }
 
 
-            return hasLocker;
-        }
+        //    return hasLocker;
+        //}
 
         [HttpGet]
         public JsonResult GetLastReportIDJson()

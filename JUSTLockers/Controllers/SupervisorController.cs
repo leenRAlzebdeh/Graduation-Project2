@@ -19,12 +19,15 @@ namespace JUSTLockers.Controllers
 
 
         private readonly SupervisorService _superService;
+        private readonly IStudentService _studentService;
+
         private readonly IEmailService _emailService;
-        public SupervisorController(SupervisorService superService, IConfiguration configuration,IEmailService emailService)
+        public SupervisorController(SupervisorService superService, IConfiguration configuration,IEmailService emailService, IStudentService studentService)
         {
             _superService = superService;
             _configuration = configuration;
             _emailService = emailService;
+            _studentService = studentService;
         }
 
         //[HttpGet]
@@ -88,8 +91,8 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<IActionResult> BlockStudent()
         {
-          
-            return View("~/Views/Supervisor/BlockStudent.cshtml");
+          var BlockedStudents = await _superService.BlockedStudents();
+            return View("~/Views/Supervisor/BlockStudent.cshtml", BlockedStudents);
         }
         [HttpGet]
         public async Task<IActionResult> TheftIssues(string filter)
@@ -141,6 +144,10 @@ namespace JUSTLockers.Controllers
 
             if (block)
             {
+                if (_studentService.HasLocker(id))
+                {
+                    _studentService.CancelReservation(id);
+                }
                 string message = _superService.BlockStudent(id, supervisorId);
                 TempData["Message"] = message;
                 //int? userId = HttpContext.Session.GetInt32("UserId");

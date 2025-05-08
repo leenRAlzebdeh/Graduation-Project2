@@ -639,6 +639,50 @@ namespace JUSTLockers.Service
                 }
             }
         }
+        public bool HasLocker(int? userId)
+        {
+
+            bool hasLocker = false;
+
+            try
+
+            {
+                int count;
+
+
+
+
+
+                string query = @"SELECT COUNT(*) FROM Reservations 
+                 WHERE StudentId = @userId
+                 AND LockerId IS NOT NULL 
+                ";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var cmd = new MySqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@userId", userId);
+
+                        count = Convert.ToInt32(cmd.ExecuteScalar());
+                        hasLocker = count > 0;
+
+                    }
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+
+                //TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
+                throw ex;
+            }
+
+
+            return hasLocker;
+        }
         public async Task<bool> IsStudentBlocked(int studentId)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))

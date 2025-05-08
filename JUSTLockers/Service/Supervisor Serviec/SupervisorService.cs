@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using JUSTLockers.Controllers;
 namespace JUSTLockers.Services;
 
 
@@ -15,7 +16,7 @@ public class SupervisorService : ISupervisorService
     {
         private readonly IConfiguration _configuration;
 
-        public SupervisorService(IConfiguration configuration)
+    public SupervisorService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -24,30 +25,13 @@ public class SupervisorService : ISupervisorService
             throw new NotImplementedException();
         }
 
-        public Task<List<Locker>> ViewAvailableLockers(string departmentName)
-        {
-            throw new NotImplementedException();
-        }
+   
 
-        public Task<bool> ReserveLocker(int studentId, string lockerId)
-        {
-            throw new NotImplementedException();
-        }
+     
 
-        public void ViewReservationInfo()
-        {
-            throw new NotImplementedException();
-        }
+  
 
-        public void ReportProblem()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void DeleteReport()
-        {
-            throw new NotImplementedException();
-        }
+    
 
 
     //public async Task<List<Report>> ViewReportedIssues()
@@ -257,15 +241,9 @@ WHERE
     }
 
 
-    public void CheckReportStatus()
-        {
-            throw new NotImplementedException();
-        }
+   
 
-        public void RemoveReservation()
-        {
-            throw new NotImplementedException();
-        }
+  
 
         public void ViewAllStudentReservations()
         {
@@ -344,6 +322,67 @@ WHERE
             throw new Exception($"Error sending report to admin: {ex.Message}");
         }
     }
+
+
+
+
+
+
+
+    public async Task<List<BlockedStudent>> BlockedStudents()
+    {
+
+
+        var blockedStudents = new List<BlockedStudent>();
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            string query = @"
+              SELECT 
+    bs.*, 
+    s.name AS student_name,
+    s.email,
+    s.department, 
+    s.Location, 
+    s.Major,  
+    su.name AS supervisor_name
+FROM BlockList bs
+JOIN Students s ON bs.student_id = s.id
+JOIN Supervisors su ON bs.blocked_by = su.id
+                ";
+            await connection.OpenAsync();
+            using (var command = new MySqlCommand(query, connection))
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    blockedStudents.Add(new BlockedStudent
+                    {
+                        //Id = reader.GetInt32("id"),
+                        StudentId = reader.GetInt32("student_id"),
+                        Student = new Student(
+                        reader.GetInt32("student_id"),
+                        reader.GetString("student_name"),
+                        reader.GetString("email"),
+                        reader.GetString("Major"),
+                        reader.GetString("department"),
+                        reader.GetString("Location")
+                    ),
+                        //BlockedUntil = reader.GetDateTime("BlockedUntil"),
+                        BlockedBy = reader.GetString("supervisor_name") // aliased column
+                    });
+
+                }
+            }
+        }
+        return blockedStudents;
+
+    }
+
+
+
+
+
+
     public void ViewCovenantInfo()
         {
             throw new NotImplementedException();
@@ -359,50 +398,7 @@ WHERE
             throw new NotImplementedException();
         }
 
-        public void ViewReportList()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateReportStatus()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void EscalateReport()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void BlockStudent()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UnblockStudent()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ViewBlockList()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ViewNotifications()
-        {
-            throw new NotImplementedException();
-        }
-
-    public Task<bool> CancelReservation(int studentId, string reservationId)
-        {
-            throw new NotImplementedException();
-        }
-
-    public Task<bool> CancelReservation(int studentId)
-    {
-        throw new NotImplementedException();
-    }
+  
 
     public Student GetStudentById(int id)
     {
@@ -491,6 +487,9 @@ WHERE
                 insertCommand.Parameters.AddWithValue("@userId", userId);
 
                 insertCommand.ExecuteNonQuery();
+
+
+               
                 return "Student successfully blocked.";
             }
             else
@@ -534,6 +533,21 @@ WHERE
                 return "Cannot Unblock student outside your department/location.";
             }
         }
+    }
+
+    public void ViewNotifications()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<Locker>> ViewAvailableLockers(string departmentName)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> CancelReservation(int studentId)
+    {
+        throw new NotImplementedException();
     }
 
     //public void UnblockStudent(int id)
