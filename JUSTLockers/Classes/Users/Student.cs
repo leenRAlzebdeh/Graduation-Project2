@@ -18,6 +18,12 @@ public class Student : User
     //    Reports = new HashSet<Report>();
     //}
 
+    public Student()
+    {
+
+    }
+
+
     public Student(int id, string name, string email/*, string password*/, string department, string? location)
         : base(id, name, email/*, password*/)
     {

@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Channels;
 using JUSTLockers.Service;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace JUSTLockers.Controllers
 {
-    [Authorize]
+
     public class SupervisorController : Controller
     {
         
@@ -59,8 +59,22 @@ namespace JUSTLockers.Controllers
             return View("~/Views/Supervisor/SupervisorDashboardNoCon.cshtml");
 
         }
+        [HttpGet]
+        public async Task<IActionResult> ViewCabinetInfoSuper(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
 
-            [HttpPost]
+            var cabinets = await _superService.ViewCabinetInfo(userId,searchCab, location, level, department, status, wing);
+            
+
+            return View("~/Views/Supervisor/ViewCabinetInfoSuper.cshtml", cabinets);
+
+        }
+
+        
+
+
+        [HttpPost]
         public async Task<IActionResult> ReallocationRequest(Reallocation model)
         {
             if (ModelState.IsValid)
@@ -95,6 +109,17 @@ namespace JUSTLockers.Controllers
           var BlockedStudents = await _superService.BlockedStudents();
             return View("~/Views/Supervisor/BlockStudent.cshtml", BlockedStudents);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ViewStudentInfo(int? searchstu )
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+
+            var students = await _superService.ViewAllStudentReservations(userId, searchstu);
+            return View("~/Views/Supervisor/ViewStudentInfo.cshtml", students);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> TheftIssues(string filter)
         {
@@ -167,7 +192,51 @@ namespace JUSTLockers.Controllers
             return RedirectToAction("BlockStudent");
         }
 
+        [HttpGet]
+        public IActionResult GetUserLocationAndDepartment(int userId)
+        {
+            try
+            {
+                string location = null;
+                string department = null;
 
+                string query = "SELECT location, supervised_department FROM Supervisors WHERE id = @userId";
+
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+
+                    using (var cmd = new MySqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                location = reader["location"]?.ToString();
+                                department = reader["supervised_department"]?.ToString();
+                            }
+                            else
+                            {
+                                return NotFound(new { message = "Supervisor not found." });
+                            }
+                        }
+                    }
+                }
+
+                return Json(new
+                {
+                    location,
+                    department
+                });
+            }
+            catch (Exception ex)
+            {
+                // Optional: log the error here
+                return StatusCode(500, new { message = "An error occurred.", details = ex.Message });
+            }
+        }
 
         public bool HasConvinent(int? userId)
         {
