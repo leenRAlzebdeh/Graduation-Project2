@@ -72,9 +72,6 @@ namespace JUSTLockers.Controllers
 
         }
 
-        
-
-
         [HttpPost]
         public async Task<IActionResult> ReallocationRequest(Reallocation model)
         {
@@ -86,7 +83,7 @@ namespace JUSTLockers.Controllers
                 {
                     TempData["SuccessMessage"] = message;
                 }
-                else if(message.StartsWith("You are not allowed"))
+                else if (message.StartsWith("You are not allowed"))
                 {
                     TempData["cabinetError"] = message;
                 }
@@ -103,6 +100,37 @@ namespace JUSTLockers.Controllers
             }
 
             return View("~/Views/Supervisor/ReallocationRequest.cshtml", model);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> ReallocationRequestFormSameDep(Reallocation model)
+        {
+            if (ModelState.IsValid)
+            {
+                string message = await _superService.ReallocationRequestFormSameDep(model); // Pass model
+
+                if (message.StartsWith("Cabinet reallocation was successful"))
+                {
+                    TempData["SuccessMessage"] = message;
+                }
+                else if(message.StartsWith("You are not allowed"))
+                {
+                    TempData["cabinetError"] = message;
+                }
+                else if (message.StartsWith("You Need"))
+                {
+                    TempData["ErrorMessage"] = message;
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = message;
+                }
+
+                return RedirectToAction("ReallocationRequestFormSameDepartment");
+            }
+
+            return View("~/Views/Supervisor/ReallocationRequestFormSameDep.cshtml", model);
         }
 
         [HttpGet]
@@ -147,8 +175,13 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Supervisor/ReallocationRequest.cshtml");
         }
-       
-    [HttpPost]
+        [HttpGet]
+        public IActionResult ReallocationRequestFormSameDepartment()
+        {
+            return View("~/Views/Supervisor/ReallocationRequestFormSameDep.cshtml");
+        }
+
+        [HttpPost]
     public JsonResult SearchStudent(int id)
     {
         var student = _superService.GetStudentById(id);

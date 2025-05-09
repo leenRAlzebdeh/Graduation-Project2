@@ -295,6 +295,99 @@ WHERE
         return students;
     }
 
+
+
+    public async Task<string> ReallocationRequestFormSameDep(Reallocation model)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            using (var transaction = await connection.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Step 1: Validate Supervisor's Department and Location
+                    string query1 = "SELECT location, supervised_department FROM Supervisors WHERE id = @SupervisorID";
+                    string supervisorLocation = null;
+                    string supervisorDepartment = null;
+
+                    using (var command1 = new MySqlCommand(query1, connection, transaction))
+                    {
+                        command1.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+
+                        using (var reader = await command1.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                supervisorLocation = reader["location"].ToString();
+                                supervisorDepartment = reader["supervised_department"].ToString();
+                            }
+                            else
+                            {
+                                return "Supervisor not found.";
+                            }
+                        }
+                    }
+
+                    // Step 2: Check if the supervisor is authorized
+                    if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment)
+                    {
+                        return $"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
+                    }
+
+                    if (supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
+                    {
+                        return $"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
+                    }
+
+                    // Step 3: Update Cabinet Info
+                    string updateCabinetQuery = @"
+                    UPDATE Cabinets 
+                    SET 
+                        department_name = @NewDepartment,
+                        wing = @NewWing,
+                        level = @NewLevel,
+                        location = @NewLocation
+                    WHERE cabinet_id = @OldCabinetId";
+
+                    using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+                    {
+                        updateCmd.Parameters.AddWithValue("@NewDepartment", model.RequestedDepartment);
+                        updateCmd.Parameters.AddWithValue("@NewWing", model.RequestWing);
+                        updateCmd.Parameters.AddWithValue("@NewLevel", model.RequestLevel);
+                        updateCmd.Parameters.AddWithValue("@NewLocation", model.RequestLocation);
+                        updateCmd.Parameters.AddWithValue("@OldCabinetId", model.CurrentCabinetID);
+
+                        int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+                        if (rowsAffected == 0)
+                        {
+                            await transaction.RollbackAsync();
+                            return "No cabinet record was updated.";
+                        }
+                    }
+
+                    // Step 4: Commit the transaction
+                    await transaction.CommitAsync();
+                    return "Cabinet reallocation was successful.";
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return $"Error processing reallocation request: {ex.Message}";
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
     public void Notify()
         {
             throw new NotImplementedException();
@@ -324,8 +417,14 @@ WHERE
 
                             if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment)
                             {
-                                return "You are not allowed to make a request outside your Department " + supervisorDepartment + "/" + supervisorLocation + ".";
+                                return "You are not allowed to make a Reallocate Cabinet outside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
                             }
+                            if (supervisorLocation == model.RequestLocation && supervisorDepartment == model.RequestedDepartment)
+                            {
+                                return "You Don't have  Admin's Approve To Reallcoate a cabinet inside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
+                            }
+
+                           
                         }
                         else
                         {
