@@ -827,9 +827,11 @@ public class AdminService : IAdminService
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
-            var query = @"SELECT RequestID, SupervisorID, CurrentDepartment, RequestLocation,CurrentLocation,
-                             RequestedDepartment, CurrentCabinetID ,NewCabinetID
-                             FROM Reallocation where RequestStatus='Pending'";
+            var query = @"SELECT RequestID, SupervisorID, CurrentDepartment, RequestLocation, CurrentLocation,
+                                RequestedDepartment, CurrentCabinetID, NewCabinetID
+                         FROM Reallocation
+                         WHERE RequestStatus = 'Pending' 
+                         AND RequestedDepartment != CurrentDepartment";
 
             using (var command = new MySqlCommand(query, connection))
             using (var reader = await command.ExecuteReaderAsync())

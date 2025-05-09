@@ -16,11 +16,13 @@ namespace JUSTLockers.Services;
 public class SupervisorService : ISupervisorService
     {
         private readonly IConfiguration _configuration;
+    private readonly AdminService _adminService;
 
-    public SupervisorService(IConfiguration configuration)
+    public SupervisorService(IConfiguration configuration , AdminService adminService)
         {
             _configuration = configuration;
-        }
+            _adminService = adminService;
+    }
         public void Login()
         {
             throw new NotImplementedException();
@@ -340,35 +342,73 @@ WHERE
                         return $"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
                     }
 
-                    // Step 3: Update Cabinet Info
-                    string updateCabinetQuery = @"
-                    UPDATE Cabinets 
-                    SET 
-                        department_name = @NewDepartment,
-                        wing = @NewWing,
-                        level = @NewLevel,
-                        location = @NewLocation
-                    WHERE cabinet_id = @OldCabinetId";
+                    //// Step 3: Update Cabinet Info
+                    //string updateCabinetQuery = @"
+                    //UPDATE Cabinets 
+                    //SET 
+                    //    department_name = @NewDepartment,
+                    //    wing = @NewWing,
+                    //    level = @NewLevel,
+                    //    location = @NewLocation
+                    //WHERE cabinet_id = @OldCabinetId";
 
-                    using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+                    //using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+                    //{
+                    //    updateCmd.Parameters.AddWithValue("@NewDepartment", model.RequestedDepartment);
+                    //    updateCmd.Parameters.AddWithValue("@NewWing", model.RequestWing);
+                    //    updateCmd.Parameters.AddWithValue("@NewLevel", model.RequestLevel);
+                    //    updateCmd.Parameters.AddWithValue("@NewLocation", model.RequestLocation);
+                    //    updateCmd.Parameters.AddWithValue("@OldCabinetId", model.CurrentCabinetID);
+
+                    //    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+                    //    if (rowsAffected == 0)
+                    //    {
+                    //        await transaction.RollbackAsync();
+                    //        return "No cabinet record was updated.";
+                    //    }
+                    //}
+
+                    //// Step 4: Commit the transaction
+                    //await transaction.CommitAsync();
+                    //return "Cabinet reallocation was successful.";
+
+
+                    // inserte this reallocation request 
+                    string insertQuery = @"
+                    INSERT INTO Reallocation
+                    (SupervisorID, CurrentDepartment, RequestedDepartment, 
+                    RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
+                    number_cab, CurrentCabinetID)
+                    VALUES
+                    (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
+                    @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
+                    @NumberCab, @CurrentCabinetID);
+                    SELECT LAST_INSERT_ID();"; // Retrieve the last inserted ID
+
+                    using (var command = new MySqlCommand(insertQuery, connection, transaction))
                     {
-                        updateCmd.Parameters.AddWithValue("@NewDepartment", model.RequestedDepartment);
-                        updateCmd.Parameters.AddWithValue("@NewWing", model.RequestWing);
-                        updateCmd.Parameters.AddWithValue("@NewLevel", model.RequestLevel);
-                        updateCmd.Parameters.AddWithValue("@NewLocation", model.RequestLocation);
-                        updateCmd.Parameters.AddWithValue("@OldCabinetId", model.CurrentCabinetID);
+                        command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+                        command.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+                        command.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+                        command.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
 
-                        int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
-                        if (rowsAffected == 0)
+                        var reallocationId = Convert.ToInt32(await command.ExecuteScalarAsync()); // Get the inserted ID
+                        if (reallocationId > 0)
                         {
-                            await transaction.RollbackAsync();
-                            return "No cabinet record was updated.";
+                            await transaction.CommitAsync();
+                           await _adminService.ApproveRequestReallocation(reallocationId);
+
+                            return $"Cabinet reallocation was successful.";
                         }
                     }
-
-                    // Step 4: Commit the transaction
-                    await transaction.CommitAsync();
                     return "Cabinet reallocation was successful.";
+
+
                 }
                 catch (Exception ex)
                 {
