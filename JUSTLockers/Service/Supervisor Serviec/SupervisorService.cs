@@ -259,7 +259,7 @@ WHERE
             JOIN Supervisors su 
               ON s.department = su.supervised_department 
               AND s.Location = su.location
-            WHERE su.id = @userId";
+            WHERE su.id = @userId and s.locker_id is not null";
 
             if (searchstu.HasValue)
             {
