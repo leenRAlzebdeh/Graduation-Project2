@@ -8,10 +8,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Channels;
 using JUSTLockers.Service;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
-
+    [Authorize]
     public class SupervisorController : Controller
     {
         

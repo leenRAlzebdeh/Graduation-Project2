@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
-    //[Authorize]
+    [Authorize]
     public class AdminController : Controller
     {
         

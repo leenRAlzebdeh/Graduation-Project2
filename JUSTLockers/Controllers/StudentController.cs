@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
-    //[Authorize]
+    [Authorize]
     public class StudentController : Controller
     {
         private readonly IStudentService _studentService;
