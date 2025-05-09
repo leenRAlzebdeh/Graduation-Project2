@@ -305,34 +305,87 @@ WHERE
     {
         try
         {
-            string query = @"INSERT INTO Reallocation 
-                         
-                         (SupervisorID, CurrentDepartment, RequestedDepartment, 
-                          RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
-                          number_cab, CurrentCabinetID) 
-                         VALUES 
-                         (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
-                          @RequestLocation,@CurrentLocation,@RequestWing, @RequestLevel,
-                          @NumberCab, @CurrentCabinetID)";
-
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
 
-                using (var command = new MySqlCommand(query, connection))
+                // Step 1: Get the supervisor's department and location
+                string query1 = "SELECT location, supervised_department FROM Supervisors WHERE id = @SupervisorID";
+                using (var command1 = new MySqlCommand(query1, connection))
+                {
+                    command1.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+
+                    using (var reader = await command1.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            string supervisorLocation = reader["location"].ToString();
+                            string supervisorDepartment = reader["supervised_department"].ToString();
+
+                            if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment)
+                            {
+                                return "You are not allowed to make a request outside your Department " + supervisorDepartment + "/" + supervisorLocation + ".";
+                            }
+                        }
+                        else
+                        {
+                            return "Supervisor not found.";
+                        }
+                    }
+                }
+
+                // Step 2: Check if the same request already exists
+                string checkQuery = @"SELECT COUNT(*) FROM Reallocation
+                                  WHERE SupervisorID = @SupervisorID AND
+                                        CurrentDepartment = @CurrentDepartment AND
+                                        RequestedDepartment = @RequestedDepartment AND
+                                        CurrentLocation = @CurrentLocation AND
+                                        RequestLocation = @RequestLocation AND
+                                        RequestWing = @RequestWing AND
+                                        RequestLevel = @RequestLevel AND
+                                        number_cab = @NumberCab AND
+                                        CurrentCabinetID = @CurrentCabinetID";
+
+                using (var checkCommand = new MySqlCommand(checkQuery, connection))
+                {
+                    checkCommand.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+                    checkCommand.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+                    checkCommand.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+                    checkCommand.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
+
+                    var count = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+                    if (count > 0)
+                    {
+                        return "This request has already been submitted.";
+                    }
+                }
+
+                // Step 3: Insert the request
+                string insertQuery = @"INSERT INTO Reallocation 
+                                (SupervisorID, CurrentDepartment, RequestedDepartment, 
+                                 RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
+                                 number_cab, CurrentCabinetID) 
+                                VALUES 
+                                (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
+                                 @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
+                                 @NumberCab, @CurrentCabinetID)";
+
+                using (var command = new MySqlCommand(insertQuery, connection))
                 {
                     command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
                     command.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
-                    //command.Parameters.AddWithValue("@RequestStatus", model.RequestStatus?.ToString() ?? "PENDING");
                     command.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
-                   // command.Parameters.AddWithValue("@RequestDate", model.RequestDate ?? DateTime.Now);
                     command.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
                     command.Parameters.AddWithValue("@NumberCab", model.NumberCab);
                     command.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
-                   // command.Parameters.AddWithValue("@NewCabinetID", model.NewCabinetID ?? (object)DBNull.Value);
 
                     int rowsAffected = await command.ExecuteNonQueryAsync();
 
@@ -345,6 +398,7 @@ WHERE
             return $"Error sending request: {ex.Message}";
         }
     }
+
     public async Task SendToAdmin(int reportId)
     {
         try
@@ -428,10 +482,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
 
 
-    public void ViewCovenantInfo()
-        {
-            throw new NotImplementedException();
-        }
+
 
         public void CancelStudentReservation()
         {

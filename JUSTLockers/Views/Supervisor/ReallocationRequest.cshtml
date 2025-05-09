@@ -142,6 +142,11 @@
             {
                 <div class="message-box error">@TempData["ErrorMessage"]</div>
             }
+            @if (TempData["cabinetError"] != null)
+            {
+                <div class="message-box error">@TempData["cabinetError"]</div>
+            }
+
 
 
             <input type="hidden" name="NumberCab" id="NumberCab" />
@@ -150,11 +155,16 @@
                 <div class="col-sm-6 col-md-2">
                     <label for="SupervisorID" class="form-label">Supervisor ID</label>
                     <input type="text" class="form-control" name="SupervisorID" id="SupervisorID" required />
+
+
                 </div>
                 <div class="col-sm-6 col-md-2">
                     <label for="CurrentCabinetID" class="form-label">Cabinet ID</label>
                     <input type="text" class="form-control" name="CurrentCabinetID" id="CurrentCabinetID" required />
                     <div id="cabinetError" class="text-danger mt-1" style="display:none;">Cabinet not found.</div>
+                   
+
+
                 </div>
                 <div class="col-sm-6 col-md-2">
                     <label for="CurrentLocation" class="form-label">Location</label>
@@ -308,7 +318,7 @@
 
         });
     </script>
-
+    <script src="~/js/message.js"></script>
     <script>
 
 

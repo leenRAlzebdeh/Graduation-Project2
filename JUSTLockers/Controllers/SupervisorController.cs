@@ -85,6 +85,14 @@ namespace JUSTLockers.Controllers
                 {
                     TempData["SuccessMessage"] = message;
                 }
+                else if(message.StartsWith("You are not allowed"))
+                {
+                    TempData["cabinetError"] = message;
+                }
+                else if (message.StartsWith("This request has"))
+                {
+                    TempData["ErrorMessage"] = message;
+                }
                 else
                 {
                     TempData["ErrorMessage"] = message;

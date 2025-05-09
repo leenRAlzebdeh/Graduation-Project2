@@ -9,7 +9,6 @@ public interface ISupervisorService : IUserActions, ILockerActions
     void Notify();
     //done
     Task<string> ReallocationRequest(Reallocation model);
-    void ViewCovenantInfo();
     public  Task<List<Report>> TheftIssues(string filter);
     public  Task SendToAdmin(int reportId);
     void ManualReserve();
@@ -17,7 +16,8 @@ public interface ISupervisorService : IUserActions, ILockerActions
     //done
     Task<List<Report>> ViewReportedIssues(int? userId);
 
-
+    public Task<List<Cabinet>> ViewCabinetInfo(int? userId, string? searchCab = null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
+;
     //done
     public string UnblockStudent(int id, int? userId);
     //done
