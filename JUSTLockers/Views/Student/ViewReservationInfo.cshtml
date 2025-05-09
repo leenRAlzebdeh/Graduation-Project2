@@ -1,236 +1,146 @@
-﻿
-@model JUSTLockers.Classes.Reservation
+﻿@model JUSTLockers.Classes.Reservation
 @{
     ViewData["Title"] = "Reservation Info";
     var hasReservation = Model != null;
     var isBlocked = ViewBag.IsBlocked as bool? ?? false;
 }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JUSTLocker | @ViewData["Title"]</title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/student.css" />
-    <style>
-        body {
-            background-color: #fdf9e8;
-            font-family: 'Poppins', sans-serif;
-            color: #333;
-        }
 
+    <style>
+        
         .main-content {
+            margin-top: 0 !important;
+            padding-top: 20px !important;
             flex: 1;
-            padding: 30px 50px;
+           /*  padding: 20px 40px 40px; */
             overflow-y: auto;
-            animation: fadeIn 0.8s ease;
             max-width: 1200px;
             margin: auto;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #f6db75, #f0c419);
-            padding: 20px 30px;
-            border-radius: 12px;
-            color: #fff;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .reservation-section {
+           /*  padding: 20px 40px 40px; */
+            background: #fff;
+            border-radius: 15px;
+             padding: 30px; 
+             margin-top:70px;
+             position:center;
+
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        .welcome {
-            font-size: 1.5rem;
+        .section-title {
+            font-size: 1.6rem;
             font-weight: 600;
+            color: #d2a800;
+            margin-bottom: 25px;
         }
 
-        .student-info {
-            display: flex;
-            gap: 15px;
+        .blocked-warning {
+            background-color: #ffe6e6;
+            color: #dc3545;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .reservation-card {
+            background: #fff9e0;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
         }
 
         .info-box {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.95rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 6px 12px;
-            border-radius: 8px;
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
-        .reservation-section {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            animation: slideUp 0.8s ease;
-        }
+            .info-box .label {
+                font-size: 0.9rem;
+                color: #999;
+            }
 
-            .reservation-section h2 {
-                font-size: 1.6rem;
+            .info-box .value {
                 font-weight: 600;
-                color: #f6db75;
-                margin-bottom: 25px;
-            }
-
-        .blocked-message {
-            background-color: #ffe6e6;
-            color: #dc3545;
-            border: 1px solid #ff9999;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            text-align: center;
-            font-weight: 500;
-            animation: fadeIn 0.8s ease;
-        }
-
-        .reservation-card, .no-reservation-card {
-            background-color: #f9e7a3;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border-left: 4px solid #f6db75;
-            animation: fadeIn 0.8s ease;
-        }
-
-        .reservation-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-            .reservation-table th {
-                font-weight: 500;
-                width: 30%;
-                vertical-align: top;
-                padding: 10px;
-                color: #444;
-                border-bottom: 1px solid #f6db75;
-            }
-
-            .reservation-table td {
-                padding: 10px;
-                color: #555;
-                border-bottom: 1px solid #f6db75;
-            }
-
-        .badge {
-            padding: 6px 12px;
-            font-size: 0.9rem;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-
-        .badge-success {
-            background-color: #28a745;
-            color: #fff;
-        }
-
-        .badge-danger {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        .badge-warning {
-            background-color: #ffc107;
-            color: #fff;
-        }
-
-        .btn-reserve {
-            background: linear-gradient(135deg, #f6db75, #f0c419);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            display: inline-block;
-            font-weight: 600;
-            transition: background 0.3s ease;
-        }
-
-            .btn-reserve:hover {
-                background: linear-gradient(135deg, #e0c04f, #d4a917);
-            }
-
-        .no-reservation-card .feature-icon {
-            font-size: 2.5rem;
-            color: #6b7280;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .no-reservation-card h3 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #f6db75;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .no-reservation-card p.text-muted {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #6b7280;
-            font-size: 0.95rem;
-        }
-
-        .no-reservation-card .feature-list {
-            margin-top: 20px;
-        }
-
-            .no-reservation-card .feature-list h5 {
-                font-size: 1.1rem;
-                font-weight: 600;
+                font-size: 1rem;
                 color: #333;
-                margin-bottom: 15px;
             }
 
-            .no-reservation-card .feature-list li {
-                margin-bottom: 12px;
-                color: #555;
-                font-size: 0.95rem;
-                display: flex;
-                align-items: center;
-            }
+        .progress-bar {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            background: #fff3c4;
+            border-radius: 10px;
+            padding: 10px;
+        }
 
-            .no-reservation-card .feature-list i {
-                color: #28a745;
-                margin-right: 10px;
-            }
-
-        .text-danger {
-            color: #dc3545;
-            font-size: 0.95rem;
+        .step {
+            flex: 1;
             text-align: center;
-            margin-top: 15px;
+            font-weight: 600;
+            color: #777;
         }
 
-        @@keyframes fadeIn {
-            from {
-                opacity: 0;
+            .step.active {
+                color: #000;
+                border-bottom: 3px solid #f0c419;
             }
 
-            to {
-                opacity: 1;
-            }
+        .no-reservation {
+            text-align: center;
+            padding: 40px;
         }
 
-        @@keyframes slideUp {
-            from {
-                transform: translateY(15px);
-                opacity: 0;
+        .benefits {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            font-size: 0.95rem;
+        }
+
+            .benefits div {
+                background: #fdf6d9;
+                padding: 12px 20px;
+                border-radius: 10px;
             }
 
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .btn-reserve-now {
+            background: #f0c419;
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: #222;
+            font-weight: 600;
+            margin-top: 20px;
+            display: inline-block;
+            text-decoration: none;
         }
+
+            .btn-reserve-now:hover {
+                background: #e0b000;
+            }
     </style>
 </head>
 <body>
@@ -268,9 +178,9 @@
 
     </div>
 
+
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Header -->
         <div class="header">
             <div class="welcome">Welcome to JUSTLocker!</div>
             <div class="student-info">
@@ -279,123 +189,73 @@
             </div>
         </div>
 
-        <!-- Reservation Info Section -->
         <div class="reservation-section">
-            <h2>Your Locker Reservation</h2>
+            <h2 class="section-title">Locker Reservation Summary</h2>
 
-            <!-- Block List Message -->
-            <div class="blocked-message" style="display: @(isBlocked ? "block" : "none");">
-                <i class="fas fa-lock me-2"></i>You are currently blocked from managing reservations. Please contact an administrator for assistance.
-            </div>
+            @if (isBlocked)
+            {
+                <div class="blocked-warning">
+                    You are currently blocked from managing reservations. Please contact the admin.
+                </div>
+            }
 
             @if (hasReservation)
             {
-                <!-- Active Reservation Card -->
                 <div class="reservation-card">
-                    <h4><i class="fas fa-key me-2"></i>Reservation Details</h4>
-                    <div class="table-responsive mt-4">
-                        <table class="reservation-table">
-                            <tbody>
-                                <tr>
-                                    <th>Locker ID</th>
-                                    <td>@Model.LockerId</td>
-                                </tr>
-                                <tr>
-                                    <th>Reservation Date</th>
-                                    <td>@Model.Date.ToString("yyyy-MM-dd")</td>
-                                </tr>
-                                <tr>
-                                    <th>Status</th>
-                                    <td>
-                                        @{
-                                            var status = Model.Status.ToString();
-                                            <span class="badge @(status == "RESERVED" ? "bg-success" : status == "BLOCKED" ? "bg-danger" : "bg-warning")">
-                                                @(status == "RESERVED" ? "Reserved" : status == "BLOCKED" ? "Blocked" : "Pending")
-                                            </span>
-                                        }
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Location</th>
-                                    <td>@Model.Location</td>
-                                </tr>
-                                <tr>
-                                    <th>Department</th>
-                                    <td>@Model.Department</td>
-                                </tr>
-                                <tr>
-                                    <th>Wing</th>
-                                    <td>@Model.Wing</td>
-                                </tr>
-                                <tr>
-                                    <th>Level</th>
-                                    <td>Level @Model.Level</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <h3><i class="fas fa-lock"></i> Locker ID: @Model.LockerId</h3>
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <div class="label">📅 Date</div>
+                            <div class="value">@Model.Date.ToString("yyyy-MM-dd")</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">📍 Location</div>
+                            <div class="value">@Model.Location</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">🏢 Department</div>
+                            <div class="value">@Model.Department</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">🏛️ Wing</div>
+                            <div class="value">@Model.Wing</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">🧱 Level</div>
+                            <div class="value">Level @Model.Level</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="step @(Model.Status.ToString() == "RESERVED" ? "active" : "")">Reserved</div>
+                        <div class="step @(Model.Status.ToString() == "BLOCKED" ? "active" : "")">Blocked</div>
                     </div>
                 </div>
             }
             else
             {
-                <!-- No Reservation Card -->
-                <div class="no-reservation-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-door-open"></i>
-                    </div>
-                    <h3>No Active Reservation Found</h3>
-                    <p class="text-muted">You don't currently have a locker reservation.</p>
+                <div class="no-reservation">
+                    <i class="fas fa-door-open empty-icon" style="font-size: 3rem; color: #d2a800;"></i>
+                    <h3>No Active Reservation</h3>
+                    <p>You currently do not have a reserved locker.</p>
 
                     @if (!isBlocked)
                     {
-                        <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="btn btn-reserve">
-                            <i class="fas fa-plus-circle me-2"></i>Reserve a Locker Now
+                        <a href="@Url.Action("ReservationView", "Student", new { studentId = Context.Session.GetInt32("UserId") })" class="btn-reserve-now">
+                            <i class="fas fa-plus-circle"></i> Reserve Now
                         </a>
                     }
-                    else
-                    {
-                        <p class="text-danger mt-3">
-                            <i class="fas fa-ban me-2"></i>You cannot reserve a locker while you are blocked.
-                        </p>
-                    }
 
-                    <div class="feature-list">
-                        <h5 class="mt-4 mb-3">Locker Benefits:</h5>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-check-circle"></i> Secure storage for your belongings</li>
-                            <li><i class="fas fa-check-circle"></i> Convenient access during campus hours</li>
-                            <li><i class="fas fa-check-circle"></i> Assigned to your department location</li>
-                            <li><i class="fas fa-check-circle"></i> 24/7 security monitoring</li>
-                        </ul>
+                    <div class="benefits">
+                        <div><i class="fas fa-shield-alt"></i> Secure Storage</div>
+                        <div><i class="fas fa-clock"></i> 24/7 Access</div>
+                        <div><i class="fas fa-map"></i> Department Based</div>
                     </div>
                 </div>
             }
         </div>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/DashbordAdmin.js"></script>
-    @* <script>
-        const studentId = @ViewBag.StudentId;
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch('/Dashboard/GetMajorJson')
-                .then(response => response.json())
-                .then(data => {
-                    const majorNameElement = document.getElementById("major-name");
-                    if (majorNameElement) {
-                        majorNameElement.textContent = data || "Unknown major";
-                    }
-                })
-                .catch(() => {
-                    const majorNameElement = document.getElementById("major-name");
-                    if (majorNameElement) {
-                        majorNameElement.textContent = "Error fetching major name";
-                    }
-                });
-        });
-    </script> *@
-
     <script>
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -422,6 +282,5 @@
 
 
     </script>
-
 </body>
 </html>
