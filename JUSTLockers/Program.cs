@@ -1,6 +1,8 @@
 using JUSTLockers.DataBase;
 using JUSTLockers.Service;
 using JUSTLockers.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -52,9 +54,28 @@ builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(bui
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SupervisorService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
-
+builder.Services.AddScoped<UserActions>();
 builder.Services.AddTransient<IEmailService, EmailService>();
-builder.Services.AddSession();
+builder.Services.AddSession(
+    options =>
+    {
+        options.IdleTimeout = TimeSpan.FromMinutes(20); 
+        options.Cookie.HttpOnly = true; 
+        options.Cookie.IsEssential = true; 
+    }
+    );
+builder.Services.AddAuthentication("MyCookieAuth")
+    .AddCookie("MyCookieAuth", options =>
+    {
+        options.LoginPath = "/Home/Login";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(20); // optional
+        options.SlidingExpiration = true;
+        options.Cookie.IsEssential = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    });
+
+builder.Services.AddAuthorization();
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
@@ -73,6 +94,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
