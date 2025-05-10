@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JUSTLockers.Classes.BlockedStudent>
+﻿@*  @model IEnumerable<JUSTLockers.Classes.BlockedStudent>
 @using JUSTLockers.Classes
 @{
     ViewData["Title"] = "Manage Blocked Students";
@@ -159,9 +159,9 @@
                             <th>Location</th>
                             <th>Major</th>
                             <th>Blocked By</th>
-                      @*       <th>Blocked Until</th>
-                            <th>Actions</th> *@
-                        </tr>
+                         <th>Blocked Until</th>
+                            <th>Actions</th> 
+                       </tr>
                     </thead>
                     @if (Model != null && Model.Any())
                     {
@@ -212,6 +212,430 @@
     </script>
 
 <script src="~/js/message.js"></script>
+ *@
+
+@model IEnumerable<JUSTLockers.Classes.BlockedStudent>
+@using JUSTLockers.Classes
+@{
+    ViewData["Title"] = "Manage Blocked Students";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocking Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/SupervisorView.css" />
+
+    <style>
+       
+
+        .full-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            width: 100%;
+        }
+
+            .full-card h3 {
+                margin-bottom: 20px;
+                font-size: 22px;
+                font-weight: 600;
+            }
+
+        .form-inline {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+            .form-inline input[type="number"] {
+                flex: 1;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+            }
+
+            .form-inline button {
+                background-color: #3F46C0;
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #3F46C0;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .message-box {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+            .message-box.success {
+                background-color: #d1e7dd;
+                color: #0f5132;
+            }
+
+            .message-box.error {
+                background-color: #f8d7da;
+                color: #842029;
+            }
+
+        fieldset {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 20px;
+        }
+
+        legend {
+            font-weight: bold;
+        }
+
+        .block-wrapper {
+            padding: 30px;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f8;
+        }
+
+        .block-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 24px;
+            width: 100%;
+        }
+
+        .block-title, .table-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .block-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+            .block-form input[type="number"] {
+                flex: 1;
+                min-width: 200px;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+            }
+
+            .block-form button {
+                padding: 10px 20px;
+                background-color: #3F46C0;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+
+        .student-info fieldset {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .student-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+            .student-actions button {
+                background: gray;
+                color: white;
+                padding: 8px 14px;
+                border: none;
+                border-radius: 5px;
+            }
+
+        .message-box {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 16px;
+        }
+
+            .message-box.success {
+                background-color: #d1e7dd;
+                color: #0f5132;
+            }
+
+            .message-box.error {
+                background-color: #f8d7da;
+                color: #842029;
+            }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #3F46C0;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        table button {
+            padding: 6px 12px;
+            background: crimson;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="/photos/images/logo.jpeg" alt="Logo" />
+            <h1>JUSTLocker</h1>
+        </div>
+
+        <ul class="menu">
+            <li class="nav-item">
+                <a href="@Url.Action("SupervisorDashboard", "Supervisor")">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-archive"></i>
+                    <span>Report Management</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <ul class="pretty-submenu" id="cabinet-submenu">
+                    <li><a href="@Url.Action("BlockStudent", "Supervisor")">Block Student</a></li>
+                    <li><a href="@Url.Action("ReportedIssues", "Supervisor")">Reported Issues</a></li>
+                    <li><a href="@Url.Action("ViewStudentInfo", "Supervisor")">Students Info</a></li>
+                </ul>
+            </li>
+
+            <li class="has-submenu">
+                <div class="submenu-toggle">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Cabinets Management</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <ul class="pretty-submenu" id="Employee-submenu">
+                    <li><a href="@Url.Action("ReallocationRequestForm", "Supervisor")">Reallocation/Diff Department</a></li>
+                    <li><a href="@Url.Action("ReallocationRequestFormSameDepartment", "Supervisor")">Reallocation/Same Department</a></li>
+                    <li><a href="@Url.Action("ViewCabinetInfoSuper", "Supervisor")">Cabinets Info</a></li>
+                </ul>
+            </li>
+
+            <li class="nav-item">
+                <a href="@Url.Action("Settings", "Account")">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+
+            <li class="nav-item logout-link">
+                <form asp-action="Logout" asp-controller="Account" method="post">
+                    <button type="submit">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </aside>
 
 
 
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <!-- Hero / Header Section -->
+        <header class="hero-header">
+            <img class="hero-bg" src="/photos/images/lockers.png" alt="Hero Background" />
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h2>Supervisor Dashboard</h2>
+                <div class="profile">
+                    <button id="dark-mode-toggle"><i class="fas fa-moon"></i></button>
+                    <div class="admin-info">
+                        <img src="/photos/images/adminpic.jpg" alt="Admin Profile" />
+                        <span id="admin-name">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-container">
+           <div class="block-wrapper">
+    <div class="block-card">
+        <h2 class="block-title">Block Student</h2>
+
+        <!-- Block Student Form -->
+        <form id="blockStudentForm" class="block-form">
+            <label for="studentIdInput">Student ID</label>
+            <input type="number" id="studentIdInput" placeholder="Enter Student ID" value="@Context.Request.Query["studentIdInput"]" />
+            <button type="button" onclick="searchStudent()">Search</button>
+        </form>
+
+        <!-- Feedback Messages -->
+        @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
+        {
+            <div class="message-box error">@TempData["Message"]</div>
+        }
+        else if (TempData["Message"] != null)
+        {
+            <div class="message-box success">@TempData["Message"]</div>
+        }
+
+        <!-- Student Info -->
+        <div id="studentInfo" class="student-info" style="display: none;">
+            <fieldset>
+                <legend>📘 Student Info</legend>
+                <p><strong>Name:</strong> <span id="s_name"></span></p>
+                <p><strong>Email:</strong> <span id="s_email"></span></p>
+                <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
+                <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
+                <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
+
+                <div class="student-actions">
+                    <div id="blockActionBtn"></div>
+                    <button type="button" onclick="cancelStudentInfo()">Cancel</button>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- Not Found Message -->
+        <div id="notFoundMsg" class="message-box error" style="display: none;">
+            Student does not exist.
+        </div>
+
+        <!-- Blocked Students Table -->
+        <h2 class="table-title">Blocked Students</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Location</th>
+                        <th>Major</th>
+                        <th>Blocked By</th>
+                        <th>Blocked Until</th>
+                       
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var blocked in Model)
+                        {
+                            <tr>
+                                <td>@blocked.StudentId</td>
+                                <td>@blocked.Student.Name</td>
+                                <td>@blocked.Student.Department</td>
+                                <td>@blocked.Student.Location</td>
+                                <td>@blocked.Student.Major</td>
+                                <td>@blocked.BlockedBy</td>
+                                <td>-</td> <!-- You can change this when you add BlockedUntil -->
+                               
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">No students found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+        </section>
+    </main>
+
+    <script src="~/js/blocklist.js"></script>
+    <script src="~/js/message.js"></script>
+    <script src="~/js/DashbordAdmin.js"></script>
+   
+    <script src="~/js/admin.js"></script>
+    <script>
+        function cancelStudentInfo() {
+            document.getElementById("studentInfo").style.display = "none";
+            document.getElementById("notFoundMsg").style.display = "none";
+        }
+    </script>
+    <script>
+        document.querySelectorAll('.submenu-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const parent = toggle.closest('.has-submenu');
+                parent.classList.toggle('open');
+            });
+        });
+    </script>
+   
+</body>
+</html>
