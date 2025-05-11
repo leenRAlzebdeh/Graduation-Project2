@@ -7,6 +7,7 @@ public interface IAdminService : IUserActions
 
     public  Task<bool> RejectRequestReallocation(int requestId);
     Task<bool> ApproveRequestReallocation(int requestId);
+   // public Task<(bool Success, string Message)> ApproveRequestReallocation(int requestId);
     //done
     public  Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null,string ? location = null, int? level = null, string? department = null, string? status = null, string? wing = null);
     //done
@@ -46,5 +47,5 @@ public interface IAdminService : IUserActions
     public Task<Report> GetReportDetails(int reportId);
     //done 
     public Task<bool> ReviewReport(int reportId);
-
+    public Task<Reallocation> GetReallocationRequestById(int requestId);
     }

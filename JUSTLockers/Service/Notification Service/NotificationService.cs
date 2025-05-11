@@ -3,9 +3,9 @@ using JUSTLockers.DataBase;
 public class NotificationService
 {
     private readonly DbConnectionFactory _context;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
 
-    public NotificationService(DbConnectionFactory context, EmailService emailService)
+    public NotificationService(DbConnectionFactory context, IEmailService emailService)
     {
         _context = context;
         _emailService = emailService;

@@ -55,7 +55,8 @@ builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SupervisorService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<UserActions>();
-builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 builder.Services.AddSession(
     options =>
     {

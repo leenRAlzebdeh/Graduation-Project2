@@ -88,35 +88,58 @@ public class AdminService : IAdminService
     {
         try
         {
-            string query = @"INSERT INTO Supervisors 
-                        (id, name, email, supervised_department, location) 
-                        VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
+            string queryEmployee = @"SELECT id, name, email,password FROM Employees WHERE id = @Id";
+            string querySupervisor = @"INSERT INTO Supervisors 
+                                        (id, name, email, supervised_department, location,password) 
+                                        VALUES (@Id, @Name, @Email, @DepartmentName, @Location,@password)";
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
+                string pass;
                 await connection.OpenAsync();
 
-                using (var command = new MySqlCommand(query, connection))
+                // Step 1: Retrieve employee information
+                using (var commandEmployee = new MySqlCommand(queryEmployee, connection))
                 {
-                    command.Parameters.AddWithValue("@Id", supervisor.Id);
-                    command.Parameters.AddWithValue("@Name", supervisor.Name);
-                    command.Parameters.AddWithValue("@Email", supervisor.Email);
-                    command.Parameters.AddWithValue("@DepartmentName",
-                        string.IsNullOrEmpty(supervisor.DepartmentName) ? DBNull.Value : supervisor.DepartmentName);
-                    command.Parameters.AddWithValue("@Location",
-                        string.IsNullOrEmpty(supervisor.Location) ? DBNull.Value : supervisor.Location);
+                    commandEmployee.Parameters.AddWithValue("@Id", supervisor.Id);
 
-                    int rowsAffected = await command.ExecuteNonQueryAsync();
+                    using (var reader = await commandEmployee.ExecuteReaderAsync())
+                    {
+                        if (!await reader.ReadAsync())
+                        {
+                            return (false, "Employee not found.");
+                        }
+
+                        // Populate supervisor details from employee table
+                        supervisor.Name = reader.GetString("name");
+                        supervisor.Email = reader.GetString("email");
+                        pass = reader.GetString("password");
+                    }
+                }
+
+                // Step 2: Insert into Supervisors table
+                using (var commandSupervisor = new MySqlCommand(querySupervisor, connection))
+                {
+                    commandSupervisor.Parameters.AddWithValue("@Id", supervisor.Id);
+                    commandSupervisor.Parameters.AddWithValue("@Name", supervisor.Name);
+                    commandSupervisor.Parameters.AddWithValue("@Email", supervisor.Email);
+                    commandSupervisor.Parameters.AddWithValue("@DepartmentName",
+                        string.IsNullOrEmpty(supervisor.DepartmentName) ? DBNull.Value : supervisor.DepartmentName);
+                    commandSupervisor.Parameters.AddWithValue("@Location",
+                        string.IsNullOrEmpty(supervisor.Location) ? DBNull.Value : supervisor.Location);
+                    commandSupervisor.Parameters.AddWithValue("@password", pass);
+
+                    int rowsAffected = await commandSupervisor.ExecuteNonQueryAsync();
 
                     return rowsAffected > 0
                         ? (true, "Supervisor added successfully!")
-                        : (false, "Failed to add supervisor");
+                        : (false, "Failed to add supervisor.");
                 }
             }
         }
         catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry
         {
-            return (false, "Supervisor ID already exists");
+            return (false, "Supervisor ID already exists.");
         }
         catch (Exception ex)
         {
@@ -207,28 +230,7 @@ public class AdminService : IAdminService
         {
             await connection.OpenAsync();
 
-            // 1. Verify department exists at the specified location
-            //var departmentQuery = "SELECT name FROM Departments WHERE name = @DepartmentName AND Location = @Location";
-            //string departmentNameFromDb = null;
-
-            //using (var departmentCmd = new MySqlCommand(departmentQuery, connection))
-            //{
-            //    departmentCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
-            //    departmentCmd.Parameters.AddWithValue("@Location", location);
-
-            //    using (var reader = await departmentCmd.ExecuteReaderAsync())
-            //    {
-            //        if (await reader.ReadAsync())
-            //        {
-            //            departmentNameFromDb = reader.IsDBNull("name") ? null : reader.GetString("name");
-            //        }
-            //        else
-            //        {
-            //            return "Department does not exist at the specified location.";
-            //        }
-            //    }
-            //}
-
+            
             // 2. Get supervisor's current details
             var supervisorQuery = "SELECT id, name FROM Supervisors WHERE id = @SupervisorId";
             string supervisorName = null;
@@ -249,24 +251,7 @@ public class AdminService : IAdminService
                 }
             }
 
-            // 3. Check if this department+location is already assigned to someone else
-            //var assignmentCheckQuery = @"SELECT COUNT(*) FROM Supervisors 
-            //                      WHERE supervised_department = @DepartmentName 
-            //                      AND location = @Location
-            //                      AND id != @SupervisorId";
-
-            //using (var checkCmd = new MySqlCommand(assignmentCheckQuery, connection))
-            //{
-            //    checkCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
-            //    checkCmd.Parameters.AddWithValue("@Location", location);
-            //    checkCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
-
-            //    var alreadyAssigned = Convert.ToInt32(await checkCmd.ExecuteScalarAsync()) > 0;
-            //    if (alreadyAssigned)
-            //    {
-            //        return "This department at this location is already assigned to another supervisor.";
-            //    }
-            //}
+            
 
             // 4. Update supervisor's covenant and location
             var updateQuery = @"UPDATE Supervisors 
@@ -367,15 +352,13 @@ public class AdminService : IAdminService
 
     public async Task<Supervisor> GetSupervisorById(int supervisorId)
     {
-
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         {
             connection.Open();
-            var query = @"
-                SELECT s.id, s.name, s.email, d.name AS department_name, d.total_wings, d.Location 
-                FROM Supervisors s
-                LEFT JOIN Departments d ON s.supervised_department = d.name
-                WHERE s.id = @SupervisorId";
+            var query = @"  
+               SELECT s.id, s.name, s.email, s.supervised_department, s.location   
+               FROM Supervisors s  
+               WHERE s.id = @SupervisorId";
 
             using (var command = new MySqlCommand(query, connection))
             {
@@ -385,31 +368,30 @@ public class AdminService : IAdminService
                 {
                     if (await reader.ReadAsync())
                     {
-                        // Fetch the supervised department (if assigned)
-                        Department supervisedDepartment = null;
-                        if (!reader.IsDBNull(reader.GetOrdinal("department_name")))
+                        // Fetch the supervised department (if assigned)  
+                        Department? supervisedDepartment = null;
+                        if (!reader.IsDBNull(reader.GetOrdinal("supervised_department")))
                         {
                             supervisedDepartment = new Department
                             {
-                                Name = reader.GetString("department_name"),
-                                Total_Wings = reader.GetInt32("total_wings"),
-                                Location = reader.GetString("Location")
+                                Name = reader.GetString("supervised_department"),
+                                Location = reader.GetString("location")
                             };
                         }
 
-                        // Create and return the Supervisor object
+                        // Create and return the Supervisor object  
                         return new Supervisor(
                             id: reader.GetInt32("id"),
                             name: reader.GetString("name"),
                             email: reader.GetString("email"),
-                            department: supervisedDepartment
+                            department: supervisedDepartment ?? new Department() 
                         );
                     }
                 }
             }
         }
 
-        return null; // Return null if no supervisor is found
+        return null; // Return null if no supervisor is found  
     }
 
 
@@ -429,89 +411,29 @@ public class AdminService : IAdminService
                 int rowsAffected = await rejectCmd.ExecuteNonQueryAsync();
                 return rowsAffected > 0;
             }
+
+            //get supervisor id
+            //string getSupervisorIdQuery = @"SELECT SupervisorID FROM Reallocation WHERE RequestID = @RequestID";
+            //int supervisorId = 0;
+            //using (var getSupervisorIdCmd = new MySqlCommand(getSupervisorIdQuery, connection))
+            //{
+            //    getSupervisorIdCmd.Parameters.AddWithValue("@RequestID", requestId);
+            //    using (var reader = await getSupervisorIdCmd.ExecuteReaderAsync())
+            //    {
+            //        if (await reader.ReadAsync())
+            //        {
+            //            supervisorId = reader["SupervisorID"] != DBNull.Value ? Convert.ToInt32(reader["SupervisorID"]) : 0;
+            //        }
+            //    }
+            //    return supervisorId;
+            //}
         }
     }
 
 
-    //public async Task<bool> ApproveRequestReallocation(int requestId)
-    //{
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        await connection.OpenAsync();
-
-    //        // Fix the select query: include all needed columns and correct syntax
-    //        string selectQuery = @"
-    //        SELECT RequestedDepartment, RequestLocation, number_cab, NewCabinetID, RequestWing, RequestLevel
-    //        FROM Reallocation
-    //        WHERE RequestID = @RequestID";
-
-    //        string department = null;
-    //        string location = null;
-    //        string newCabinetId = null;
-    //        string numberCab = null;
-    //        string wing = null;
-    //        string level = null;
-
-    //        using (var selectCmd = new MySqlCommand(selectQuery, connection))
-    //        {
-    //            selectCmd.Parameters.AddWithValue("@RequestID", requestId);
-    //            using (var reader = await selectCmd.ExecuteReaderAsync())
-    //            {
-    //                if (await reader.ReadAsync())
-    //                {
-    //                    department = reader["RequestedDepartment"]?.ToString();
-    //                    location = reader["RequestLocation"]?.ToString();
-    //                    newCabinetId = reader["NewCabinetID"]?.ToString();
-    //                    numberCab = reader["number_cab"]?.ToString();
-    //                    wing = reader["RequestWing"]?.ToString();
-    //                    level = reader["RequestLevel"]?.ToString();
-    //                }
-    //                else return false; // Not found
-    //            }
-    //        }
-
-    //        if (string.IsNullOrWhiteSpace(department) || string.IsNullOrWhiteSpace(location)
-    //            || string.IsNullOrWhiteSpace(newCabinetId) || string.IsNullOrWhiteSpace(numberCab))
-    //            return false;
-
-    //        // Update Cabinet info
-    //        string updateCabinetQuery = @"
-    //        UPDATE Cabinets 
-    //        SET department_name = @Department,
-    //            location = @Location,
-    //            wing = @Wing,
-    //            level = @Level
-
-    //        WHERE number_cab = @NumberCab";
-
-    //        using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection))
-    //        {
-    //            updateCmd.Parameters.AddWithValue("@Department", department);
-    //            updateCmd.Parameters.AddWithValue("@Location", location);
-    //            updateCmd.Parameters.AddWithValue("@Wing", wing);
-    //            updateCmd.Parameters.AddWithValue("@Level", level);
-    //           // updateCmd.Parameters.AddWithValue("@CabinetID", newCabinetId); // string value
-    //            updateCmd.Parameters.AddWithValue("@NumberCab", numberCab);    // still string
-
-    //            await updateCmd.ExecuteNonQueryAsync();
-    //        }
-
-    //        // Mark request as approved
-    //        string approveQuery = @"UPDATE Reallocation 
-    //                            SET RequestStatus = 'Approved' 
-    //                            WHERE RequestID = @RequestID";
-
-    //        using (var approveCmd = new MySqlCommand(approveQuery, connection))
-    //        {
-    //            approveCmd.Parameters.AddWithValue("@RequestID", requestId);
-    //            await approveCmd.ExecuteNonQueryAsync();
-    //        }
-
-    //        return true;
-    //    }
-    //}
 
 
+    
     public async Task<bool> ApproveRequestReallocation(int requestId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -798,11 +720,44 @@ public class AdminService : IAdminService
                     await transaction.RollbackAsync();
                     Console.WriteLine($"Error approving reallocation: {ex.Message}");
 
-                    throw; 
+                    throw;
 
                 }
             }
         }
+    }
+    public async Task<List<string>> GetAffectedStudentAsync(string cabinetId)
+    {
+        var affectedStudents = new List<string>();
+        try
+        {
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+                string query = "SELECT email FROM Students WHERE locker_id IN (SELECT Id FROM Lockers WHERE Id LIKE CONCAT(@cabinetId, '%'))";
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@cabinetId", cabinetId);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var email = reader["email"]?.ToString();
+                            if (!string.IsNullOrEmpty(email))
+                            {
+                                affectedStudents.Add(email);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching affected students: {ex.Message}");
+        }
+
+        return affectedStudents;
     }
     //emas 
     public void Login()
@@ -948,46 +903,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
 
 
 
-    //public async Task<List<Cabinet>> ViewCabinetInfo()
-    //{
-    //    var cabinets = new List<Cabinet>();
-
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        await connection.OpenAsync();
-
-    //        var query = @"SELECT number_cab, wing, level, location, department_name, 
-    //                        cabinet_id, Capacity, status 
-    //                  FROM Cabinets";
-
-    //        using (var command = new MySqlCommand(query, connection))
-    //        using (var reader = await command.ExecuteReaderAsync())
-    //        {
-    //            while (await reader.ReadAsync())
-    //            {
-    //                cabinets.Add(new Cabinet
-    //                {
-    //                    CabinetNumber = reader.GetInt32("number_cab"),
-    //                   // Wing = reader.GetString("wing"),
-    //                    Level = reader.GetInt32("level"),
-    //                    Location = reader.GetString("location"),
-    //                    Department = reader.GetString("department_name"),
-    //                    //EmployeeId = reader.IsDBNull(reader.GetOrdinal("supervisor_id"))
-    //                    //             ? null
-    //                    //             : reader.GetInt32("supervisor_id"),
-    //                    Cabinet_id = reader.GetString("cabinet_id"),
-    //                    Capacity = reader.GetInt32("Capacity"),
-    //                    Status = Enum.TryParse<CabinetStatus>(reader.GetString("status"), out var statusEnum)
-    //                             ? statusEnum
-    //                             : CabinetStatus.IN_SERVICE, // default if unknown
-    //                    EmployeeName = "" // Optional: can join with Employees table if needed
-    //                });
-    //            }
-    //        }
-    //    }
-
-    //    return cabinets;
-    //}
+    
 
     public async Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
@@ -1307,12 +1223,12 @@ where r.Type='THEFT' and r.SentToAdmin=1
     }
 
 
-    public async Task<bool> IsDepartmentAssigned(string departmentName, string location)
+    public async Task<int> IsDepartmentAssigned(string departmentName, string location)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
-            var query = @"SELECT COUNT(*) FROM Supervisors 
+            var query = @"SELECT id FROM Supervisors 
                      WHERE supervised_department = @DepartmentName 
                      AND location = @Location";
 
@@ -1320,9 +1236,43 @@ where r.Type='THEFT' and r.SentToAdmin=1
             {
                 command.Parameters.AddWithValue("@DepartmentName", departmentName);
                 command.Parameters.AddWithValue("@Location", location);
-                var count = Convert.ToInt32(await command.ExecuteScalarAsync());
-                return count > 0;
+                var id = Convert.ToInt32(await command.ExecuteScalarAsync());
+                return id;
             }
         }
+        
+    }
+
+    public async Task<Reallocation> GetReallocationRequestById(int requestId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = @"SELECT * FROM Reallocation WHERE RequestID = @RequestID";
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@RequestID", requestId);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new Reallocation
+                        {
+                            RequestID = reader.GetInt32("RequestID"),
+                            SupervisorID = reader.GetInt32("SupervisorID"),
+                            CurrentDepartment = reader.GetString("CurrentDepartment"),
+                            RequestedDepartment = reader.GetString("RequestedDepartment"),
+                            CurrentCabinetID = reader.GetString("CurrentCabinetID"),
+                            NewCabinetID = reader.GetString("NewCabinetID"),
+                            CurrentLocation = reader.GetString("CurrentLocation"),
+                            RequestLocation = reader.GetString("RequestLocation"),
+                            RequestWing = reader.GetString("RequestWing"),
+                            RequestLevel = reader.GetInt32("RequestLevel"),
+                        };
+                    }
+                }
+            }
+        }
+        return null; // Return null if no reallocation request is found
     }
 }

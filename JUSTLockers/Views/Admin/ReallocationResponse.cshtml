@@ -404,10 +404,15 @@
                             <div class="mt-3">
                                 <form asp-action="ApproveRequestReallocation" asp-controller="Admin" method="post" class="d-inline">
                                     <input type="hidden" name="requestId" value="@request.RequestID" />
+                                    <input type="hidden" name="SupervisorID" value="@request.SupervisorID" />
+                                    <input type="hidden" name="RequestedDepartment" value="@request.RequestedDepartment" />
+                                    <input type="hidden" name="RequestLocation" value="@request.RequestLocation" />
+                                    <input type="hidden" name="CurrentCabinetID" value="@request.CurrentCabinetID" />
                                     <button type="submit" class="btn btn-primary me-2 px-4">Approve</button>
                                 </form>
                                 <form asp-action="RejectRequestReallocation" asp-controller="Admin" method="post" class="d-inline">
                                     <input type="hidden" name="requestId" value="@request.RequestID" />
+                                    <input type="hidden" name="SupervisorID" value="@request.SupervisorID" />
                                     <button type="submit" class="btn btn-danger px-4">Reject</button>
                                 </form>
                             </div>

@@ -1,26 +1,21 @@
-﻿using JUSTLockers.DataBase;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Mvc;
-using JUSTLockers.Classes;
-using MySqlConnector;
+﻿using JUSTLockers.Classes;
 using JUSTLockers.Services;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using System.Threading.Channels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MySqlConnector;
 
 namespace JUSTLockers.Controllers
 {
     [Authorize]
     public class AdminController : Controller
     {
-        
+
         private readonly IConfiguration _configuration;
 
 
         private readonly AdminService _adminService;
         private readonly IEmailService _emailService;
-        public AdminController(AdminService adminService, IConfiguration configuration,IEmailService emailService)
+        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService)
         {
             _adminService = adminService;
             _configuration = configuration;
@@ -49,14 +44,14 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSupervisor(Supervisor supervisor)
         {
             try
             {
-                
+
                 // Check if employee exists
                 var employeeExists = await _adminService.CheckEmployeeExists(supervisor.Id);
                 if (!employeeExists)
@@ -65,8 +60,8 @@ namespace JUSTLockers.Controllers
                 }
 
                 // Check if supervisor already exists
-                var supervisorExists = await _adminService.SupervisorExists(supervisor.Id);
-                if (supervisorExists)
+                var supervisorExists = await _adminService.GetSupervisorById(supervisor.Id);
+                if (supervisorExists != null)
                 {
                     return Json(new { success = false, message = "This employee is already a supervisor." });
                 }
@@ -75,7 +70,7 @@ namespace JUSTLockers.Controllers
                 if (!string.IsNullOrEmpty(supervisor.DepartmentName) && !string.IsNullOrEmpty(supervisor.Location))
                 {
                     var isAssigned = await _adminService.IsDepartmentAssigned(supervisor.DepartmentName, supervisor.Location);
-                    if (isAssigned)
+                    if (isAssigned != 0)
                     {
                         return Json(new { success = false, message = $"Department {supervisor.DepartmentName} at {supervisor.Location} is already assigned." });
                     }
@@ -86,6 +81,8 @@ namespace JUSTLockers.Controllers
 
                 if (result.Success)
                 {
+                    SendEmail(supervisor.Id, null, EmailMessageType.SupervisorAdded, null);
+
                     return Json(new { success = true, message = result.Message });
                 }
 
@@ -103,11 +100,15 @@ namespace JUSTLockers.Controllers
         {
             try
             {
+                var supervisor = await _adminService.GetSupervisorById(supervisorId);
                 var result = await _adminService.DeleteSupervisor(supervisorId);
 
                 if (result.StartsWith("Supervisor deleted"))
                 {
+                    SendEmail(supervisorId, supervisor, EmailMessageType.SupervisorDeleted, null);
+
                     return Json(new { success = true, message = result });
+
                 }
 
                 return Json(new { success = false, message = result });
@@ -141,7 +142,7 @@ namespace JUSTLockers.Controllers
         [HttpPost]
         public IActionResult AssignCabinet(Cabinet model)
         {
-            //var _adminService = new AdminService(_context);
+
             if (ModelState.IsValid)
             {
                 // Call the AssignCabinet method and capture the returned message
@@ -150,18 +151,18 @@ namespace JUSTLockers.Controllers
                 // Set the message to TempData
                 if (message.StartsWith("Cabinet added"))
                 {
-                    TempData["SuccessMessage"] = message; // Success message
+                    TempData["SuccessMessage"] = message;
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = message; // Error message
+                    TempData["ErrorMessage"] = message;
                 }
 
-                // Redirect to the desired view (e.g., Index)
+
                 return RedirectToAction("AddCabinet");
             }
             return View("~/Views/Admin/AddCabinet.cshtml");
-            
+
         }
         public IActionResult Index()
         {
@@ -176,12 +177,12 @@ namespace JUSTLockers.Controllers
             ViewData["Filter"] = filter;
             return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
         }
-        
+
         [HttpGet]
         public async Task<IActionResult> ViewCabinetInfo(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
         {
 
-            var cabinets = await _adminService.ViewCabinetInfo(searchCab,location, level, department, status, wing);
+            var cabinets = await _adminService.ViewCabinetInfo(searchCab, location, level, department, status, wing);
             return View(cabinets);
 
         }
@@ -196,32 +197,40 @@ namespace JUSTLockers.Controllers
                 ViewBag.Message = "No reallocation requests to Approve.";
             }
 
-           // return View(requests);
+
             return View("~/Views/Admin/ReallocationResponse.cshtml", requests);
         }
 
         [HttpPost]
-        public async Task<IActionResult> ApproveRequestReallocation(int requestId)
+        public async Task<IActionResult> ApproveRequestReallocation(int requestId, int SupervisorID, string RequestedDepartment, string RequestLocation, string CurrentCabinetID)
         {
-            bool success = await _adminService.ApproveRequestReallocation(requestId);
-
+            var student = await _adminService.GetAffectedStudentAsync(CurrentCabinetID);
+            var success = await _adminService.ApproveRequestReallocation(requestId);
+           
             if (success)
             {
+
+                SendEmail(SupervisorID, null, EmailMessageType.ReallocationApproved, requestId);
+                var affectedSuper = await _adminService.IsDepartmentAssigned(RequestedDepartment, RequestLocation);
+                var reallocationRequest = await _adminService.GetReallocationRequestById(requestId);
+                SendEmail(affectedSuper, null, EmailMessageType.ReallocationCabinet, requestId , reallocationRequest);
+                SendEmail(student, EmailMessageType.StudentReallocation, reallocationRequest);
                 TempData["Success"] = "Reallocation request approved successfully.";
             }
             else
             {
-                TempData["Error"] = "Failed to approve the reallocation request.";
+                TempData["Error"] = "Failed to approve the reallocation request."+$"{success}";
             }
             return RedirectToAction("ReallocationResponse", "Admin");
         }
         [HttpPost]
-        public async Task<IActionResult> RejectRequestReallocation(int requestId)
+        public async Task<IActionResult> RejectRequestReallocation(int requestId, int SupervisorID)
         {
             bool success = await _adminService.RejectRequestReallocation(requestId);
 
             if (success)
             {
+                SendEmail(SupervisorID, null, EmailMessageType.ReallocationRejected, requestId);
                 TempData["Success"] = "Reallocation request rejected successfully.";
             }
             else
@@ -241,14 +250,15 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName,string location)
+        public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName, string location)
         {
 
 
-            var result = await _adminService.AssignCovenant(supervisorId, departmentName,location);
+            var result = await _adminService.AssignCovenant(supervisorId, departmentName, location);
 
             if (result.StartsWith("Covenant assigned"))
             {
+                SendEmail(supervisorId, null, EmailMessageType.CovenantSigned, null);
                 TempData["SuccessMessage"] = result;
             }
             else
@@ -258,9 +268,65 @@ namespace JUSTLockers.Controllers
 
             return RedirectToAction("SignCovenant");
         }
-
-
         
+
+        private async void SendEmail(int supervisorId, Supervisor? supervisor, EmailMessageType type, int? requestId)
+        {
+            if (supervisor == null)
+            {
+                supervisor = await _adminService.GetSupervisorById(supervisorId);
+            }
+
+            var emailData = new Dictionary<string, string>
+            {
+                { "Name", supervisor.Name },
+                { "Department", supervisor.SupervisedDepartment.Name },
+                { "Location", supervisor.SupervisedDepartment.Location },
+                { "RequestId", requestId?.ToString() ?? "" },
+                { "Reason" ,"Contact with the Admin for more information" }
+
+            };
+            await _emailService.SendSupervisorNotificationAsync(supervisor.Email, type, emailData);
+        }
+        private async void SendEmail(int supervisorId, Supervisor? supervisor, EmailMessageType type, int? requestId, Reallocation reallocation)
+        {
+            if (supervisor == null)
+            {
+                supervisor = await _adminService.GetSupervisorById(supervisorId);
+
+            }
+
+            var emailData = new Dictionary<string, string>
+            {
+                { "Name", supervisor.Name },
+                { "Department", supervisor.SupervisedDepartment.Name },
+                { "Location", supervisor.SupervisedDepartment.Location },
+                { "RequestId", requestId?.ToString() ?? "" },
+                { "Reason" ,"There is some data that have to be solved first" },
+                { "NewCabinetId", reallocation.NewCabinetID ?? "N/A" },
+                { "CurrentDepartment", reallocation.CurrentDepartment ?? "N/A" },
+                { "RequestWing", reallocation.RequestWing ?? "N/A" },
+                { "RequestLevel", reallocation.RequestLevel?.ToString() ?? "N/A" },
+
+
+            };
+            await _emailService.SendSupervisorNotificationAsync(supervisor.Email, type, emailData);
+        }
+
+        private async void SendEmail(List<string> student, EmailMessageType type, Reallocation reallocation)
+        {
+            var emailData = new Dictionary<string, string>
+            { 
+                { "NewCabinetId", reallocation.NewCabinetID ?? "N/A" },
+                { "RequestedDepartment", reallocation.RequestedDepartment ?? "N/A" },
+                { "RequestLocation", reallocation.RequestLocation ?? "N/A" },
+                { "CurrentCabinetId", reallocation.CurrentCabinetID ?? "N/A" },
+                { "RequestWing", reallocation.RequestWing ?? "N/A" },
+                { "RequestLevel", reallocation.RequestLevel?.ToString() ?? "N/A" },
+            };
+            await _emailService.SendStudentNotificationAsync(student, type, emailData);
+        }
+
         public JsonResult GetEmployee(int id)
         {
             try
@@ -298,19 +364,15 @@ namespace JUSTLockers.Controllers
         }
 
 
-
-
-
-
-
-        // Delete a covenant from a supervisor
         [HttpPost]
         public async Task<IActionResult> DeleteCovenant(int supervisorId)
         {
+            var supervisor = await _adminService.GetSupervisorById(supervisorId);
             var result = await _adminService.DeleteCovenant(supervisorId);
 
             if (result.StartsWith("Covenant deleted"))
             {
+                SendEmail(supervisorId, supervisor, EmailMessageType.CovenantDeleted, null);
                 TempData["SuccessMessage"] = result;
             }
             else
@@ -396,34 +458,21 @@ namespace JUSTLockers.Controllers
                 return StatusCode(500, new { status = "Error", message = "Internal server error: " + ex.Message });
             }
         }
-       
+
 
         [HttpGet]
-        public async Task<IActionResult> TestEmail()
-        {
-            try
-            {
-                await _emailService.SendEmailAsync("leenalzebdeh@gmail.com", "Test Email", "This is a test email from JUSTLockers.");
-                return Ok("Email sent successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error sending email: {ex.Message}");
-            }
-        }
-        [HttpGet]
-        public async Task<IActionResult> IsDepartmentAssigned(string departmentName,string location)
+        public async Task<IActionResult> IsDepartmentAssigned(string departmentName, string location)
         {
             try
             {
                 // Check if department is assigned to any supervisor
-                var isAssigned = await _adminService.IsDepartmentAssigned(departmentName,location);
+                var isAssigned = await _adminService.IsDepartmentAssigned(departmentName, location);
 
-                if (isAssigned)
-                {
-                    // You might want to add logic here to check if it's assigned to the current supervisor
-                    // being edited, in which case it wouldn't be an error
-                }
+                //if (isAssigned!=0)
+                //{
+                //    // You might want to add logic here to check if it's assigned to the current supervisor
+                //    // being edited, in which case it wouldn't be an error
+                //}
 
                 return Json(new { isAssigned });
             }

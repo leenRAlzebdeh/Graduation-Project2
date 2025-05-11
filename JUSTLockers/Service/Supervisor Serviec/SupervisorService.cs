@@ -29,55 +29,6 @@ public class SupervisorService : ISupervisorService
         }
 
    
-
-     
-
-  
-
-    
-
-
-    //public async Task<List<Report>> ViewReportedIssues()
-    //{
-    //    var reports = new List<Report>();
-    //    var query = "SELECT * FROM Reports";
-
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        await connection.OpenAsync();
-
-    //        using (var command = new MySqlCommand(query, connection))
-    //        using (var reader = await command.ExecuteReaderAsync())
-    //        {
-    //            while (await reader.ReadAsync())
-    //            {
-    //                reports.Add(new Report
-    //                {
-    //                    Reporter = null,
-    //                    Locker = null,
-
-    //                    ReportId = reader.GetInt32("Id"),
-    //                    ReporterId = reader.GetInt32("ReporterId"),
-    //                    LockerId = reader.GetString("LockerId"),
-
-    //                    // Converting string from DB to enums
-    //                    Type = Enum.Parse<ReportType>(reader.GetString("Type")),
-    //                    Status = Enum.Parse<ReportStatus>(reader.GetString("Status")),
-
-    //                    Subject = reader.GetString("Subject"),
-    //                    Statement = reader.GetString("Statement"),
-    //                    ReportDate = reader.GetDateTime("ReportDate"),
-    //                    ResolvedDate = reader.IsDBNull("ResolvedDate") ? null : reader.GetDateTime("ResolvedDate"),
-    //                    ResolutionDetails = reader.IsDBNull("ResolvedDetails") ? null : reader.GetString("ResolvedDetails"),
-    //                    ImageData = reader.IsDBNull("ImageData") ? null : (byte[])reader["ImageData"],
-    //                    ImageMimeType = reader.IsDBNull("ImageMimeType") ? null : reader.GetString("ImageMimeType")
-    //                });
-    //            }
-    //        }
-    //    }
-
-    //    return reports;
-    //}
     public async Task<List<Report>> ViewReportedIssues(int? userId)
     {
         var reports = new List<Report>();
@@ -342,36 +293,7 @@ WHERE
                         return $"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
                     }
 
-                    //// Step 3: Update Cabinet Info
-                    //string updateCabinetQuery = @"
-                    //UPDATE Cabinets 
-                    //SET 
-                    //    department_name = @NewDepartment,
-                    //    wing = @NewWing,
-                    //    level = @NewLevel,
-                    //    location = @NewLocation
-                    //WHERE cabinet_id = @OldCabinetId";
-
-                    //using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
-                    //{
-                    //    updateCmd.Parameters.AddWithValue("@NewDepartment", model.RequestedDepartment);
-                    //    updateCmd.Parameters.AddWithValue("@NewWing", model.RequestWing);
-                    //    updateCmd.Parameters.AddWithValue("@NewLevel", model.RequestLevel);
-                    //    updateCmd.Parameters.AddWithValue("@NewLocation", model.RequestLocation);
-                    //    updateCmd.Parameters.AddWithValue("@OldCabinetId", model.CurrentCabinetID);
-
-                    //    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
-                    //    if (rowsAffected == 0)
-                    //    {
-                    //        await transaction.RollbackAsync();
-                    //        return "No cabinet record was updated.";
-                    //    }
-                    //}
-
-                    //// Step 4: Commit the transaction
-                    //await transaction.CommitAsync();
-                    //return "Cabinet reallocation was successful.";
-
+                   
 
                     // inserte this reallocation request 
                     string insertQuery = @"
@@ -401,7 +323,7 @@ WHERE
                         if (reallocationId > 0)
                         {
                             await transaction.CommitAsync();
-                           await _adminService.ApproveRequestReallocation(reallocationId);
+                            await _adminService.ApproveRequestReallocation(reallocationId);
 
                             return $"Cabinet reallocation was successful.";
                         }
@@ -681,20 +603,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
         }
     }
 
-    //public void BlockStudent(int id,int? userId)
-    //{
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        string query1 = "select count(*) ";
-    //        string query = "INSERT INTO BlockList (student_id,blocked_by) VALUES (@id,@userId)";
-    //        var command = new MySqlCommand(query, connection);
-    //        command.Parameters.AddWithValue("@id", id);
-    //        command.Parameters.AddWithValue("@userId", userId);
-
-    //        connection.Open();
-    //        command.ExecuteNonQuery();
-    //    }
-    //}
+   
     public string BlockStudent(int id, int? userId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
