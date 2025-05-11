@@ -111,26 +111,28 @@ namespace JUSTLockers.Controllers
             if (ModelState.IsValid)
             {
                 var student = await _adminService.GetAffectedStudentAsync(model.CurrentCabinetID);
-                string message = await _superService.ReallocationRequestFormSameDep(model); // Pass model
+                
+                var message = await _superService.ReallocationRequestFormSameDep(model); // Pass model
+                var reallocation = await _adminService.GetReallocationRequestById(message.requestId);
 
-
-                if (message.StartsWith("Cabinet reallocation was successful"))
+                if (message.message.StartsWith("Cabinet reallocation was successful"))
                 {
-                    TempData["SuccessMessage"] = message;
-                    _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, model);
+                    TempData["SuccessMessage"] = message.message;
+                    if(student != null) 
+                    _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, reallocation);
 
                 }
-                else if(message.StartsWith("You are not allowed"))
+                else if(message.message.StartsWith("You are not allowed"))
                 {
-                    TempData["cabinetError"] = message;
+                    TempData["cabinetError"] = message.message;
                 }
-                else if (message.StartsWith("You Need"))
+                else if (message.message.StartsWith("You Need"))
                 {
-                    TempData["ErrorMessage"] = message;
+                    TempData["ErrorMessage"] = message.message;
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = message;
+                    TempData["ErrorMessage"] = message.message;
                 }
 
                 return RedirectToAction("ReallocationRequestFormSameDepartment");

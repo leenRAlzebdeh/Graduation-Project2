@@ -240,7 +240,7 @@ WHERE
 
 
 
-    public async Task<string> ReallocationRequestFormSameDep(Reallocation model)
+    public async Task<(string message , int requestId)> ReallocationRequestFormSameDep(Reallocation model)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -267,7 +267,7 @@ WHERE
                             }
                             else
                             {
-                                return "Supervisor not found.";
+                                return ("Supervisor not found.",0);
                             }
                         }
                     }
@@ -275,12 +275,12 @@ WHERE
                     // Step 2: Check if the supervisor is authorized
                     if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment)
                     {
-                        return $"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
+                        return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.", 0);
                     }
 
                     if (supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
                     {
-                        return $"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.";
+                        return ($"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.",0);
                     }
 
                    
@@ -315,17 +315,17 @@ WHERE
                             await transaction.CommitAsync();
                             await _adminService.ApproveRequestReallocation(reallocationId);
 
-                            return $"Cabinet reallocation was successful.";
+                            return ($"Cabinet reallocation was successful.",reallocationId);
                         }
                     }
-                    return "Cabinet reallocation was successful.";
+                   return ($"Cabinet reallocation was successful.", 0);
 
 
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    return $"Error processing reallocation request: {ex.Message}";
+                    return ($"Error processing reallocation request: {ex.Message}",0);
                 }
             }
         }

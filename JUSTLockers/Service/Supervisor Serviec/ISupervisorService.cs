@@ -20,7 +20,7 @@ public interface ISupervisorService : IUserActions, ILockerActions
         public bool IsStudentBlocked(int id);
         public Student GetStudentById(int id);
 
-    Task<string> ReallocationRequestFormSameDep(Reallocation model);
+    public  Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model);
 
 
 
