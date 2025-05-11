@@ -20,48 +20,57 @@
             <img src="/photos/images/logo.jpeg" alt="Logo" />
             <h1>JUSTLocker</h1>
         </div>
+
         <ul class="menu">
             <li class="nav-item">
                 <a href="@Url.Action("SupervisorDashboard", "Supervisor")">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
                 </a>
             </li>
+
             <li class="has-submenu">
                 <div class="submenu-toggle">
-                    <i class="fas fa-archive"></i> Report Management
+                    <i class="fas fa-archive"></i>
+                    <span>Report Management</span>
+                    <i class="fas fa-chevron-down arrow"></i>
                 </div>
                 <ul class="pretty-submenu" id="cabinet-submenu">
                     <li><a href="@Url.Action("BlockStudent", "Supervisor")">Block Student</a></li>
-                    <li><a href="@Url.Action("ReportedIssues","Supervisor")">Reported Issues</a></li>
+                    <li><a href="@Url.Action("ReportedIssues", "Supervisor")">Reported Issues</a></li>
                     <li><a href="@Url.Action("ViewStudentInfo", "Supervisor")">Students Info</a></li>
-
-
                 </ul>
             </li>
+
             <li class="has-submenu">
                 <div class="submenu-toggle">
-                    <i class="fas fa-user-graduate"></i> Cabinets Management
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Cabinets Management</span>
+                    <i class="fas fa-chevron-down arrow"></i>
                 </div>
                 <ul class="pretty-submenu" id="Employee-submenu">
-                    <li><a href="@Url.Action("ReallocationRequestForm", "Supervisor")">Reallocation/Diff Department </a></li>
-                    <li><a href="@Url.Action("ReallocationRequestFormSameDepartment", "Supervisor")">Reallocation/Same Department </a></li>
-
+                    <li><a href="@Url.Action("ReallocationRequestForm", "Supervisor")">Reallocation/Diff Department</a></li>
+                    <li><a href="@Url.Action("ReallocationRequestFormSameDepartment", "Supervisor")">Reallocation/Same Department</a></li>
                     <li><a href="@Url.Action("ViewCabinetInfoSuper", "Supervisor")">Cabinets Info</a></li>
                 </ul>
-            </li>   
+            </li>
+
             <li class="nav-item">
                 <a href="@Url.Action("Settings", "Account")">
-                    <i class="fas fa-cog"></i> Settings
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
                 </a>
             </li>
+
+            <li class="nav-item logout-link">
+                <form asp-action="Logout" asp-controller="Account" method="post">
+                    <button type="submit">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </li>
         </ul>
-        <div class="logout-section text-center mb-3">
-            <form asp-action="Logout" asp-controller="Account" method="post">
-                <button type="submit" class="btn btn-danger w-100">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </form>
-        </div>
     </aside>
 
     <!-- Main Content -->
@@ -96,5 +105,13 @@
 
     <script src="~/js/DashbordAdmin.js"></script>
     <script src="~/js/admin.js"></script>
+    <script>
+        document.querySelectorAll('.submenu-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const parent = toggle.closest('.has-submenu');
+                parent.classList.toggle('open');
+            });
+        });
+    </script>
 </body>
 </html>

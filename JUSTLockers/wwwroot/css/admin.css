@@ -57,106 +57,150 @@ body.dark-mode {
 /* -----------------------------
    Sidebar
 ----------------------------- */
+/* -----------------------------
+   Sidebar (Like Screenshot)
+----------------------------- */
 .sidebar {
     width: 260px;
     background: linear-gradient(135deg, #3b5998, #192f6a);
-    color: #fff;
-    min-height: 100vh;
+    color: #ffffff;
+    height: 100vh;
     position: fixed;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding-top: 30px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    border-right: 1px solid #e5e7eb;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
 }
 
 .brand {
-    text-align: center;
-    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-    .brand img {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-bottom: 10px;
-        border: 2px solid #fff;
-    }
 
     .brand h1 {
-        font-size: 1.5rem;
-        font-weight: 700;
+        font-size: 20px;
+        color: #ffffff;
+        letter-spacing: 0.5px;
     }
 
+
+    .brand img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+   
 .menu {
     width: 100%;
-    padding: 0 20px;
+    padding: 0;
+    list-style: none;
+    margin: 0;
+   
 }
 
-    .menu li {
-        margin-bottom: 5px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.3s;
+    .menu li.nav-item a,
+    .menu li.logout-link button,
+    .menu li .submenu-toggle {
         display: flex;
         align-items: center;
+        gap: 30px;
+        padding: 12px 20px;
+        text-decoration: none;
+        color: #ffffff;
+        font-weight: 500;
+        width: 100%;
+        background: transparent;
+       /* border: none;*/
+        cursor: pointer;
+        transition: background 0.3s;
+      
     }
 
-        .menu li.nav-item a,
-        .menu li .submenu-toggle {
-            padding: 15px;
-            color: #fff;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            width: 100%;
+        .menu li.nav-item a:hover,
+        .menu li.logout-link button:hover,
+        .menu li .submenu-toggle:hover {
+            background-color: #f3f4f6;
+            color:#111827;
         }
 
-        .menu li i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
+    .menu li.active a,
+    .menu li.active button {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        backdrop-filter: blur(4px);
+        border-radius: 6px;
+    }
 
-        .menu li:hover,
-        .menu li.active {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-/* Submenu Styling */
 .has-submenu {
-    display: flex;
     flex-direction: column;
 }
 
+.submenu-toggle .arrow {
+    margin-left: auto;
+    font-size: 12px;
+    transition: transform 0.3s;
+}
+
 .pretty-submenu {
-    display: none; /* Hidden by default */
-    width: 100%;
-     /* padding-left: 30px;*/ /* Indent submenu items */
+    display: none;
+    flex-direction: column;
+   padding-left: 20px;
+    border-left: 2px solid #e5e7eb;
+    margin-left: 20px;
+   
 }
 
     .pretty-submenu.show {
-        display: block; /* Show when toggled */
+        display: flex;
     }
 
     .pretty-submenu li {
-        padding: 10px 15px;
-        margin: 0;
-        border-radius: 8px;
-        transition: background 0.3s;
+        width: 100%;
     }
-
-        .pretty-submenu li:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
 
     .pretty-submenu a {
-        color: #ddd; /* Slightly lighter than top-level items for contrast */
-        text-decoration: none;
         display: block;
+       padding: 10px 20px;
+        color: #ffffff;
+        font-weight: 400;
+        text-decoration: none;
+        transition: background 0.3s;
+       
     }
 
+        .pretty-submenu a:hover {
+            background-color: #f3f4f6;
+            color:#111827;
+        }
 
+    .pretty-submenu .active {
+        background-color: #fef08a;
+        font-weight: 600;
+        color: #111827;
+    }
+   
+.logout-link {
+    margin-top: auto;
+   /* border-top: 1px solid #e5e7eb;*/
+}
+
+    .logout-link form button {
+        justify-content: flex-start;
+        background-color: transparent;
+        border: none;
+        font-size: 15px;
+    }
+
+        .logout-link form button:hover {
+            background-color: #f3f4f6;
+        }
 
 
 /* Dark Mode for Submenu */
