@@ -55,6 +55,8 @@ builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SupervisorService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<UserActions>();
+builder.Services.AddScoped<CabinetService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddSession(

@@ -270,7 +270,9 @@ namespace JUSTLockers.Service
             throw new NotImplementedException();
         }
         //leen
-        public async Task<bool> CancelReservation(int studentId)
+        
+
+        public async Task<bool> CancelReservation(int studentId , string status)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -307,9 +309,6 @@ namespace JUSTLockers.Service
 
                         if (lockerId == null) return false;
 
-                        
-
-
                         // Update student record
                         var updateStudentQuery = "UPDATE Students SET locker_id = NULL WHERE id = @StudentId";
                         using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
@@ -326,10 +325,11 @@ namespace JUSTLockers.Service
                             await reservationCmd.ExecuteNonQueryAsync();
                         }
 
-                        var updateLockerQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE Id = @LockerId";
+                        var updateLockerQuery = "UPDATE Lockers SET Status = @status WHERE Id = @LockerId";
                         using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
                         {
                             lockerCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                            lockerCmd.Parameters.AddWithValue("@status", status);
                             await lockerCmd.ExecuteNonQueryAsync();
                         }
 
@@ -344,6 +344,8 @@ namespace JUSTLockers.Service
                 }
             }
         }
+
+
 
         public async Task<DepartmentInfo> GetDepartmentInfo(int studentId)
         {

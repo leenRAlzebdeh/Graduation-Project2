@@ -178,7 +178,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                var result = await _studentService.CancelReservation(studentId);
+                var result = await _studentService.CancelReservation(studentId , "EMPTY");
                 if (result)
                 {
                     return Ok(new { success = true });

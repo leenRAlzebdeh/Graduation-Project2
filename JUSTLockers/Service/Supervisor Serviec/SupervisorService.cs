@@ -1,15 +1,5 @@
 using JUSTLockers.Classes;
-using JUSTLockers.DataBase;
-using MailKit.Search;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.Configuration;
 using MySqlConnector;
-using System.ComponentModel;
-using System.Data;
-using Dapper;
-using Microsoft.Data.SqlClient;
-using JUSTLockers.Controllers;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 namespace JUSTLockers.Services;
 
 
@@ -22,7 +12,7 @@ public class SupervisorService : ISupervisorService
         {
             _configuration = configuration;
             _adminService = adminService;
-    }
+        }
         public void Login()
         {
             throw new NotImplementedException();

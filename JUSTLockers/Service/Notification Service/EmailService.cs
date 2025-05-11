@@ -1,85 +1,19 @@
-﻿//using MailKit.Net.Smtp;
-//using MailKit.Security;
-//using MimeKit;
-//using Microsoft.Extensions.Configuration;
-
-//namespace JUSTLockers.Services;
-
-//public interface IEmailService
-//{
-//    Task SendEmailAsync(string recipient, string subject, string body);
-//    Task SendEmailToManyAsync(List<string> recipients, string subject, string body);
-//}
-//public class EmailService : IEmailService
-//{
-//    private readonly IConfiguration _config;
-
-//    public EmailService(IConfiguration config)
-//    {
-//        _config = config;
-//    }
-
-//    public async Task SendEmailAsync(string recipient, string subject, string body)
-//    {
-//        var email = _config["Email:Email"];
-//        var password = _config["Email:Password"];
-//        var host = _config["Email:Host"];
-//        var port = _config.GetValue<int>("Email:Port");
-
-//        var message = new MimeMessage();
-//        message.From.Add(MailboxAddress.Parse(email));
-//        message.To.Add(MailboxAddress.Parse(recipient));
-//        message.Subject = subject;
-//        message.Body = new TextPart("plain") { Text = body };
-
-//        using var smtp = new SmtpClient();
-//        await smtp.ConnectAsync(host, port, SecureSocketOptions.SslOnConnect);
-//        await smtp.AuthenticateAsync(email, password);
-//        await smtp.SendAsync(message);
-//        await smtp.DisconnectAsync(true);
-//    }
-
-//    public async Task SendEmailToManyAsync(List<string> recipients, string subject, string body)
-//    {
-//        var email = _config["Email:Email"];
-//        var password = _config["Email:Password"];
-//        var host = _config["Email:Host"];
-//        var port = _config.GetValue<int>("Email:Port");
-
-//        var message = new MimeMessage();
-//        message.From.Add(MailboxAddress.Parse(email));
-//        message.Subject = subject;
-//        message.Body = new TextPart("plain") { Text = body };
-
-//        // 🔹 Add multiple recipients
-//        foreach (var recipient in recipients)
-//        {
-//            message.To.Add(MailboxAddress.Parse(recipient));
-//        }
-
-//        using var smtp = new SmtpClient();
-//        await smtp.ConnectAsync(host, port, SecureSocketOptions.SslOnConnect); 
-//        await smtp.AuthenticateAsync(email, password);
-//        await smtp.SendAsync(message);
-//        await smtp.DisconnectAsync(true);
-//    }
-
-
-
-//}
-
-
+﻿using JUSTLockers.Classes;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+using Org.BouncyCastle.Cms;
 namespace JUSTLockers.Services
 {
     public interface IEmailService
     {
         Task SendEmailAsync(string recipient, string subject, string body);
         Task SendEmailToManyAsync(List<string> recipients, string subject, string body);
-        public Task SendStudentNotificationAsync(List<string> recipients, EmailMessageType messageType, Dictionary<string, string>? data = null);
-        Task SendSupervisorNotificationAsync(string recipient, EmailMessageType messageType, Dictionary<string, string>? data = null);
+        public Task SendStudentsNotificationAsync(List<string> recipients, EmailMessageType messageType, Dictionary<string, string>? data = null);
+       // public Task SendStudentNotificationAsync(string recipients, EmailMessageType messageType, Dictionary<string, string>? data = null);
+
+        Task SendForNotificationAsync(string recipient, EmailMessageType messageType, Dictionary<string, string>? data = null);
+        Task SendStudentsCabinetNotificationAsync(List<string> recipients, CabinetStatus messageType, Dictionary<string, string>? data = null);
     }
 
     public class EmailService : IEmailService
@@ -93,6 +27,8 @@ namespace JUSTLockers.Services
 
         public async Task SendEmailAsync(string recipient, string subject, string body)
         {
+            if (recipient==null)
+                return;
             var email = _config["Email:Email"];
             var password = _config["Email:Password"];
             var host = _config["Email:Host"];
@@ -113,7 +49,15 @@ namespace JUSTLockers.Services
 
         public async Task SendEmailToManyAsync(List<string> recipients, string subject, string body)
         {
-            var email = _config["Email:Email"];
+            if (recipients.Count == 1)
+            {
+                await SendEmailAsync(recipients[0], subject, body);
+                return;
+            }
+            else if (recipients.Count == 0)
+                return;
+        
+                var email = _config["Email:Email"];
             var password = _config["Email:Password"];
             var host = _config["Email:Host"];
             var port = _config.GetValue<int>("Email:Port");
@@ -134,15 +78,22 @@ namespace JUSTLockers.Services
             await smtp.SendAsync(message);
             await smtp.DisconnectAsync(true);
         }
-
-        public async Task SendSupervisorNotificationAsync(string recipient, EmailMessageType messageType, Dictionary<string, string>? data = null)
+        
+        public async Task SendForNotificationAsync(string recipient, EmailMessageType messageType, Dictionary<string, string>? data = null)
         {
             (string subject, string body) = GenerateEmailContent(messageType, data);
             Console.WriteLine( subject+body );
             await SendEmailAsync(recipient, subject, body);
         }
 
-        public async Task SendStudentNotificationAsync(List<string> recipients, EmailMessageType messageType, Dictionary<string, string>? data = null)
+        public async Task SendStudentsNotificationAsync(List<string> recipients, EmailMessageType messageType, Dictionary<string, string>? data = null)
+        {
+            (string subject, string body) = GenerateEmailContent(messageType, data);
+            Console.WriteLine(subject + body);
+            await SendEmailToManyAsync(recipients, subject, body);
+        }
+
+        public async Task SendStudentsCabinetNotificationAsync(List<string> recipients, CabinetStatus messageType, Dictionary<string, string>? data = null)
         {
             (string subject, string body) = GenerateEmailContent(messageType, data);
             Console.WriteLine(subject + body);
@@ -235,10 +186,98 @@ namespace JUSTLockers.Services
                            "Please check the JUSTLockers system for updated details or contact your supervisor if you have any questions.\n\n" +
                            "Best regards,\nJUSTLockers Team";
                     break;
+                case EmailMessageType.StudentBlocked:
+                    subject =
+                        "Locker Reservation Blocked Notification";
+                    body =
+                        $"Dear Student,\n\n" +
+                        "You have been blocked in the JUSTLockers system.\n" +
+                        "You should know that you will not be able to reserve a locker until further notice.\n" +
+                        "Please contact your supervisor for further details.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+                case EmailMessageType.StudentUnblocked:
+                    subject =
+                        "Locker Reservation Unblocked Notification";
+                    body =
+                        $"Dear Student,\n\n" +
+                        "You have been unblocked in the JUSTLockers system.\n" +
+                        "You can now reserve a locker now.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+
                 default:
                     throw new ArgumentException("Invalid email message type");
             }
 
+            return (subject, body);
+        }
+
+
+        private (string subject, string body) GenerateEmailContent(CabinetStatus messageType, Dictionary<string, string>? data)
+        {
+            string subject = "";
+            string body = "";
+
+            switch (messageType)
+            {
+                case CabinetStatus.IN_SERVICE:
+                    subject =
+                        "Cabinet Status Update";
+                    body =
+                        $"Dear Student ,\n\n" +
+                        $"The status of your cabinet has been updated to IN_SERVICE.\n" +
+                        $"Cabinet ID: {data?.GetValueOrDefault("CabinetId") ?? "N/A"}\n" +
+                        $"Department: {data?.GetValueOrDefault("Department") ?? "N/A"}\n" +
+                        $"Location: {data?.GetValueOrDefault("Location") ?? "N/A"}\n\n" +
+                        "You can now reserve a locker in this cabinet.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+                case CabinetStatus.IN_MAINTENANCE:
+                    subject =
+                        "Cabinet Status Update";
+                    body =
+                        $"Dear Student ,\n\n" +
+                        $"The status of your cabinet has been updated to IN_MAINTENANCE.\n" +
+                        $"Cabinet ID: {data?.GetValueOrDefault("CabinetId") ?? "N/A"}\n" +
+                        $"Department: {data?.GetValueOrDefault("Department") ?? "N/A"}\n" +
+                        $"Location: {data?.GetValueOrDefault("Location") ?? "N/A"}\n\n" +
+                        "You will not be able to reserve a locker in this cabinet until further notice.\n\n" +
+                        "Please Know that you have 5 days to get your stuff out of the cabinet.\n\n" +
+                        "You can reserve a locker in another cabinet.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+                case CabinetStatus.OUT_OF_SERVICE:
+                    subject =
+                        "Cabinet Status Update";
+                    body =
+                        $"Dear Student ,\n\n" +
+                        $"The status of your cabinet has been updated to OUT_OF_SERVICE.\n" +
+                        $"Cabinet ID: {data?.GetValueOrDefault("CabinetId") ?? "N/A"}\n" +
+                        $"Department: {data?.GetValueOrDefault("Department") ?? "N/A"}\n" +
+                        $"Location: {data?.GetValueOrDefault("Location") ?? "N/A"}\n\n" +
+                        "You will not be able to reserve a locker in this cabinet ,\n\n" +
+                        "Please Know that you have 5 days to get your stuff out of the cabinet.\n\n" +
+                        "You can reserve a locker in another cabinet.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+                case CabinetStatus.DAMAGED:
+                    subject =
+                        "Cabinet Status Update";
+                    body =
+                        $"Dear Student,\n\n" +
+                        $"The status of your cabinet has been updated to DAMAGED.\n" +
+                        $"Cabinet ID: {data?.GetValueOrDefault("CabinetId") ?? "N/A"}\n" +
+                        $"Department: {data?.GetValueOrDefault("Department") ?? "N/A"}\n" +
+                        $"Location: {data?.GetValueOrDefault("Location") ?? "N/A"}\n\n" +
+                        "You will not be able to reserve a locker in this cabinet until further notice.\n\n" +
+                        "Please Know that you have 5 days to get your stuff out of the cabinet.\n\n" +
+                        "You can reserve a locker in another cabinet.\n\n" +
+                        "Best regards,\nJUSTLockers Team";
+                    break;
+                default:
+                    throw new ArgumentException("Invalid email message type");
+            }
             return (subject, body);
         }
 
@@ -253,8 +292,12 @@ namespace JUSTLockers.Services
         ReallocationApproved,
         ReallocationCabinet,
         ReallocationRejected,
-        StudentReallocation
+        StudentReallocation,
+        StudentBlocked,
+        StudentUnblocked,
     }
+
+  
 
 
 }

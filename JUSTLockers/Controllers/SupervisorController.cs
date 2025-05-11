@@ -22,14 +22,15 @@ namespace JUSTLockers.Controllers
 
         private readonly SupervisorService _superService;
         private readonly IStudentService _studentService;
-
-        private readonly IEmailService _emailService;
-        public SupervisorController(SupervisorService superService, IConfiguration configuration,IEmailService emailService, IStudentService studentService)
+        private readonly AdminService _adminService;
+        private readonly NotificationService _notificationService;
+        public SupervisorController(SupervisorService superService, IConfiguration configuration, IStudentService studentService , AdminService adminService,NotificationService notificationService)
         {
             _superService = superService;
             _configuration = configuration;
-            _emailService = emailService;
             _studentService = studentService;
+            _adminService = adminService;
+            _notificationService = notificationService;
         }
 
         //[HttpGet]
@@ -76,7 +77,7 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> ReallocationRequest(Reallocation model)
         {
             if (ModelState.IsValid)
-            {
+            {   
                 string message = await _superService.ReallocationRequest(model); // Pass model
 
                 if (message.StartsWith("Request sent"))
@@ -106,13 +107,18 @@ namespace JUSTLockers.Controllers
         [HttpPost]
         public async Task<IActionResult> ReallocationRequestFormSameDep(Reallocation model)
         {
+            
             if (ModelState.IsValid)
             {
+                var student = await _adminService.GetAffectedStudentAsync(model.CurrentCabinetID);
                 string message = await _superService.ReallocationRequestFormSameDep(model); // Pass model
+
 
                 if (message.StartsWith("Cabinet reallocation was successful"))
                 {
                     TempData["SuccessMessage"] = message;
+                    _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, model);
+
                 }
                 else if(message.StartsWith("You are not allowed"))
                 {
@@ -209,14 +215,16 @@ namespace JUSTLockers.Controllers
         {
             int? supervisorId = HttpContext.Session.GetInt32("UserId");
 
-
+            var student = _superService.GetStudentById(id);
             if (block)
             {
                 if (_studentService.HasLocker(id))
                 {
-                    _studentService.CancelReservation(id);
+                    _studentService.CancelReservation(id, "EMPTY");
                 }
                 string message = _superService.BlockStudent(id, supervisorId);
+                
+                _notificationService.SendStudentEmail(student.Email, EmailMessageType.StudentBlocked, null);
                 TempData["Message"] = message;
                 //int? userId = HttpContext.Session.GetInt32("UserId");
                 //_superService.BlockStudent(id, userId);
@@ -226,6 +234,7 @@ namespace JUSTLockers.Controllers
             else
             {
                 string message = _superService.UnblockStudent(id, supervisorId);
+                _notificationService.SendStudentEmail(student.Email, EmailMessageType.StudentUnblocked, null);
                 TempData["Message"] = message;
                 //_superService.UnblockStudent(id);
                 //TempData["SuccessMessage"] = "Student unblocked successfully.";

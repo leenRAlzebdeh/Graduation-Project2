@@ -575,70 +575,70 @@ public class AdminService : IAdminService
                     }
 
                     // 4. Store affected student IDs and nullify their locker_id
-                    var affectedStudents = new List<int>();
-                    string nullifyStudentsQuery = @"
-        SELECT id 
-        FROM Students 
-        WHERE locker_id IN (
-            SELECT Id 
-            FROM Lockers 
-            WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
-        )";
+                    //            var affectedStudents = new List<int>();
+                    //            string nullifyStudentsQuery = @"
+                    //SELECT id 
+                    //FROM Students 
+                    //WHERE locker_id IN (
+                    //    SELECT Id 
+                    //    FROM Lockers 
+                    //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
+                    //)";
 
-                    using (var nullifyStudentsCmd = new MySqlCommand(nullifyStudentsQuery, connection, transaction))
-                    {
-                        nullifyStudentsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-                        nullifyStudentsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-                        using (var reader = await nullifyStudentsCmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                affectedStudents.Add(Convert.ToInt32(reader["id"]));
-                            }
-                        }
-                    }
+                    //            using (var nullifyStudentsCmd = new MySqlCommand(nullifyStudentsQuery, connection, transaction))
+                    //            {
+                    //                nullifyStudentsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
+                    //                nullifyStudentsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
+                    //                using (var reader = await nullifyStudentsCmd.ExecuteReaderAsync())
+                    //                {
+                    //                    while (await reader.ReadAsync())
+                    //                    {
+                    //                        affectedStudents.Add(Convert.ToInt32(reader["id"]));
+                    //                    }
+                    //                }
+                    //            }
 
-                    string updateStudentsToNullQuery = affectedStudents.Any()
-                        ? $"UPDATE Students SET locker_id = NULL WHERE id IN ({string.Join(",", affectedStudents)})"
-                        : "UPDATE Students SET locker_id = NULL WHERE 1=0";
+                    //            string updateStudentsToNullQuery = affectedStudents.Any()
+                    //                ? $"UPDATE Students SET locker_id = NULL WHERE id IN ({string.Join(",", affectedStudents)})"
+                    //                : "UPDATE Students SET locker_id = NULL WHERE 1=0";
 
-                    using (var updateStudentsNullCmd = new MySqlCommand(updateStudentsToNullQuery, connection, transaction))
-                    {
-                        await updateStudentsNullCmd.ExecuteNonQueryAsync();
-                    }
+                    //            using (var updateStudentsNullCmd = new MySqlCommand(updateStudentsToNullQuery, connection, transaction))
+                    //            {
+                    //                await updateStudentsNullCmd.ExecuteNonQueryAsync();
+                    //            }
 
                     // 5. Store affected reservation IDs and nullify their LockerId
-                    var affectedReservations = new List<string>();
-                    string nullifyReservationsQuery = @"
-        SELECT Id 
-        FROM Reservations 
-        WHERE LockerId IN (
-            SELECT Id 
-            FROM Lockers 
-            WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
-        )";
+                    //            var affectedReservations = new List<string>();
+                    //            string nullifyReservationsQuery = @"
+                    //SELECT Id 
+                    //FROM Reservations 
+                    //WHERE LockerId IN (
+                    //    SELECT Id 
+                    //    FROM Lockers 
+                    //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
+                    //)";
 
-                    using (var nullifyReservationsCmd = new MySqlCommand(nullifyReservationsQuery, connection, transaction))
-                    {
-                        nullifyReservationsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-                        nullifyReservationsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-                        using (var reader = await nullifyReservationsCmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                affectedReservations.Add(reader["Id"]?.ToString() ?? string.Empty);
-                            }
-                        }
-                    }
+                    //            using (var nullifyReservationsCmd = new MySqlCommand(nullifyReservationsQuery, connection, transaction))
+                    //            {
+                    //                nullifyReservationsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
+                    //                nullifyReservationsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
+                    //                using (var reader = await nullifyReservationsCmd.ExecuteReaderAsync())
+                    //                {
+                    //                    while (await reader.ReadAsync())
+                    //                    {
+                    //                        affectedReservations.Add(reader["Id"]?.ToString() ?? string.Empty);
+                    //                    }
+                    //                }
+                    //            }
 
-                    string updateReservationsToNullQuery = affectedReservations.Any()
-                        ? $"UPDATE Reservations SET LockerId = NULL WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
-                        : "UPDATE Reservations SET LockerId = NULL WHERE 1=0";
+                    //            string updateReservationsToNullQuery = affectedReservations.Any()
+                    //                ? $"UPDATE Reservations SET LockerId = NULL WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
+                    //                : "UPDATE Reservations SET LockerId = NULL WHERE 1=0";
 
-                    using (var updateReservationsNullCmd = new MySqlCommand(updateReservationsToNullQuery, connection, transaction))
-                    {
-                        await updateReservationsNullCmd.ExecuteNonQueryAsync();
-                    }
+                    //            using (var updateReservationsNullCmd = new MySqlCommand(updateReservationsToNullQuery, connection, transaction))
+                    //            {
+                    //                await updateReservationsNullCmd.ExecuteNonQueryAsync();
+                    //            }
 
                     // 6. Update Lockers with new IDs, department, and cabinet_id
                     foreach (var (oldLockerId, newLockerId) in lockerIds)
@@ -659,44 +659,46 @@ public class AdminService : IAdminService
                             lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
                             await lockerCmd.ExecuteNonQueryAsync();
                         }
+                    }//this is new here
+
 
                         // Update the Students table with the new locker_id for affected students
-                        string updateStudentsQuery = affectedStudents.Any()
-                            ? $"UPDATE Students SET locker_id = @NewLockerId WHERE id IN ({string.Join(",", affectedStudents)})"
-                            : "UPDATE Students SET locker_id = @NewLockerId WHERE 1=0";
+                        //string updateStudentsQuery = affectedStudents.Any()
+                        //    ? $"UPDATE Students SET locker_id = @NewLockerId WHERE id IN ({string.Join(",", affectedStudents)})"
+                        //    : "UPDATE Students SET locker_id = @NewLockerId WHERE 1=0";
 
-                        using (var studentsCmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
-                        {
-                            studentsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                            await studentsCmd.ExecuteNonQueryAsync();
-                        }
+                        //using (var studentsCmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
+                        //{
+                        //    studentsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+                        //    await studentsCmd.ExecuteNonQueryAsync();
+                        //}
 
                         // Update the Reservations table with the new LockerId for affected reservations
-                        string updateReservationsQuery = affectedReservations.Any()
-                            ? $"UPDATE Reservations SET LockerId = @NewLockerId WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
-                            : "UPDATE Reservations SET LockerId = @NewLockerId WHERE 1=0";
+                        //string updateReservationsQuery = affectedReservations.Any()
+                        //    ? $"UPDATE Reservations SET LockerId = @NewLockerId WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
+                        //    : "UPDATE Reservations SET LockerId = @NewLockerId WHERE 1=0";
 
-                        using (var reservationsCmd = new MySqlCommand(updateReservationsQuery, connection, transaction))
-                        {
-                            reservationsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                            await reservationsCmd.ExecuteNonQueryAsync();
-                        }
+                        //using (var reservationsCmd = new MySqlCommand(updateReservationsQuery, connection, transaction))
+                        //{
+                        //    reservationsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+                        //    await reservationsCmd.ExecuteNonQueryAsync();
+                        //}
 
-                        // Update Reservations with the new Locker ID and status
-                        string updateReservationsStatusQuery = @"
-            UPDATE Reservations 
-            SET 
-                LockerId = @NewLockerId,
-                Status = 'RESERVED'
-            WHERE LockerId = @OldLockerId";
+            //            // Update Reservations with the new Locker ID and status
+            //            string updateReservationsStatusQuery = @"
+            //UPDATE Reservations 
+            //SET 
+            //    LockerId = @NewLockerId,
+            //    Status = 'RESERVED'
+            //WHERE LockerId = @OldLockerId";
 
-                        using (var reservationsStatusCmd = new MySqlCommand(updateReservationsStatusQuery, connection, transaction))
-                        {
-                            reservationsStatusCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                            reservationsStatusCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
-                            await reservationsStatusCmd.ExecuteNonQueryAsync();
-                        }
-                    }
+            //            using (var reservationsStatusCmd = new MySqlCommand(updateReservationsStatusQuery, connection, transaction))
+            //            {
+            //                reservationsStatusCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+            //                reservationsStatusCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
+            //                await reservationsStatusCmd.ExecuteNonQueryAsync();
+            //            }
+            //        }
 
                     // 7. Mark the reallocation request as approved
                     string approveQuery = @"

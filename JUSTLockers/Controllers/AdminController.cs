@@ -15,11 +15,13 @@ namespace JUSTLockers.Controllers
 
         private readonly AdminService _adminService;
         private readonly IEmailService _emailService;
-        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService)
+        private readonly NotificationService _notificationService;
+        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService, NotificationService notificationService)
         {
             _adminService = adminService;
             _configuration = configuration;
             _emailService = emailService;
+            _notificationService = notificationService;
         }
 
 
@@ -81,7 +83,7 @@ namespace JUSTLockers.Controllers
 
                 if (result.Success)
                 {
-                    SendEmail(supervisor.Id, null, EmailMessageType.SupervisorAdded, null);
+                    _notificationService.SendSupervisorEmail(supervisor.Id, null, EmailMessageType.SupervisorAdded, null);
 
                     return Json(new { success = true, message = result.Message });
                 }
@@ -105,7 +107,7 @@ namespace JUSTLockers.Controllers
 
                 if (result.StartsWith("Supervisor deleted"))
                 {
-                    SendEmail(supervisorId, supervisor, EmailMessageType.SupervisorDeleted, null);
+                    _notificationService.SendSupervisorEmail(supervisorId, supervisor, EmailMessageType.SupervisorDeleted, null);
 
                     return Json(new { success = true, message = result });
 
@@ -210,11 +212,11 @@ namespace JUSTLockers.Controllers
             if (success)
             {
 
-                SendEmail(SupervisorID, null, EmailMessageType.ReallocationApproved, requestId);
+                _notificationService.SendSupervisorEmail(SupervisorID, null, EmailMessageType.ReallocationApproved, requestId);
                 var affectedSuper = await _adminService.IsDepartmentAssigned(RequestedDepartment, RequestLocation);
                 var reallocationRequest = await _adminService.GetReallocationRequestById(requestId);
-                SendEmail(affectedSuper, null, EmailMessageType.ReallocationCabinet, requestId , reallocationRequest);
-                SendEmail(student, EmailMessageType.StudentReallocation, reallocationRequest);
+                _notificationService.SendSupervisorReallocationEmail(affectedSuper, null, EmailMessageType.ReallocationCabinet, requestId , reallocationRequest);
+                _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, reallocationRequest);
                 TempData["Success"] = "Reallocation request approved successfully.";
             }
             else
@@ -230,7 +232,7 @@ namespace JUSTLockers.Controllers
 
             if (success)
             {
-                SendEmail(SupervisorID, null, EmailMessageType.ReallocationRejected, requestId);
+                _notificationService.SendSupervisorEmail(SupervisorID, null, EmailMessageType.ReallocationRejected, requestId);
                 TempData["Success"] = "Reallocation request rejected successfully.";
             }
             else
@@ -258,7 +260,7 @@ namespace JUSTLockers.Controllers
 
             if (result.StartsWith("Covenant assigned"))
             {
-                SendEmail(supervisorId, null, EmailMessageType.CovenantSigned, null);
+                _notificationService.SendSupervisorEmail(supervisorId, null, EmailMessageType.CovenantSigned, null);
                 TempData["SuccessMessage"] = result;
             }
             else
@@ -269,63 +271,6 @@ namespace JUSTLockers.Controllers
             return RedirectToAction("SignCovenant");
         }
         
-
-        private async void SendEmail(int supervisorId, Supervisor? supervisor, EmailMessageType type, int? requestId)
-        {
-            if (supervisor == null)
-            {
-                supervisor = await _adminService.GetSupervisorById(supervisorId);
-            }
-
-            var emailData = new Dictionary<string, string>
-            {
-                { "Name", supervisor.Name },
-                { "Department", supervisor.SupervisedDepartment.Name },
-                { "Location", supervisor.SupervisedDepartment.Location },
-                { "RequestId", requestId?.ToString() ?? "" },
-                { "Reason" ,"Contact with the Admin for more information" }
-
-            };
-            await _emailService.SendSupervisorNotificationAsync(supervisor.Email, type, emailData);
-        }
-        private async void SendEmail(int supervisorId, Supervisor? supervisor, EmailMessageType type, int? requestId, Reallocation reallocation)
-        {
-            if (supervisor == null)
-            {
-                supervisor = await _adminService.GetSupervisorById(supervisorId);
-
-            }
-
-            var emailData = new Dictionary<string, string>
-            {
-                { "Name", supervisor.Name },
-                { "Department", supervisor.SupervisedDepartment.Name },
-                { "Location", supervisor.SupervisedDepartment.Location },
-                { "RequestId", requestId?.ToString() ?? "" },
-                { "Reason" ,"There is some data that have to be solved first" },
-                { "NewCabinetId", reallocation.NewCabinetID ?? "N/A" },
-                { "CurrentDepartment", reallocation.CurrentDepartment ?? "N/A" },
-                { "RequestWing", reallocation.RequestWing ?? "N/A" },
-                { "RequestLevel", reallocation.RequestLevel?.ToString() ?? "N/A" },
-
-
-            };
-            await _emailService.SendSupervisorNotificationAsync(supervisor.Email, type, emailData);
-        }
-
-        private async void SendEmail(List<string> student, EmailMessageType type, Reallocation reallocation)
-        {
-            var emailData = new Dictionary<string, string>
-            { 
-                { "NewCabinetId", reallocation.NewCabinetID ?? "N/A" },
-                { "RequestedDepartment", reallocation.RequestedDepartment ?? "N/A" },
-                { "RequestLocation", reallocation.RequestLocation ?? "N/A" },
-                { "CurrentCabinetId", reallocation.CurrentCabinetID ?? "N/A" },
-                { "RequestWing", reallocation.RequestWing ?? "N/A" },
-                { "RequestLevel", reallocation.RequestLevel?.ToString() ?? "N/A" },
-            };
-            await _emailService.SendStudentNotificationAsync(student, type, emailData);
-        }
 
         public JsonResult GetEmployee(int id)
         {
@@ -372,7 +317,7 @@ namespace JUSTLockers.Controllers
 
             if (result.StartsWith("Covenant deleted"))
             {
-                SendEmail(supervisorId, supervisor, EmailMessageType.CovenantDeleted, null);
+                _notificationService.SendSupervisorEmail(supervisorId, supervisor, EmailMessageType.CovenantDeleted, null);
                 TempData["SuccessMessage"] = result;
             }
             else
