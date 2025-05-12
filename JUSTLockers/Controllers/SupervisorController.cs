@@ -166,6 +166,8 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> SendToAdmin(int reportId)
         {
             await _superService.SendToAdmin(reportId);
+            var (email,report) =await _studentService.GetReportByAsync(reportId);
+            _notificationService.SendUpdatedReportStudentEmail(email, ReportStatus.ESCALATED, report);
             return RedirectToAction("ReportedIssues");
         }
 
@@ -295,7 +297,7 @@ namespace JUSTLockers.Controllers
             //ViewBag.IsBlocked = isBlocked;
 
             // Get department info
-            DepartmentInfo departmentInfo = await _superService.GetDepartmentInfo(userId.Value);
+            var departmentInfo = await _superService.GetDepartmentInfo(userId.Value);
             if (departmentInfo == null)
             {
                 return NotFound("super not found");

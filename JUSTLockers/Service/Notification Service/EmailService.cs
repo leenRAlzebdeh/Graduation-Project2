@@ -14,6 +14,7 @@ namespace JUSTLockers.Services
 
         Task SendForNotificationAsync(string recipient, EmailMessageType messageType, Dictionary<string, string>? data = null);
         Task SendStudentsCabinetNotificationAsync(List<string> recipients, CabinetStatus messageType, Dictionary<string, string>? data = null);
+        Task UpdateStudentRepositoryAsync(string recipient, ReportStatus type, Dictionary<string, string>? data = null);
     }
 
     public class EmailService : IEmailService
@@ -99,7 +100,12 @@ namespace JUSTLockers.Services
             Console.WriteLine(subject + body);
             await SendEmailToManyAsync(recipients, subject, body);
         }
-
+        public Task UpdateStudentRepositoryAsync(string recipient, ReportStatus type, Dictionary<string, string>? data = null)
+        {
+           (string subject, string body) = GenerateEmailContent(type, data);
+            Console.WriteLine(subject + body);
+            return SendEmailAsync(recipient, subject, body);
+        }
         private (string subject, string body) GenerateEmailContent(EmailMessageType messageType, Dictionary<string, string>? data)
         {
             string subject = "";
@@ -281,9 +287,61 @@ namespace JUSTLockers.Services
             return (subject, body);
         }
 
+        private (string subject, string body) GenerateEmailContent(ReportStatus messageType, Dictionary<string, string>? data)
+        {
+            string subject = "";
+            string body = "";
+            
+
+            switch (messageType)
+            {
+                case ReportStatus.REPORTED:
+                    subject = "Report Submitted";
+                    body = $"Dear Student,\n\n" +
+                           "Your report has been successfully submitted.\n" +
+                           $"Report ID: {data?.GetValueOrDefault("ReportId") ?? "N/A"}\n" +
+                           "We will review it and get back to you soon.\n\n" +
+                           "Best regards,\nJUSTLockers Team";
+                    break;
+                case ReportStatus.IN_REVIEW:
+                    subject = "Report Under Review";
+                    body = $"Dear Student,\n\n" +
+                           "Your report is currently under review.\n" +
+                           $"Report ID: {data?.GetValueOrDefault("ReportId") ?? "N/A"}\n" +
+                           "We will update you once the review is complete.\n\n" +
+                           "Best regards,\nJUSTLockers Team";
+                    break;
+                case ReportStatus.ESCALATED:
+                    subject = "Report Escalated ";
+                    body = $"Dear Student,\n\n" +
+                           "Your report has been escalated to the Admin for further review.\n" +
+                           $"Report ID: {data?.GetValueOrDefault("ReportId") ?? "N/A"}\n" +
+                           "We will keep you updated on the progress.\n\n" +
+                           "Best regards,\nJUSTLockers Team";
+                    break;
+                case ReportStatus.RESOLVED:
+                    subject = "Report Resolved";
+                    body = $"Dear Student,\n\n" +
+                           "Your report has been resolved.\n" +
+                           $"Report ID: {data?.GetValueOrDefault("ReportId") ?? "N/A"}\n" +
+                           $"Resolution Details:{ data?.GetValueOrDefault("ResolutionDetails") ?? "N/A"}\n"+
+                           "You can check the system for details.\n\n" +
+                           "Best regards,\nJUSTLockers Team";
+                    break;
+                case ReportStatus.REJECTED:
+                    subject = "Report Rejected";
+                    body = $"Dear Student,\n\n" +
+                           "Your report has been rejected.\n" +
+                           $"Report ID: {data?.GetValueOrDefault("ReportId") ?? "N/A"}\n" +
+                           $"Resolution Details:{data?.GetValueOrDefault("ResolutionDetails") ?? "N/A"}\n" +
+                           "You can contact the Supervisor for further details.\n\n" +
+                           "Best regards,\nJUSTLockers Team";
+                    break;
+            }
+            return (subject, body);
+        }
 
 
-        
     }
     public enum EmailMessageType
     {

@@ -94,4 +94,14 @@ public class NotificationService
         
         await _emailService.SendStudentsCabinetNotificationAsync(student, type, emailData);
     }
+
+    public async void SendUpdatedReportStudentEmail(string studentEmail, ReportStatus type,Report report)
+    {
+        var emailData = new Dictionary<string, string>
+            {
+                { "ReportId", report.ReportId.ToString() },
+                { "ResolutionDetails", report.ResolutionDetails }
+            };
+        await _emailService.UpdateStudentRepositoryAsync(studentEmail, type, emailData);
+    }
 }

@@ -3,10 +3,10 @@ namespace JUSTLockers.Classes;
 public class Report
 {
     public required int ReportId { get; set; }
-    public required Student? Reporter { get; set; }
+    public  Student? Reporter { get; set; }
     public int ReporterId { get; set; }
 
-    public required Locker? Locker { get; set; }
+    public  Locker? Locker { get; set; }
     public string LockerId { get; set; }
 
     public ReportType Type { get; set; }

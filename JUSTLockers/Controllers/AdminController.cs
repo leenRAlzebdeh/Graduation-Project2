@@ -1,4 +1,5 @@
 ﻿using JUSTLockers.Classes;
+using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,14 @@ namespace JUSTLockers.Controllers
         private readonly AdminService _adminService;
         private readonly IEmailService _emailService;
         private readonly NotificationService _notificationService;
-        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService, NotificationService notificationService)
+        private readonly IStudentService _studentService;
+        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService, NotificationService notificationService, IStudentService studentService)
         {
             _adminService = adminService;
             _configuration = configuration;
             _emailService = emailService;
             _notificationService = notificationService;
+            _studentService = studentService;
         }
 
 
@@ -337,6 +340,8 @@ namespace JUSTLockers.Controllers
                 var success = await _adminService.ReviewReport(reportId);
                 if (success)
                 {
+                    var (email, report) = await _studentService.GetReportByAsync(reportId);
+                    _notificationService.SendUpdatedReportStudentEmail(email, ReportStatus.IN_REVIEW, report);
                     return Json(new { success = true, message = "Report marked as In Review successfully!" });
                 }
                 return Json(new { success = false, message = "Failed to update report status." });
@@ -357,6 +362,8 @@ namespace JUSTLockers.Controllers
                 var success = await _adminService.ResolveReport(reportId, resolutionDetails);
                 if (success)
                 {
+                    var (email, report) = await _studentService.GetReportByAsync(reportId);
+                    _notificationService.SendUpdatedReportStudentEmail(email, ReportStatus.RESOLVED, report);
                     return Json(new { success = true, message = "Report resolved successfully!" });
                 }
                 return Json(new { success = false, message = "Failed to resolve report." });
@@ -376,6 +383,8 @@ namespace JUSTLockers.Controllers
                 var success = await _adminService.RejectReport(reportId);
                 if (success)
                 {
+                    var (email, report) = await _studentService.GetReportByAsync(reportId);
+                    _notificationService.SendUpdatedReportStudentEmail(email, ReportStatus.REJECTED, report);
                     return Json(new { success = true, message = "Report rejected successfully!" });
                 }
                 return Json(new { success = false, message = "Failed to reject report." });

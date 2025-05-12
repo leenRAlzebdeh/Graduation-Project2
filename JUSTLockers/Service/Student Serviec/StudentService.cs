@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -162,7 +162,55 @@ namespace JUSTLockers.Service
                 await command.ExecuteNonQueryAsync();
             }
         }
-       
+
+        public async Task<(string email, Report report)> GetReportByAsync(int reportId)
+        {
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT 
+                r.Id AS ReportId,
+                r.ReporterId AS ReporterId,
+                r.LockerId AS LockerId,
+                r.ResolvedDetails AS ResolutionDetails,
+                s.email AS StudentEmail
+            FROM 
+                Reports r
+            JOIN 
+                Students s ON r.ReporterId = s.id
+            WHERE 
+                r.Id = @ReportId";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ReportId", reportId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var report = new Report
+                            {
+                                ReportId = reader.GetInt32("ReportId"),
+                                ReporterId = reader.GetInt32("ReporterId"),
+                                LockerId = reader.GetString("LockerId"),
+                                ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails"))
+                                    ? null
+                                    : reader.GetString("ResolutionDetails")
+                            };
+                            var email = reader.GetString("StudentEmail");
+
+                            return (email, report);
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException($"Report ID {reportId} vanished! Maybe it’s hiding in a locker? 😺");
+                        }
+                    }
+                }
+            }
+        }
 
 
         public async Task<List<Report>> ViewAllReports(int? studentId)
@@ -650,10 +698,6 @@ namespace JUSTLockers.Service
 
             {
                 int count;
-
-
-
-
 
                 string query = @"SELECT COUNT(*) FROM Reservations 
                  WHERE StudentId = @userId
