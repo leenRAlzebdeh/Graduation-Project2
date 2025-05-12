@@ -34,7 +34,7 @@ namespace JUSTLockers.Service
                 }
                 else if (status == "IN_SERVICE")
                 {
-                    string updateQuery = "UPDATE Lockers SET Status = 'IN_SERVICE' WHERE cabinet_id = @id";
+                    string updateQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE cabinet_id = @id";
                     using (var cmd = new MySqlCommand(updateQuery, connection))
                     {
                         cmd.Parameters.AddWithValue("@id", cabinetId);

@@ -78,18 +78,16 @@ WHERE
                                 reader.GetString("ReporterName"),
                                 reader.GetString("ReporterEmail"),
                                 reader.GetString("DepartmentName")
-
-
                             // Department is fetched from Lockers
                             ),
                             Locker = new Locker
                             {
                                 LockerId = reader.GetString("LockerNumber"),
-                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                Status = Enum.Parse<LockerStatus>(reader.GetString("LockerStatus")),
                                 Department = reader.GetString("DepartmentName"),
                             },
-                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
-                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                            Type = Enum.Parse<ReportType>(reader.GetString("ReportType")),
+                            Status = Enum.Parse<ReportStatus>(reader.GetString("ReportStatus")),
                             Subject = reader.GetString("ProblemDescription"),
                             Statement = reader.GetString("DetailedDescription"),
                             ReportDate = reader.GetDateTime("ReportDate"),
@@ -240,7 +238,121 @@ WHERE
 
 
 
-    public async Task<(string message , int requestId)> ReallocationRequestFormSameDep(Reallocation model)
+    //public async Task<(string message , int requestId)> ReallocationRequestFormSameDep(Reallocation model)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        await connection.OpenAsync();
+    //        using (var transaction = await connection.BeginTransactionAsync())
+    //        {
+    //            try
+    //            {
+    //                // Step 1: Validate Supervisor's Department and Location
+    //                string query1 = "SELECT location, supervised_department FROM Supervisors WHERE id = @SupervisorID";
+    //                string supervisorLocation = null;
+    //                string supervisorDepartment = null;
+
+    //                using (var command1 = new MySqlCommand(query1, connection, transaction))
+    //                {
+    //                    command1.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+
+    //                    using (var reader = await command1.ExecuteReaderAsync())
+    //                    {
+    //                        if (await reader.ReadAsync())
+    //                        {
+    //                            supervisorLocation = reader["location"].ToString();
+    //                            supervisorDepartment = reader["supervised_department"].ToString();
+    //                        }
+    //                        else
+    //                        {
+    //                            return ("Supervisor not found.",0);
+    //                        }
+    //                    }
+    //                }
+
+    //                // Step 2: Check if the supervisor is authorized
+    //                if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment||
+    //                    supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
+    //                {
+    //                    return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}. You need Admin approval", 0);
+    //                }
+
+    //                // Step 3: Check if the same request already exists
+    //                string validateCabinetQuery = @"
+    //                SELECT COUNT(*) 
+    //                FROM Cabinets 
+    //                WHERE department_name = @RequestedDepartment 
+    //                AND wing = @RequestWing 
+    //                AND level = @RequestLevel 
+    //                AND number_cab = @NumberCab 
+    //                AND location = @RequestLocation";
+    //                using (var validateCmd = new MySqlCommand(validateCabinetQuery, connection, transaction))
+    //                {
+    //                    validateCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
+    //                    validateCmd.Parameters.AddWithValue("@RequestWing", model.RequestWing);
+    //                    validateCmd.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+    //                    validateCmd.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+    //                    validateCmd.Parameters.AddWithValue("@RequestLocation", model.RequestLocation);
+
+    //                    var cabinetExists = Convert.ToInt32(await validateCmd.ExecuteScalarAsync());
+    //                    if (cabinetExists > 0)
+    //                    {
+    //                        return ("The requested cabinet already exists at the specified location.", 0);
+    //                    }
+    //                }
+
+
+
+    //                // inserte this reallocation request 
+    //                string insertQuery = @"
+    //                INSERT INTO Reallocation
+    //                (SupervisorID, CurrentDepartment, RequestedDepartment, 
+    //                RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
+    //                number_cab, CurrentCabinetID)
+    //                VALUES
+    //                (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
+    //                @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
+    //                @NumberCab, @CurrentCabinetID);
+    //                SELECT LAST_INSERT_ID();"; // Retrieve the last inserted ID
+
+    //                using (var command = new MySqlCommand(insertQuery, connection, transaction))
+    //                {
+    //                    command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
+    //                    command.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
+    //                    command.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
+    //                    command.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
+    //                    command.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
+    //                    command.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
+    //                    command.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+    //                    command.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+    //                    command.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
+
+
+    //                    var reallocationId = Convert.ToInt32(await command.ExecuteScalarAsync()); // Get the inserted ID
+    //                    if (reallocationId > 0)
+    //                    {
+    //                        await transaction.CommitAsync();
+    //                        var what =await _adminService.ApproveRequestReallocation(reallocationId);
+    //                        if(what)
+    //                        return ($"Cabinet reallocation was successful.",reallocationId);
+    //                        else
+    //                        { 
+    //                            return ($"Cabinet reallocation was not successful.", 0);
+    //                        }
+    //                    }
+    //                }
+    //               return ($"Cabinet reallocation was successful.", 0);
+
+    //            }
+    //            catch (Exception ex)
+    //            {
+    //                await transaction.RollbackAsync();
+    //                return ($"Error processing reallocation request: {ex.Message}",0);
+    //            }
+    //        }
+    //    }
+    //}
+    public async Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -267,36 +379,55 @@ WHERE
                             }
                             else
                             {
-                                return ("Supervisor not found.",0);
+                                return ("Supervisor not found.", 0);
                             }
                         }
                     }
 
                     // Step 2: Check if the supervisor is authorized
-                    if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment)
+                    if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment ||
+                        supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
                     {
-                        return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.", 0);
+                        return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}. You need Admin approval", 0);
                     }
 
-                    if (supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
+                    // Step 3: Validate the requested cabinet (replace the empty if () ; statement)
+                    string validateCabinetQuery = @"
+                    SELECT COUNT(*) 
+                    FROM Cabinets 
+                    WHERE department_name = @RequestedDepartment 
+                    AND wing = @RequestWing 
+                    AND level = @RequestLevel 
+                    AND number_cab = @NumberCab 
+                    AND location = @RequestLocation";
+                    using (var validateCmd = new MySqlCommand(validateCabinetQuery, connection, transaction))
                     {
-                        return ($"You need Admin approval to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}.",0);
+                        validateCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
+                        validateCmd.Parameters.AddWithValue("@RequestWing", model.RequestWing);
+                        validateCmd.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+                        validateCmd.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+                        validateCmd.Parameters.AddWithValue("@RequestLocation", model.RequestLocation);
+
+                        var cabinetExists = Convert.ToInt32(await validateCmd.ExecuteScalarAsync());
+                        if (cabinetExists > 0)
+                        {
+                            return ("The requested cabinet already exists at the specified location.", 0);
+                        }
                     }
 
-                   
-
-                    // inserte this reallocation request 
+                    // Step 4: Insert the reallocation request
                     string insertQuery = @"
                     INSERT INTO Reallocation
                     (SupervisorID, CurrentDepartment, RequestedDepartment, 
-                    RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
-                    number_cab, CurrentCabinetID)
+                     RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
+                     number_cab, CurrentCabinetID)
                     VALUES
                     (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
-                    @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
-                    @NumberCab, @CurrentCabinetID);
-                    SELECT LAST_INSERT_ID();"; // Retrieve the last inserted ID
+                     @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
+                     @NumberCab, @CurrentCabinetID);
+                    SELECT LAST_INSERT_ID();";
 
+                    int reallocationId;
                     using (var command = new MySqlCommand(insertQuery, connection, transaction))
                     {
                         command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
@@ -309,35 +440,150 @@ WHERE
                         command.Parameters.AddWithValue("@NumberCab", model.NumberCab);
                         command.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
 
-                        var reallocationId = Convert.ToInt32(await command.ExecuteScalarAsync()); // Get the inserted ID
-                        if (reallocationId > 0)
+                        reallocationId = Convert.ToInt32(await command.ExecuteScalarAsync());
+                        if (reallocationId <= 0)
                         {
-                            await transaction.CommitAsync();
-                            await _adminService.ApproveRequestReallocation(reallocationId);
-
-                            return ($"Cabinet reallocation was successful.",reallocationId);
+                            await transaction.RollbackAsync();
+                            return ("Failed to insert reallocation request.", 0);
                         }
                     }
-                   return ($"Cabinet reallocation was successful.", 0);
 
+                    // Step 5: Perform the reallocation (merged from ApproveRequestReallocation)
+                    // 5.1: Temporarily set cabinet_id in Lockers to NULL
+                    string tempUpdateLockersQuery = @"
+                    UPDATE Lockers 
+                    SET cabinet_id = NULL
+                    WHERE cabinet_id = @CurrentCabinetId";
+                    int lockersUpdated;
+                    using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
+                    {
+                        tempLockersCmd.Parameters.AddWithValue("@CurrentCabinetId", model.CurrentCabinetID);
+                        lockersUpdated = await tempLockersCmd.ExecuteNonQueryAsync();
+                    }
 
+                    // 5.2: Update Cabinet information
+                    string updateCabinetQuery = @"
+                    UPDATE Cabinets 
+                    SET 
+                        department_name = @RequestedDepartment,
+                        wing = @RequestWing,
+                        level = @RequestLevel,
+                        location = @RequestLocation
+                    WHERE cabinet_id = @CurrentCabinetId";
+                    using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+                    {
+                        updateCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
+                        updateCmd.Parameters.AddWithValue("@RequestWing", model.RequestWing);
+                        updateCmd.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+                        updateCmd.Parameters.AddWithValue("@RequestLocation", model.RequestLocation);
+                        updateCmd.Parameters.AddWithValue("@CurrentCabinetId", model.CurrentCabinetID);
+
+                        int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+                        if (rowsAffected == 0)
+                        {
+                            await transaction.RollbackAsync();
+                            return ("Failed to update cabinet information.", 0);
+                        }
+                    }
+
+                    // 5.3: Get the new cabinet_id
+                    string? newCabinetId = null;
+                    string getNewCabinetIdQuery = @"
+                    SELECT cabinet_id 
+                    FROM Cabinets 
+                    WHERE department_name = @RequestedDepartment 
+                    AND wing = @RequestWing 
+                    AND level = @RequestLevel 
+                    AND number_cab = @NumberCab";
+                    using (var getCabinetCmd = new MySqlCommand(getNewCabinetIdQuery, connection, transaction))
+                    {
+                        getCabinetCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
+                        getCabinetCmd.Parameters.AddWithValue("@RequestWing", model.RequestWing);
+                        getCabinetCmd.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
+                        getCabinetCmd.Parameters.AddWithValue("@NumberCab", model.NumberCab);
+
+                        newCabinetId = await getCabinetCmd.ExecuteScalarAsync() as string;
+                        if (string.IsNullOrEmpty(newCabinetId))
+                        {
+                            await transaction.RollbackAsync();
+                            return ("Failed to retrieve new cabinet ID.", 0);
+                        }
+                    }
+
+                    // 5.4: Update Lockers if any were affected
+                    if (lockersUpdated > 0)
+                    {
+                        var lockerIds = new List<(string OldId, string NewId)>();
+                        string selectLockersQuery = @"
+                        SELECT Id 
+                        FROM Lockers 
+                        WHERE DepartmentName = @CurrentDepartment 
+                        AND Id LIKE CONCAT(@CurrentCabinetId, '%')";
+                        using (var selectLockersCmd = new MySqlCommand(selectLockersQuery, connection, transaction))
+                        {
+                            selectLockersCmd.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment);
+                            selectLockersCmd.Parameters.AddWithValue("@CurrentCabinetId", model.CurrentCabinetID);
+                            using (var reader = await selectLockersCmd.ExecuteReaderAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    string oldLockerId = reader["Id"]?.ToString() ?? string.Empty;
+                                    string newLockerId = $"{newCabinetId}-{oldLockerId.Split('-').Last()}";
+                                    lockerIds.Add((oldLockerId, newLockerId));
+                                }
+                            }
+                        }
+
+                        foreach (var (oldLockerId, newLockerId) in lockerIds)
+                        {
+                            string updateLockerQuery = @"
+                            UPDATE Lockers 
+                            SET 
+                                Id = @NewLockerId,
+                                DepartmentName = @RequestedDepartment,
+                                cabinet_id = @NewCabinetId
+                            WHERE Id = @OldLockerId";
+                            using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+                            {
+                                lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+                                lockerCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
+                                lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
+                                lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
+                                await lockerCmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                    }
+
+                    // 5.5: Mark the reallocation request as approved
+                    string approveQuery = @"
+                    UPDATE Reallocation 
+                    SET RequestStatus = 'Approved'
+                    WHERE RequestID = @RequestID";
+                    using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
+                    {
+                        approveCmd.Parameters.AddWithValue("@RequestID", reallocationId);
+                        await approveCmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Step 6: Commit the transaction
+                    await transaction.CommitAsync();
+                    return ($"Cabinet reallocation was successful.", reallocationId);
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
-                    return ($"Error processing reallocation request: {ex.Message}",0);
+                    try
+                    {
+                        await transaction.RollbackAsync();
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                      return ("Error during transaction rollback.",0);
+                    }
+                    return ($"Error processing reallocation request: {ex.Message}", 0);
                 }
             }
         }
     }
-
-
-
-
-
-
-
-
 
 
     public void Notify()
@@ -764,6 +1010,40 @@ JOIN Supervisors su ON bs.blocked_by = su.id
     {
         throw new NotImplementedException();
     }
+
+    public async Task<bool> HasCovenant(int? userId)
+    {
+        try
+
+        {
+            int count;
+
+            string query = @"SELECT COUNT(*) FROM Supervisors 
+                 WHERE id = @userId
+                 AND supervised_department IS NOT NULL 
+                ";
+
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var cmd = new MySqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@userId", userId);
+
+                    count = Convert.ToInt32(cmd.ExecuteScalar());
+                    return count > 0;
+
+                }
+            }
+            
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+
+    }
+
 
     //public void UnblockStudent(int id)
     //{

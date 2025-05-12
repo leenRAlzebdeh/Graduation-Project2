@@ -198,6 +198,7 @@ namespace JUSTLockers.Controllers
         {
             int? studentId = HttpContext.Session.GetInt32("UserId");
             var reports = await _studentService.ViewAllReports(studentId);
+
             ViewBag.HasLocker = _studentService.HasLocker(studentId);
             return View("~/Views/Home/StudentDashboard.cshtml",reports);
         }

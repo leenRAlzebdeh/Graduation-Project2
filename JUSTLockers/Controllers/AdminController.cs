@@ -211,7 +211,7 @@ namespace JUSTLockers.Controllers
            
             if (success)
             {
-
+                //some method for the notification system
                 _notificationService.SendSupervisorEmail(SupervisorID, null, EmailMessageType.ReallocationApproved, requestId);
                 var affectedSuper = await _adminService.IsDepartmentAssigned(RequestedDepartment, RequestLocation);
                 var reallocationRequest = await _adminService.GetReallocationRequestById(requestId);

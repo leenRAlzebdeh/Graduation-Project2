@@ -1,15 +1,10 @@
-﻿using JUSTLockers.DataBase;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using JUSTLockers.Classes;
 using MySqlConnector;
 using JUSTLockers.Services;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using System.Threading.Channels;
-using JUSTLockers.Service;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using System.Threading.Tasks;
 
 namespace JUSTLockers.Controllers
 {
@@ -33,18 +28,14 @@ namespace JUSTLockers.Controllers
             _notificationService = notificationService;
         }
 
-        //[HttpGet]
-        //public IActionResult ReportedIssues()
-        //{
-        //    return View("~/Views/Supervisor/ReportedIssues.cshtml");
         //}
         [HttpGet]
-        public IActionResult SupervisorDashboard()
+        public async Task<IActionResult> SupervisorDashboard()
         {
             // Logic to show the Assign Cabinet page
             // return View();
-
-            if(HasConvinent(HttpContext.Session.GetInt32("UserId")))
+            var hasCovenant = await HasCovenant(HttpContext.Session.GetInt32("UserId"));
+            if (hasCovenant)
             {
                 return View("~/Views/Home/SupervisorDashboard.cshtml");
             }
@@ -112,7 +103,7 @@ namespace JUSTLockers.Controllers
             {
                 var student = await _adminService.GetAffectedStudentAsync(model.CurrentCabinetID);
                 
-                var message = await _superService.ReallocationRequestFormSameDep(model); // Pass model
+                var message = await _superService.ReallocationRequestFormSameDep(model); 
                 var reallocation = await _adminService.GetReallocationRequestById(message.requestId);
 
                 if (message.message.StartsWith("Cabinet reallocation was successful"))
@@ -228,18 +219,12 @@ namespace JUSTLockers.Controllers
                 
                 _notificationService.SendStudentEmail(student.Email, EmailMessageType.StudentBlocked, null);
                 TempData["Message"] = message;
-                //int? userId = HttpContext.Session.GetInt32("UserId");
-                //_superService.BlockStudent(id, userId);
-                //TempData["SuccessMessage"] = "Student blocked successfully.";
-
-            }
+           }
             else
             {
                 string message = _superService.UnblockStudent(id, supervisorId);
                 _notificationService.SendStudentEmail(student.Email, EmailMessageType.StudentUnblocked, null);
                 TempData["Message"] = message;
-                //_superService.UnblockStudent(id);
-                //TempData["SuccessMessage"] = "Student unblocked successfully.";
             }
 
             return RedirectToAction("BlockStudent");
@@ -291,44 +276,44 @@ namespace JUSTLockers.Controllers
             }
         }
 
-        public bool HasConvinent(int? userId)
+        public async Task<bool> HasCovenant(int? userId)
         {
 
-            bool hasConvinent = false;
+            bool hasCovenant = await _superService.HasCovenant(userId);
 
-            try
+            //try
 
-            {
-                int count;
+            //{
+            //    int count;
 
-                string query = @"SELECT COUNT(*) FROM Supervisors 
-                 WHERE id = @userId
-                 AND supervised_department IS NOT NULL 
-                ";
+            //    string query = @"SELECT COUNT(*) FROM Supervisors 
+            //     WHERE id = @userId
+            //     AND supervised_department IS NOT NULL 
+            //    ";
 
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    connection.Open();
-                    using (var cmd = new MySqlCommand(query, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@userId", userId);
+            //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            //    {
+            //        connection.Open();
+            //        using (var cmd = new MySqlCommand(query, connection))
+            //        {
+            //            cmd.Parameters.AddWithValue("@userId", userId);
 
-                        count = Convert.ToInt32(cmd.ExecuteScalar());
-                        hasConvinent = count > 0;
+            //            count = Convert.ToInt32(cmd.ExecuteScalar());
+            //            hasConvinent = count > 0;
 
-                    }
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-
-                TempData["ErrorMessage"] = "An error occurred while checking super Convinent status: " + ex.Message;
-            }
+            //        }
+            //    }
 
 
-            return hasConvinent;
+            //}
+            //catch (Exception ex)
+            //{
+
+            //    TempData["ErrorMessage"] = "An error occurred while checking super Convinent status: " + ex.Message;
+            //}
+
+
+            return hasCovenant;
         }
 
 

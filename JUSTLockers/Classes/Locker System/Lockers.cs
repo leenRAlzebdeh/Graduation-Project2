@@ -16,5 +16,6 @@ public enum LockerStatus
     EMPTY,
     RESERVED,
     IN_MAINTENANCE,
-    OUT_OF_SERVICE
+    OUT_OF_SERVICE,
+    DAMAGED
 }
