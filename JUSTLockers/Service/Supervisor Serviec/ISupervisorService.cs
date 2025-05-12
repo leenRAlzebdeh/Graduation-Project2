@@ -1,4 +1,5 @@
 using JUSTLockers.Classes;
+using JUSTLockers.Service;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JUSTLockers.Services;
@@ -22,7 +23,7 @@ public interface ISupervisorService : IUserActions, ILockerActions
 
     public  Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model);
 
-
+    public  Task<DepartmentInfo> GetDepartmentInfo(int userId);
 
         void Notify();
         void ManualReserve();
