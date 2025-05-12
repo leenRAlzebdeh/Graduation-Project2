@@ -1,4 +1,5 @@
 using JUSTLockers.Classes;
+using JUSTLockers.Service;
 using MySqlConnector;
 namespace JUSTLockers.Services;
 
@@ -749,6 +750,31 @@ JOIN Supervisors su ON bs.blocked_by = su.id
         return cabinets;
     }
 
+    public async Task<DepartmentInfo> GetDepartmentInfo(int userId)
+    {
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+            var query = @"SELECT supervised_department, location FROM Supervisors WHERE id = @userId";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@userId", userId);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new DepartmentInfo
+                        {
+                            DepartmentName = reader.GetString("supervised_department"),
+                            Location = reader.GetString("location")
+                        };
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     public void ViewNotifications()
     {

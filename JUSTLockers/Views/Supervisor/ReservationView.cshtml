@@ -1,0 +1,313 @@
+﻿@{
+    ViewBag.Title = "Reserve a Locker";
+
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>JUSTLocker - Reserve a Locker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/SupervisorView.css" />
+    <link rel="stylesheet" href="~/css/message.css" />
+    <link rel="stylesheet" href="~/css/blocklist.css" />
+
+    <style>
+        .reserve-btn:disabled {
+            background-color: #ccc; /* Gray color to indicate it's disabled */
+            color: #666; /* Light gray text */
+            cursor: not-allowed; /* Change cursor to indicate it's not clickable */
+        }
+
+        #currentReservation {
+            /* display: none; */
+        }
+
+    </style>
+</head>
+
+<body>
+
+
+    <div class="content-wrapper">
+        <div class="main-content">
+            <div class="header">
+                <h2>Reserve a Locker</h2>
+            </div>
+
+            <div class="card shadow-sm mb-5">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <i class="bi bi-lock-fill me-2"></i>
+
+                </div>
+                <div class="card-body">
+                    <form id="blockStudentForm" class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+
+                        <label for="studentIdInput" class="form-label mb-0">Student ID</label>
+                        <input type="number" id="studentIdInput" class="form-control w-auto" placeholder="Enter Student ID" value="@Context.Request.Query["studentIdInput"]" />
+
+                        <button type="button" onclick="searchStudent()" class="btn btn-primary">Search</button>
+                    </form>
+
+                    @if (TempData["Message"] != null && TempData["Message"].ToString().Contains("Cannot"))
+                    {
+                        <div class="message-box error">@TempData["Message"]</div>
+
+                    }
+
+
+                    else if (TempData["Message"] != null)
+                    {
+                        <div class="message-box success">@TempData["Message"]</div>
+                    }
+                    <!-- Student Info -->
+                    <div id="studentInfo" class="border rounded p-3 mt-3" style="display: none;">
+                        <fieldset>
+                            <legend class="fw-bold">📘 Student Info</legend>
+
+                            <p><strong>Name:</strong> <span id="s_name"></span></p>
+                            <p><strong>Email:</strong> <span id="s_email"></span></p>
+                            <p><strong>Department:</strong> <span id="s_department"></span> / <span id="s_location"></span></p>
+                            <p><strong>His Locker:</strong> <span id="s_lockerId"></span></p>
+                            <p><strong>Block Status:</strong> <span id="s_blockStatus"></span></p>
+
+                            <div id="note" style="display:none; color:red;">Can not reserve for Blocked Student  </div>
+                            <div id="note2" style="display:none; color:red;">Student already has a locker  </div>
+
+
+
+                            <div class="d-flex gap-3 mt-2">
+
+                                <button onclick="cancelStudentInfo()" class="btn btn-secondary">Cancel</button>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Not Found Message -->
+                    <div id="notFoundMsg" class="message-box error" style="display: none;">
+                        Student does not exist.
+                    </div>
+                    <div id="statusMsg" class="message-box success" style="display: none;"></div>
+
+                </div>
+            </div>
+
+
+
+
+
+            <div class="reservation-section">
+
+                <fieldset>
+                    <legend>Available Lockers</legend>
+
+
+
+                    @if (Model.Count == 0)
+                    {
+                        <div class="status-message error-message">No available lockers.</div>
+                    }
+                    else
+                    {
+
+
+                        <div id="lockersTable">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Wing</th>
+                                        <th>Level</th>
+                                        <th>Available</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var wingInfo in Model)
+                                    {
+                                        <tr>
+                                            <td>@wingInfo.Wing</td>
+                                            <td>@wingInfo.Level</td>
+                                            <td>@wingInfo.AvailableLockers</td>
+                                            <td>
+                                                @Html.AntiForgeryToken()
+                                                <button class="reserve-btn btn-danger w-100"
+                                                        data-wing="@wingInfo.Wing"
+                                                        data-level="@wingInfo.Level" disabled>
+
+                                                    Reserve
+                                                </button>
+                                                <div class="status-message" id="status-@wingInfo.Wing-@wingInfo.Level"></div>
+                                            </td>
+
+
+                                        </tr>
+
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </fieldset>
+            </div>
+        </div>
+    </div>
+    <div class="logout-section text-center mb-3">
+        <form asp-action="SupervisorDashboard" asp-controller="Supervisor" method="get">
+            <button type="submit" class="btn btn-danger w-100">
+                <i class="fas fa-sign-out-alt"></i> Dashboard
+            </button>
+        </form>
+    </div>
+    <script>
+        function cancelStudentInfo() {
+            document.getElementById("studentInfo").style.display = "none";
+            document.getElementById("notFoundMsg").style.display = "none";
+        }
+    </script>
+
+    <script>
+        let currentStudent = null;
+        var note= document.getElementById("note");
+        async function searchStudent() {
+            const id = document.getElementById("studentIdInput").value;
+
+            const response = await fetch('/Supervisor/SearchStudent', {
+                method: 'POST',
+                body: new URLSearchParams({ id })
+            });
+
+            const data = await response.json();
+            const studentInfo = document.getElementById("studentInfo");
+            const notFoundMsg = document.getElementById("notFoundMsg");
+
+            if (!data.exists) {
+                notFoundMsg.style.display = "block";
+                studentInfo.style.display = "none";
+
+                // Disable all reserve buttons
+                document.querySelectorAll('.reserve-btn').forEach(btn => {
+                    btn.disabled = true;
+
+                });
+
+                return;
+            }
+
+            const s = data.student;
+            currentStudent = s;
+
+            // Fill UI
+            document.getElementById("s_name").textContent = s.name;
+            document.getElementById("s_email").textContent = s.email;
+            document.getElementById("s_department").textContent = s.department;
+            document.getElementById("s_location").textContent = s.location;
+            document.getElementById("s_lockerId").textContent = s.lockerId || "No Locker";
+            document.getElementById("s_blockStatus").textContent = s.isBlocked ? "Blocked" : "Not Blocked";
+
+            notFoundMsg.style.display = "none";
+            studentInfo.style.display = "block";
+
+            // Enable or disable reserve buttons in the table
+            document.querySelectorAll('.reserve-btn').forEach(btn => {
+                btn.disabled = s.isBlocked || s.lockerId;
+                if (s.isBlocked) {
+                    note.style.display = "block";
+                } else {
+                    note.style.display = "none";
+                }
+                if (s.lockerId) {
+                    document.getElementById("note2").style.display = "block";
+                } else {
+                    document.getElementById("note2").style.display = "none";
+                }
+            });
+        }
+
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.reserve-btn').forEach(btn => {
+                btn.disabled = true;
+
+            });
+
+            document.querySelectorAll('.reserve-btn').forEach(btn => {
+                btn.addEventListener('click', async function () {
+                    if (!currentStudent || currentStudent.isBlocked || currentStudent.lockerId) return;
+
+                    const wing = this.dataset.wing;
+                    const level = this.dataset.level;
+                    const statusDiv = document.getElementById(`status-${wing}-${level}`);
+
+                    this.disabled = true;
+                    statusDiv.textContent = 'Processing...';
+                    statusDiv.className = 'status-message';
+
+                    try {
+                        const data = {
+                            studentId: currentStudent.id,
+                            departmentName: '@ViewBag.DepartmentName',
+                            location: '@ViewBag.Location',
+                            wing: wing,
+                            level: parseInt(level)
+                        };
+
+                        const response = await fetch('/Student/ReserveLocker', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Reservation failed');
+                        }
+
+                        statusDiv.textContent = 'Reserved';
+                        cancelStudentInfo();
+                        showStatusMessage("Locker reserved successfully");
+
+
+                      // window.location.reload();
+
+                    } catch (error) {
+                        statusDiv.textContent = error.message;
+                        statusDiv.className = 'status-message error-message';
+                        this.disabled = false;
+                        console.error('Reservation error:', error);
+                    }
+                });
+            });
+        });
+
+
+
+
+
+
+        function showStatusMessage(msg, isError = false) {
+            const statusBox = document.getElementById("statusMsg");
+            statusBox.textContent = msg;
+            statusBox.style.display = "block";
+            statusBox.className = "message-box " + (isError ? "error" : "success");
+            statusBox.classList.add("fade-in");
+
+            setTimeout(() => {
+                statusBox.classList.remove("fade-in");
+                setTimeout(() => {
+                    statusBox.style.display = "none";
+                }, 3000);
+            }, 2000);
+        }
+
+
+    </script>
+
+</body>
+</html>

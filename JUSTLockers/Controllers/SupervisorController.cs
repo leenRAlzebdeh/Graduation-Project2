@@ -290,6 +290,57 @@ namespace JUSTLockers.Controllers
                 return StatusCode(500, new { message = "An error occurred.", details = ex.Message });
             }
         }
+         [HttpGet]
+        public IActionResult ReserveLocker()
+        {
+            return View("~/Views/Supervisor/ReservationView.cshtml");
+        }
+        public async Task<IActionResult> ReservationView()
+        {
+          
+            int? userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Check if student is blocked
+            //bool isBlocked = await _studentService.IsStudentBlocked(studentId.Value);
+            //ViewBag.IsBlocked = isBlocked;
+
+            // Get department info
+            DepartmentInfo departmentInfo = await _superService.GetDepartmentInfo(userId.Value);
+            if (departmentInfo == null)
+            {
+                return NotFound("super not found");
+            }
+
+            // Get available wings/levels
+            var wingsInfo = await _studentService.GetAvailableWingsAndLevels(departmentInfo.DepartmentName, departmentInfo.Location);
+
+            // Check for existing reservation
+            var reservation = await _studentService.GetCurrentReservationAsync(userId.Value);
+
+            ViewBag.DepartmentName = departmentInfo.DepartmentName;
+            ViewBag.Location = departmentInfo.Location;
+            ViewBag.StudentId = userId.Value;
+            ViewBag.HasReservation = reservation != null;
+
+            if (reservation != null)
+            {
+                ViewBag.ReservationInfo = new
+                {
+                    LockerId = reservation.LockerId,
+                    Date = reservation.Date.ToString("yyyy-MM-dd HH:mm"),
+
+                    Status = reservation.Status.ToString()
+                };
+            }
+
+            return View(wingsInfo);
+        }
+
 
         public bool HasConvinent(int? userId)
         {
