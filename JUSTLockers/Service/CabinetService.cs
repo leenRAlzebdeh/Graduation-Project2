@@ -244,14 +244,15 @@ namespace JUSTLockers.Service
         {
             try
             {
+                string query = "SELECT MAX(number_cab) AS LastCabinetNumber FROM Cabinets";
+
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    string query = "SELECT MAX(number_cab) AS LastCabinetNumber FROM Cabinets";
-                    await connection.OpenAsync();
+                    connection.Open();
                     using (var command = new MySqlCommand(query, connection))
                     {
-                        var result = await command.ExecuteScalarAsync();
-                        return result?.ToString() ?? "0";
+                        var result = command.ExecuteScalar();
+                        return result.ToString(); // Return the last cabinet number as a string
                     }
                 }
             }

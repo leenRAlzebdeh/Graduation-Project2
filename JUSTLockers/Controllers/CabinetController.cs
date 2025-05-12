@@ -228,19 +228,19 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                //string query = "SELECT MAX(number_cab) AS LastCabinetNumber FROM Cabinets";
+                string query = "SELECT MAX(number_cab) AS LastCabinetNumber FROM Cabinets";
 
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    connection.Open();
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        var result = command.ExecuteScalar();
-                //        return Json(result.ToString()); // Return the last cabinet number as a string
-                //    }
-                //}
-                var lastCabinetNumber = _cabinetService.GetLastCabinetNumberAsync();
-                return Json(lastCabinetNumber);
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        return Json(result.ToString()); // Return the last cabinet number as a string
+                    }
+                }
+                //var lastCabinetNumber = _cabinetService.GetLastCabinetNumberAsync();
+                //return Json(lastCabinetNumber.ToString());
             }
             catch (Exception ex)
             {

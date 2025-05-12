@@ -185,10 +185,10 @@ namespace JUSTLockers.Services
                            "Your locker has been reallocated as part of a cabinet reallocation in the JUSTLockers system.\n" +
                            $"Old Cabinet ID: {data?.GetValueOrDefault("CurrentCabinetId") ?? "N/A"}\n" +
                            $"New Cabinet ID: {data?.GetValueOrDefault("NewCabinetId") ?? "N/A"}\n" +
-                           $"New Department: {data?.GetValueOrDefault("RequestedDepartment") ?? "N/A"}\n" +
-                           $"New Location: {data?.GetValueOrDefault("RequestLocation") ?? "N/A"}\n" +
-                           $"New Wing: {data?.GetValueOrDefault("RequestWing") ?? "N/A"}\n" +
-                           $"New Level: {data?.GetValueOrDefault("RequestLevel") ?? "N/A"}\n\n" +
+                           $"Department: {data?.GetValueOrDefault("RequestedDepartment") ?? "N/A"}\n" +
+                           $"Location: {data?.GetValueOrDefault("RequestLocation") ?? "N/A"}\n" +
+                           $"Wing: {data?.GetValueOrDefault("RequestWing") ?? "N/A"}\n" +
+                           $"Level: {data?.GetValueOrDefault("RequestLevel") ?? "N/A"}\n\n" +
                            "Please check the JUSTLockers system for updated details or contact your supervisor if you have any questions.\n\n" +
                            "Best regards,\nJUSTLockers Team";
                     break;
