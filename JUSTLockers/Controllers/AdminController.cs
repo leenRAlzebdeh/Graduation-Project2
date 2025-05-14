@@ -450,6 +450,21 @@ namespace JUSTLockers.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Settings(DateOnly date,bool? now)
+        {
+            var settings = await _adminService.AddSettingsAsync(date,now);
+            if (settings)
+            {
+                TempData["SuccessMessage"] = "Settings updated successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to update settings.";
+            }
+            return RedirectToAction("Settings", "Admin");
+        }
+
 
     }
 }

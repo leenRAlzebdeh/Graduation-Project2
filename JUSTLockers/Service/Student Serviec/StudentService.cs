@@ -72,7 +72,7 @@ namespace JUSTLockers.Service
                     FROM Reservations r
                     JOIN Lockers l ON r.LockerId = l.Id
                     JOIN Students s ON r.StudentId = s.id
-                    WHERE r.StudentId = @StudentId";
+                    WHERE r.StudentId = @StudentId AND r.Status = 'RESERVED'";
 
                 using (var command = new MySqlCommand(query, connection))
                 {
@@ -262,47 +262,6 @@ namespace JUSTLockers.Service
             return reports;
         }
 
-        //public async Task<List<Report>> ViewReportedIssues()
-        //{
-        //    var reports = new List<Report>();
-        //    var query = "SELECT * FROM Reports";
-
-        //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        //    {
-        //        await connection.OpenAsync();
-
-        //        using (var command = new MySqlCommand(query, connection))
-        //        using (var reader = await command.ExecuteReaderAsync())
-        //        {
-        //            while (await reader.ReadAsync())
-        //            {
-        //                reports.Add(new Report
-        //                {
-        //                    Reporter = null,
-        //                    Locker = null,
-
-        //                    ReportId = reader.GetInt32("Id"),
-        //                    ReporterId = reader.GetInt32("ReporterId"),
-        //                    LockerId = reader.GetString("LockerId"),
-
-        //                    // Converting string from DB to enums
-        //                    Type = Enum.Parse<ReportType>(reader.GetString("Type")),
-        //                    Status = Enum.Parse<ReportStatus>(reader.GetString("Status")),
-
-        //                    Subject = reader.GetString("Subject"),
-        //                    Statement = reader.GetString("Statement"),
-        //                    ReportDate = reader.GetDateTime("ReportDate"),
-        //                    ResolvedDate = reader.IsDBNull("ResolvedDate") ? null : reader.GetDateTime("ResolvedDate"),
-        //                    ResolutionDetails = reader.IsDBNull("ResolvedDetails") ? null : reader.GetString("ResolvedDetails"),
-        //                    ImageData = reader.IsDBNull("ImageData") ? null : (byte[])reader["ImageData"],
-        //                    ImageMimeType = reader.IsDBNull("ImageMimeType") ? null : reader.GetString("ImageMimeType")
-        //                });
-        //            }
-        //        }
-        //    }
-
-        //    return reports;
-        //}
         public void CheckReportStatus()
         {
             throw new NotImplementedException();
@@ -366,7 +325,37 @@ namespace JUSTLockers.Service
                         }
 
                         // Delete the reservation record
-                        var updateReservationQuery = "DELETE FROM Reservations WHERE Id = @ReservationId";
+                        var checkCanceledReservationQuery = @"
+                            SELECT Id 
+                            FROM Reservations 
+                            WHERE Id = @reservationId AND Status = 'CANCELED'";
+
+                        string canceledReservationId = null;
+
+                        using (var checkCmd = new MySqlCommand(checkCanceledReservationQuery, connection, transaction))
+                        {
+                            checkCmd.Parameters.AddWithValue("@reservationId", reservationId);
+                            using (var reader = await checkCmd.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync())
+                                {
+                                    canceledReservationId = reader.GetString("Id");
+                                }
+                            }
+                        }
+
+                        if (canceledReservationId != null)
+                        {
+                            var deleteCanceledReservationQuery = "DELETE FROM Reservations WHERE Id = @ReservationId AND Status = 'CANCELED'";
+                            using (var deleteCmd = new MySqlCommand(deleteCanceledReservationQuery, connection, transaction))
+                            {
+                                deleteCmd.Parameters.AddWithValue("@ReservationId", canceledReservationId);
+                                await deleteCmd.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        // Proceed to update or create the new reservation
+                        var updateReservationQuery = "UPDATE Reservations SET Status = 'CANCELED' WHERE Id = @ReservationId";
                         using (var reservationCmd = new MySqlCommand(updateReservationQuery, connection, transaction))
                         {
                             reservationCmd.Parameters.AddWithValue("@ReservationId", reservationId);
@@ -650,19 +639,52 @@ namespace JUSTLockers.Service
                             }
                         }
 
-                        // Create reservation record
-                        var reservationId = "R-" + lockerId + "-" + studentId;
-                        var reservationQuery = @" 
-                    INSERT INTO Reservations (Id, StudentId, LockerId, ReservationDate, Status)
-                    VALUES (@ReservationId, @StudentId, @LockerId, @ReservationDate, 'RESERVED')";
+                        // Check if a reservation already exists for the same lockerId and studentId
+                        var checkReservationQuery = @"
+                            SELECT COUNT(*) 
+                            FROM Reservations 
+                            WHERE LockerId = @LockerId AND StudentId = @StudentId";
 
-                        using (var reservationCmd = new MySqlCommand(reservationQuery, connection, transaction))
+                        int existingReservationCount;
+                        using (var checkCmd = new MySqlCommand(checkReservationQuery, connection, transaction))
                         {
-                            reservationCmd.Parameters.AddWithValue("@ReservationId", reservationId);
-                            reservationCmd.Parameters.AddWithValue("@StudentId", studentId);
-                            reservationCmd.Parameters.AddWithValue("@LockerId", lockerId);
-                            reservationCmd.Parameters.AddWithValue("@ReservationDate", DateTime.Now);
-                            await reservationCmd.ExecuteNonQueryAsync();
+                            checkCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                            checkCmd.Parameters.AddWithValue("@StudentId", studentId);
+                            existingReservationCount = Convert.ToInt32(await checkCmd.ExecuteScalarAsync());
+                        }
+
+                        if (existingReservationCount > 0)
+                        {
+                            // Update the existing reservation
+                            var updateReservationQuery = @"
+                                UPDATE Reservations 
+                                SET ReservationDate = @ReservationDate, Status = 'RESERVED'
+                                WHERE LockerId = @LockerId AND StudentId = @StudentId";
+
+                            using (var updateCmd = new MySqlCommand(updateReservationQuery, connection, transaction))
+                            {
+                                updateCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                                updateCmd.Parameters.AddWithValue("@StudentId", studentId);
+                                updateCmd.Parameters.AddWithValue("@ReservationDate", DateTime.Now);
+                                await updateCmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        else
+                        {
+                            // Create a new reservation record
+                            var reservationId = "R-" + lockerId + "-" + studentId;
+                            var insertReservationQuery = @"
+                                INSERT INTO Reservations (Id, StudentId, LockerId, ReservationDate, Status)
+                                VALUES (@ReservationId, @StudentId, @LockerId, @ReservationDate, 'RESERVED')";
+
+                            using (var insertCmd = new MySqlCommand(insertReservationQuery, connection, transaction))
+                            {
+                                insertCmd.Parameters.AddWithValue("@ReservationId", reservationId);
+                                insertCmd.Parameters.AddWithValue("@StudentId", studentId);
+                                insertCmd.Parameters.AddWithValue("@LockerId", lockerId);
+                                insertCmd.Parameters.AddWithValue("@ReservationDate", DateTime.Now);
+                                await insertCmd.ExecuteNonQueryAsync();
+                            }
                         }
 
                         // Update student's locker reference
@@ -701,6 +723,7 @@ namespace JUSTLockers.Service
 
                 string query = @"SELECT COUNT(*) FROM Reservations 
                  WHERE StudentId = @userId
+                AND Status = 'RESERVED'
                  AND LockerId IS NOT NULL 
                 ";
 

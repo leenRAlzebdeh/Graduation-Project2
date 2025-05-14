@@ -757,6 +757,10 @@
     ViewBag.Title = "Reserve a Locker";
     var hasReservation = ViewBag.HasReservation ?? false;
     var isBlocked = ViewBag.IsBlocked ?? false;
+	var DepartmentName = ViewBag.DepartmentName ?? "N/A";
+    var Location = ViewBag.Location ?? "N/A";
+   
+
 }
 
 <!DOCTYPE html>
@@ -1036,6 +1040,8 @@
                             <table class="table">
                                 <thead>
                                     <tr>
+                                        <td>Department</td>
+										<td>Location</td>
                                         <th>Wing</th>
                                         <th>Level</th>
                                         <th>Available</th>
@@ -1046,6 +1052,8 @@
                                     @foreach (var wingInfo in Model)
                                     {
                                         <tr>
+                                            <td>@DepartmentName</td>
+                                            <td>@Location</td>
                                             <td>@wingInfo.Wing</td>
                                             <td>@wingInfo.Level</td>
                                             <td>@wingInfo.AvailableLockers</td>
@@ -1105,6 +1113,7 @@
     </div>
     <script>
         const studentId = @ViewBag.StudentId;
+        
         document.addEventListener("DOMContentLoaded", function () {
             const reserveButtons = document.querySelectorAll('.reserve-btn');
             const currentReservationDiv = document.getElementById('currentReservation');

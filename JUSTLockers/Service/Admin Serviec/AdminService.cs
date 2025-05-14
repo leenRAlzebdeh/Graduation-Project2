@@ -1280,4 +1280,18 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
         return null; // Return null if no reallocation request is found
     }
+
+    public async Task<bool> AddSettingsAsync(DateOnly date, bool? now)
+    {
+        if(now!=null)
+        {
+           
+        }
+        else
+        {
+
+        }
+        return true;
+
+    }
 }
