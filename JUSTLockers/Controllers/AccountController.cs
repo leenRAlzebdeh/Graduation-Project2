@@ -141,7 +141,7 @@ namespace WebApplication5.Controllers
             return View("~/Views/Home/Login.cshtml");
         }
 
-        private string  IsValidUser(int id, string password)
+        private string IsValidUser(int id, string password)
         {
 
             try

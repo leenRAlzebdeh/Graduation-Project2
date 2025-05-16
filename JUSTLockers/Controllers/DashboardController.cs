@@ -1,5 +1,6 @@
 ﻿using JUSTLockers.Classes;
 using JUSTLockers.DataBase;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using System.Linq.Expressions;
 
 namespace JUSTLockers.Controllers
 {
+    [Authorize]
     public class DashboardController : Controller
     {
 

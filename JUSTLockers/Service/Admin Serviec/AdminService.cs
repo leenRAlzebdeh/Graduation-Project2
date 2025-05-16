@@ -1281,17 +1281,142 @@ where r.Type='THEFT' and r.SentToAdmin=1
         return null; // Return null if no reallocation request is found
     }
 
-    public async Task<bool> AddSettingsAsync(DateOnly date, bool? now)
+    
+    public async Task<object> GetSemesterSettings()
     {
-        if(now!=null)
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await connection.OpenAsync();
+
+        var query = "SELECT Id, SemesterEndDate FROM SemesterSettings ORDER BY CreatedAt DESC LIMIT 1";
+        using var command = new MySqlCommand(query, connection);
+        using var reader = await command.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
         {
-           
+            return new
+            {
+                Id = reader.GetInt32(0),
+                SemesterEndDate = reader.IsDBNull(1) ? (DateTime?)null : reader.GetDateTime(1)
+            };
+        }
+        return new { Id = 0, SemesterEndDate = (DateTime?)null };
+    }
+
+    public async Task<bool> SaveSemesterSettings(DateTime endDate , int? existingId=null)
+    {
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await connection.OpenAsync();
+
+        string query;
+        if (existingId.HasValue)
+        {
+            // Update existing record
+            query = @"
+                UPDATE SemesterSettings 
+                SET SemesterEndDate = @EndDate, UpdatedAt = CURRENT_TIMESTAMP
+                WHERE Id = @Id";
         }
         else
         {
-
+            // Insert new record
+            query = @"
+                INSERT INTO SemesterSettings (SemesterEndDate)
+                VALUES (@EndDate)";
         }
-        return true;
+
+        using var command = new MySqlCommand(query, connection);
+        command.Parameters.AddWithValue("@EndDate", endDate);
+        if (existingId.HasValue)
+        {
+            command.Parameters.AddWithValue("@Id", existingId.Value);
+        }
+
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+        return rowsAffected > 0;
 
     }
+
+    public async Task<bool> ClearReservationsAndReports()
+    {
+        //using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        //await connection.OpenAsync();
+
+        //using var transaction = await connection.BeginTransactionAsync();
+
+        //try
+        //{
+        //    // Update lockers to EMPTY
+        //    var updateLockersQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE Status = 'RESERVED'";
+        //    using (var cmd = new MySqlCommand(updateLockersQuery, connection, transaction))
+        //    {
+        //        await cmd.ExecuteNonQueryAsync();
+        //    }
+
+        //    // update reservations
+        //    var deleteReservationsQuery = "UPDATE Reservations SET Status = 'CANCELED'";
+        //    using (var cmd = new MySqlCommand(deleteReservationsQuery, connection, transaction))
+        //    {
+        //        await cmd.ExecuteNonQueryAsync();
+        //    }
+
+        //    // Delete reports
+        //    var deleteReportsQuery = "DELETE FROM Reports WHERE Status = 'RESOLVED' OR Status = 'REJECTED'";
+        //    using (var cmd = new MySqlCommand(deleteReportsQuery, connection, transaction))
+        //    {
+        //        await cmd.ExecuteNonQueryAsync();
+        //    }
+
+        //    //update students
+        //    var updateStudentsQuery = "UPDATE Students SET locker_id = NULL ";
+        //    using (var cmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
+        //    {
+        //        await cmd.ExecuteNonQueryAsync();
+        //    }
+
+        //    await transaction.CommitAsync();
+        //    return true;
+        //}
+        //catch
+        //{
+        //    await transaction.RollbackAsync();
+        //    return false;
+        //}
+        return true;
+    }
+
+    public async Task<List<string>> GetAllStudentsEmails()
+    {
+        var users = new List<string>();
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await connection.OpenAsync();
+
+        var query = @"
+            SELECT email FROM Students where locker_id is not null
+            ";
+        using var command = new MySqlCommand(query, connection);
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            users.Add(reader.GetString(0));
+        }
+
+        return users;
+    }
+    //get all supervisors emails 
+    public async Task<List<string>> GetAllSupervisorsEmails()
+    {
+        var emails = new List<string>();
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await connection.OpenAsync();
+        var query = "SELECT email FROM Supervisors WHERE supervised_department is not null";
+        using var command = new MySqlCommand(query, connection);
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            emails.Add(reader.GetString(0));
+        }
+        return emails;
+    }
+    
 }

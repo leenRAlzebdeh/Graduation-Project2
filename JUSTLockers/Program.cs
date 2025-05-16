@@ -12,38 +12,38 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 36))));
-builder.Services.AddScoped<AdminService>();
+builder.Services.AddSingleton<AdminService>();
 builder.Services.AddScoped<SupervisorService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<UserActions>();
 builder.Services.AddScoped<CabinetService>();
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-
+builder.Services.AddSingleton<IEmailService, EmailService>();
+//builder.Services.AddHostedService<SemesterEndService>();
 builder.Services.AddSession(
     options =>
     {
-        options.IdleTimeout = TimeSpan.FromMinutes(20); 
+        options.IdleTimeout = TimeSpan.FromMinutes(10); 
         options.Cookie.HttpOnly = true; 
         options.Cookie.IsEssential = true; 
+       
     }
     );
 builder.Services.AddAuthentication("MyCookieAuth")
     .AddCookie("MyCookieAuth", options =>
     {
         options.LoginPath = "/Home/Login";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(20); // optional
-        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10); // optional
+        //options.SlidingExpiration = true;
         options.Cookie.IsEssential = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
     });
 
 builder.Services.AddAuthorization();
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
-app.UseSession();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -57,6 +57,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
+
 
 app.UseAuthentication();
 app.UseAuthorization();

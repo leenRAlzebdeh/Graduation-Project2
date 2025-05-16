@@ -4,9 +4,12 @@ using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
+using System;
+using static Dapper.SqlMapper;
 
 namespace JUSTLockers.Controllers
 {
+   
     [Authorize]
     public class AdminController : Controller
     {
@@ -450,19 +453,79 @@ namespace JUSTLockers.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Settings(DateOnly date,bool? now)
+        [HttpGet]
+        public async Task<IActionResult> SemesterSettings()
         {
-            var settings = await _adminService.AddSettingsAsync(date,now);
-            if (settings)
+            var settings = await _adminService.GetSemesterSettings();
+            return View("~/Views/Admin/SemesterSettings.cshtml", settings);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ScheduleSemesterEnd(DateTime? endDate, int? settingsId)
+        {
+            try
             {
-                TempData["SuccessMessage"] = "Settings updated successfully.";
+                if (!endDate.HasValue || endDate.Value < DateTime.Now.AddDays(1))
+                {
+                    TempData["ErrorMessage"] = "End date must be at least 1 days in the future.";
+                    return RedirectToAction("SemesterSettings");
+                }
+
+                var result = await _adminService.SaveSemesterSettings(endDate.Value, settingsId);
+                if (result)
+                {
+                    var message = settingsId.HasValue ? "Semester end date updated successfully." : "Semester end date scheduled successfully.";
+                    var users = await _adminService.GetAllSupervisorsEmails();
+                    await _emailService.SemesterEndNotificationAsync(
+                        users,
+                        "SupervisorsSemesterEndNotification",
+                         new Dictionary<string, DateTime>
+                        {
+                            { "EndDate", endDate.Value }
+                        });
+                    return Json(new { success = true, message });
+                }
+                return Json(new { success = false, message = "Failed to save semester end date." });
+               
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Failed to update settings.";
+                TempData["ErrorMessage"] = $"Error scheduling semester end: {ex.Message}";
             }
-            return RedirectToAction("Settings", "Admin");
+            return RedirectToAction("SemesterSettings");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ManualSemesterEnd()
+        {
+            try
+            {    DateTime dateTime = DateTime.Now.AddDays(5);
+                var result = await _adminService.SaveSemesterSettings(DateTime.Now.AddDays(5));
+                if (result)
+                {
+                    var users = await _adminService.GetAllSupervisorsEmails();
+                    await _emailService.SemesterEndNotificationAsync(
+                        users,
+                        "SupervisorsSemesterEndNotification",
+                        new Dictionary<string, DateTime>
+                        {
+                            { "EndDate", dateTime }
+                        }
+                    );
+                    TempData["SuccessMessage"] = "Manual semester end triggered. Notifications will be sent, and reservations will be canceled in 5 days.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to trigger manual semester end.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Error triggering manual semester end: {ex.Message}";
+            }
+            return RedirectToAction("SemesterSettings");
         }
 
 
