@@ -1,6 +1,7 @@
 using JUSTLockers.Classes;
 using JUSTLockers.Service;
 using MySqlConnector;
+using static System.Net.Mime.MediaTypeNames;
 namespace JUSTLockers.Services;
 
 
@@ -108,13 +109,15 @@ WHERE
 
     public async Task<List<Report>> TheftIssues(string filter)
     {
+        
+
         var reports = new List<Report>();
+        
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
 
-        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        {
-            await connection.OpenAsync();
-
-            var query = @"
+                var query = @"
         SELECT 
             r.Id AS ReportId,
             r.Subject AS ProblemDescription,
@@ -141,44 +144,44 @@ WHERE
         WHERE (@Filter IS NULL OR r.Type = @Filter)
     ";
 
-            using (var command = new MySqlCommand(query, connection))
-            {
-                command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
-
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var command = new MySqlCommand(query, connection))
                 {
-                    while (await reader.ReadAsync())
+                    command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
+
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        reports.Add(new Report
+                        while (await reader.ReadAsync())
                         {
-                            ReportId = reader.GetInt32("ReportId"),
-                            Reporter = new Student(
-                                reader.GetInt32("ReporterId"),
-                                reader.GetString("ReporterName"),
-                                reader.GetString("ReporterEmail"),
-                                reader.GetString("DepartmentName")
-                            ),
-                            Locker = new Locker
+                            reports.Add(new Report
                             {
-                                LockerId = reader.GetString("LockerNumber"),
-                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
-                                Department = reader.GetString("DepartmentName"),
-                            },
-                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
-                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
-                            Subject = reader.GetString("ProblemDescription"),
-                            Statement = reader.GetString("DetailedDescription"),
-                            ReportDate = reader.GetDateTime("ReportDate"),
-                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
-                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
-                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
-                            SentToAdmin = reader.GetBoolean("SentToAdmin")
-                        });
+                                ReportId = reader.GetInt32("ReportId"),
+                                Reporter = new Student(
+                                    reader.GetInt32("ReporterId"),
+                                    reader.GetString("ReporterName"),
+                                    reader.GetString("ReporterEmail"),
+                                    reader.GetString("DepartmentName")
+                                ),
+                                Locker = new Locker
+                                {
+                                    LockerId = reader.GetString("LockerNumber"),
+                                    Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                    Department = reader.GetString("DepartmentName"),
+                                },
+                                Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                                Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                                Subject = reader.GetString("ProblemDescription"),
+                                Statement = reader.GetString("DetailedDescription"),
+                                ReportDate = reader.GetDateTime("ReportDate"),
+                                ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                                ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                                ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                                ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                                SentToAdmin = reader.GetBoolean("SentToAdmin")
+                            });
+                        }
                     }
                 }
             }
-        }
         return reports;
 
     }
@@ -709,10 +712,7 @@ WHERE
                 command.Parameters.AddWithValue("@Id", reportId);
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
-                
-
-
-            }
+       }
         }
         catch (Exception ex)
         {
