@@ -2,7 +2,7 @@ using JUSTLockers.Classes;
 using Microsoft.AspNetCore.Mvc;
 namespace JUSTLockers.Services;
 
-public interface IAdminService : IUserActions
+public interface IAdminService 
 {
 
     public  Task<bool> RejectRequestReallocation(int requestId);
@@ -18,24 +18,21 @@ public interface IAdminService : IUserActions
     public Task<bool> CheckEmployeeExists(int employeeId);
     public Task<bool> SupervisorExists(int supervisorId);
     Task<List<Reallocation>> ReallocationResponse();
-    void NotifyStudents();
     //done
     public Task<string> DeleteCovenant(int supervisorId);
     //done
     public string AssignCabinet(Cabinet model);
 
-    void SignCabinetToNewSupervisour();
     //done
     public Task<string> AssignCovenant(int supervisorId, string departmentName, string location);
 
-   // public  Task<List<Cabinet>> ViewCabinetInfo();
-   //done
+ 
     public Task<List<Supervisor>> ViewAllSupervisorInfo();
     //done
     Task<List<Report>> ViewForwardedReports();
     //done
     public Task<Supervisor> GetSupervisorById(int supervisorId);
-    void RespondForwardedReport(string respond);
+    
     //done
     public Task<List<Department>> GetDepartments();
     public Task<List<Department>> GetDepartmentsByLocation(string location);

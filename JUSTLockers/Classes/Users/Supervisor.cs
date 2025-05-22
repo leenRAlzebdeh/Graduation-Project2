@@ -9,9 +9,7 @@ public class Supervisor : User
    public string Location { get; set; }
    public string DepartmentName { get; set; }
    public Department SupervisedDepartment { get; set; }
-    // public List<Reservation> ReservationList { get; set; }
-    // public List<Report> ReportList { get; set; }
-    //public List<Cabinet> Covenant { get; set; }
+ 
 
     public Supervisor()
        : base() // Provide default values for base class constructor

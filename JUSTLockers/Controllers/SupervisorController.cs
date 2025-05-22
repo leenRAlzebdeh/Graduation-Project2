@@ -334,38 +334,6 @@ namespace JUSTLockers.Controllers
 
             bool hasCovenant = await _superService.HasCovenant(userId);
 
-            //try
-
-            //{
-            //    int count;
-
-            //    string query = @"SELECT COUNT(*) FROM Supervisors 
-            //     WHERE id = @userId
-            //     AND supervised_department IS NOT NULL 
-            //    ";
-
-            //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            //    {
-            //        connection.Open();
-            //        using (var cmd = new MySqlCommand(query, connection))
-            //        {
-            //            cmd.Parameters.AddWithValue("@userId", userId);
-
-            //            count = Convert.ToInt32(cmd.ExecuteScalar());
-            //            hasConvinent = count > 0;
-
-            //        }
-            //    }
-
-
-            //}
-            //catch (Exception ex)
-            //{
-
-            //    TempData["ErrorMessage"] = "An error occurred while checking super Convinent status: " + ex.Message;
-            //}
-
-
             return hasCovenant;
         }
 

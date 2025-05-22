@@ -18,11 +18,7 @@ namespace JUSTLockers.Service
         {
             _configuration = configuration;
         }
-        public void Login()
-        {
-            throw new NotImplementedException();
-        }
-
+        
         //leen may not use it 
         public async Task<List<Locker>> ViewAvailableLockers(string departmentName)
         {
@@ -262,22 +258,6 @@ namespace JUSTLockers.Service
             return reports;
         }
 
-        public void CheckReportStatus()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveReservation()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ViewNotifications()
-        {
-            throw new NotImplementedException();
-        }
-        //leen
-        
 
         public async Task<bool> CancelReservation(int studentId , string status)
         {

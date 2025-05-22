@@ -226,11 +226,19 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="@Url.Action("ReallocationRequest", "Home")">
-                    <i class="fas fa-cog"></i> Settings
+                <a href="@Url.Action("SemesterSettings", "Admin")">
+                    <i class="fas fa-cog"></i> Semester Settings
                 </a>
             </li>
+
         </ul>
+        <div class="logout-section text-center mb-3">
+            <form asp-action="Logout" asp-controller="Account" method="post">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
     </aside>
     <div class="message-container" id="messageContainer"></div>
 

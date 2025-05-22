@@ -775,23 +775,6 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
     }
 
-
-
-
-
-
-
-
-        public void CancelStudentReservation()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ManualReserve()
-        {
-            throw new NotImplementedException();
-        }
-
   
 
     public Student GetStudentById(int id)
@@ -926,7 +909,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
             SELECT c.number_cab, c.wing, c.level, c.location, c.department_name, 
                    c.cabinet_id, c.Capacity, c.status 
             FROM Cabinets c
-            JOIN Supervisors s ON c.department_name = s.supervised_department
+            JOIN Supervisors s ON c.department_name = s.supervised_department AND c.location = s.location 
             WHERE s.id = @userId";
 
             var command = new MySqlCommand();
@@ -1022,20 +1005,6 @@ JOIN Supervisors su ON bs.blocked_by = su.id
         return null;
     }
 
-    public void ViewNotifications()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<Locker>> ViewAvailableLockers(string departmentName)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> CancelReservation(int studentId)
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<bool> HasCovenant(int? userId)
     {
@@ -1071,16 +1040,4 @@ JOIN Supervisors su ON bs.blocked_by = su.id
     }
 
 
-    //public void UnblockStudent(int id)
-    //{
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        string query = "DELETE FROM BlockList WHERE student_id = @id";
-    //        var command = new MySqlCommand(query, connection);
-    //        command.Parameters.AddWithValue("@id", id);
-
-    //        connection.Open();
-    //        command.ExecuteNonQuery();
-    //    }
-    //}
 }

@@ -14,48 +14,7 @@ public class AdminService : IAdminService
     {
         _configuration = configuration;
     }
-    //emas
-    //public string AddSupervisor(Supervisor supervisor)
-    //{
 
-    //    try
-    //    {
-    //        string query = "INSERT INTO Supervisors (id, name, email, supervised_department, location) VALUES (@Id, @Name, @Email, @DepartmentName, @Location)";
-
-    //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //        {
-    //            connection.Open();
-    //            using (var command = new MySqlCommand(query, connection))
-    //            {
-    //                command.Parameters.AddWithValue("@Id", supervisor.Id);
-    //                command.Parameters.AddWithValue("@Name", supervisor.Name);
-    //                command.Parameters.AddWithValue("@Email", supervisor.Email);
-    //                command.Parameters.AddWithValue("@DepartmentName", supervisor.DepartmentName); // Avoid null exception
-
-    //                command.Parameters.AddWithValue("@Location", supervisor.Location);
-
-    //                int rowsAffected = command.ExecuteNonQuery();
-    //                if (rowsAffected > 0)
-    //                {
-    //                    return "Supervisor added successfully!";
-    //                }
-    //                else
-    //                {
-    //                    return "Failed to add supervisor. Please try again.";
-    //                }
-    //            }
-    //        }
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        if(ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
-    //        {
-    //            return "Supervisor ID already exists";
-    //        }
-
-    //        return $"Error: {ex.Message}";
-    //    }
-    //}
     public async Task<bool> CheckEmployeeExists(int employeeId)
     {
         try
@@ -77,73 +36,89 @@ public class AdminService : IAdminService
         }
         catch (Exception ex)
         {
-            // Log the error (you should inject ILogger<AdminController> in the constructor)
-
-
-            // In case of error, return false to prevent false positives
             return false;
         }
     }
     public async Task<(bool Success, string Message)> AddSupervisor(Supervisor supervisor)
     {
-        try
-        {
-            string queryEmployee = @"SELECT id, name, email,password FROM Employees WHERE id = @Id";
-            string querySupervisor = @"INSERT INTO Supervisors 
-                                        (id, name, email, supervised_department, location,password) 
-                                        VALUES (@Id, @Name, @Email, @DepartmentName, @Location,@password)";
-
-            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                string pass;
-                await connection.OpenAsync();
-
-                // Step 1: Retrieve employee information
-                using (var commandEmployee = new MySqlCommand(queryEmployee, connection))
-                {
-                    commandEmployee.Parameters.AddWithValue("@Id", supervisor.Id);
-
-                    using (var reader = await commandEmployee.ExecuteReaderAsync())
-                    {
-                        if (!await reader.ReadAsync())
-                        {
-                            return (false, "Employee not found.");
-                        }
-
-                        // Populate supervisor details from employee table
-                        supervisor.Name = reader.GetString("name");
-                        supervisor.Email = reader.GetString("email");
-                        pass = reader.GetString("password");
-                    }
-                }
-
-                // Step 2: Insert into Supervisors table
-                using (var commandSupervisor = new MySqlCommand(querySupervisor, connection))
-                {
-                    commandSupervisor.Parameters.AddWithValue("@Id", supervisor.Id);
-                    commandSupervisor.Parameters.AddWithValue("@Name", supervisor.Name);
-                    commandSupervisor.Parameters.AddWithValue("@Email", supervisor.Email);
-                    commandSupervisor.Parameters.AddWithValue("@DepartmentName",
-                        string.IsNullOrEmpty(supervisor.DepartmentName) ? DBNull.Value : supervisor.DepartmentName);
-                    commandSupervisor.Parameters.AddWithValue("@Location",
-                        string.IsNullOrEmpty(supervisor.Location) ? DBNull.Value : supervisor.Location);
-                    commandSupervisor.Parameters.AddWithValue("@password", pass);
-
-                    int rowsAffected = await commandSupervisor.ExecuteNonQueryAsync();
-
-                    return rowsAffected > 0
-                        ? (true, "Supervisor added successfully!")
-                        : (false, "Failed to add supervisor.");
-                }
-            }
-        }
-        catch (MySqlException ex) when (ex.Number == 1062) // Duplicate entry
+        var employeeExists = await SupervisorExists(supervisor.Id);
+        if (employeeExists)
         {
             return (false, "Supervisor ID already exists.");
         }
-        catch (Exception ex)
+        else
+        if (!await CheckEmployeeExists(supervisor.Id))
         {
-            return (false, $"Error adding supervisor: {ex.Message}");
+            return (false, "Employee not found.");
+        }
+        else
+        if (supervisor.DepartmentName != null && supervisor.Location != null)
+        {
+            if (await IsDepartmentAssigned(supervisor.DepartmentName, supervisor.Location) > 0)
+                return (false, "Department is already assigned to another supervisor.");
+
+            else
+                try
+                {
+                    string queryEmployee = @"SELECT id, name, email,password FROM Employees WHERE id = @Id";
+                    string querySupervisor = @"INSERT INTO Supervisors 
+                                        (id, name, email, supervised_department, location,password) 
+                                        VALUES (@Id, @Name, @Email, @DepartmentName, @Location,@password)";
+
+                    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                    {
+                        string pass;
+                        await connection.OpenAsync();
+
+                        using (var commandEmployee = new MySqlCommand(queryEmployee, connection))
+                        {
+                            commandEmployee.Parameters.AddWithValue("@Id", supervisor.Id);
+
+                            using (var reader = await commandEmployee.ExecuteReaderAsync())
+                            {
+                                if (!await reader.ReadAsync())
+                                {
+                                    return (false, "Employee not found.");
+                                }
+
+                                supervisor.Name = reader.GetString("name");
+                                supervisor.Email = reader.GetString("email");
+                                pass = reader.GetString("password");
+                            }
+                        }
+
+                        using (var commandSupervisor = new MySqlCommand(querySupervisor, connection))
+                        {
+                            commandSupervisor.Parameters.AddWithValue("@Id", supervisor.Id);
+                            commandSupervisor.Parameters.AddWithValue("@Name", supervisor.Name);
+                            commandSupervisor.Parameters.AddWithValue("@Email", supervisor.Email);
+                            commandSupervisor.Parameters.AddWithValue("@DepartmentName",
+                                string.IsNullOrEmpty(supervisor.DepartmentName) ? DBNull.Value : supervisor.DepartmentName);
+                            commandSupervisor.Parameters.AddWithValue("@Location",
+                                string.IsNullOrEmpty(supervisor.Location) ? DBNull.Value : supervisor.Location);
+                            commandSupervisor.Parameters.AddWithValue("@password", pass);
+
+                            int rowsAffected = await commandSupervisor.ExecuteNonQueryAsync();
+
+                            return rowsAffected > 0
+                                ? (true, "Supervisor added successfully!")
+                                : (false, "Failed to add supervisor.");
+                        }
+                    }
+                }
+                catch (MySqlException ex) when (ex.Number == 1062)
+                {
+                    return (false, "Supervisor ID already exists.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Error adding supervisor: {ex.Message}");
+                }
+
+        }
+        else
+        {
+            return (false, "Department and location cannot be null.");
         }
     }
 
@@ -175,8 +150,6 @@ public class AdminService : IAdminService
         VALUES 
         (@NumberCab, @Wing, @Level, @Location, @DepartmentName, @Capacity)";
 
-            //  string query2 = @"update Supervisors SET  supervised_department =@DepartmentName WHERE id=@SupervisorId";
-
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -190,17 +163,7 @@ public class AdminService : IAdminService
                     command.Parameters.AddWithValue("@Location", model.Location);
                     command.Parameters.AddWithValue("@DepartmentName", model.Department);
                     command.Parameters.AddWithValue("@Capacity", model.Capacity);
-
-
-                    int rowsAffected = command.ExecuteNonQuery(); // Executes the insertion and returns the number of rows affected
-                    /*
-                                        using (var command2 = new MySqlCommand(query2, connection))
-                                        {
-                                            command2.Parameters.AddWithValue("@DepartmentName", model.Department); // Dynamically set the department
-                                            command2.Parameters.AddWithValue("@SupervisorId", model.EmployeeId ?? (object)DBNull.Value); // Pass supervisor ID
-                                            command2.ExecuteNonQuery(); // Executes the update
-                                        }
-                    */
+                    int rowsAffected = command.ExecuteNonQuery();
 
                     if (rowsAffected > 0)
                     {
@@ -226,11 +189,12 @@ public class AdminService : IAdminService
     }
     public async Task<string> AssignCovenant(int supervisorId, string departmentName, string location)
     {
+
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
 
-            
+
             // 2. Get supervisor's current details
             var supervisorQuery = "SELECT id, name FROM Supervisors WHERE id = @SupervisorId";
             string supervisorName = null;
@@ -251,7 +215,12 @@ public class AdminService : IAdminService
                 }
             }
 
-            
+            var assignDepartment = await IsDepartmentAssigned(departmentName, location);
+            if (assignDepartment != 0)
+            {
+                return $"Department is assigned to supervisor with id {assignDepartment}";
+            }
+
 
             // 4. Update supervisor's covenant and location
             var updateQuery = @"UPDATE Supervisors 
@@ -259,17 +228,24 @@ public class AdminService : IAdminService
                             location = @Location
                         WHERE id = @SupervisorId";
 
-            using (var updateCmd = new MySqlCommand(updateQuery, connection))
+            try
             {
-                updateCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
-                updateCmd.Parameters.AddWithValue("@Location", location);
-                updateCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
+                using (var updateCmd = new MySqlCommand(updateQuery, connection))
+                {
+                    updateCmd.Parameters.AddWithValue("@DepartmentName", departmentName);
+                    updateCmd.Parameters.AddWithValue("@Location", location);
+                    updateCmd.Parameters.AddWithValue("@SupervisorId", supervisorId);
 
-                int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+                    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
 
-                return rowsAffected > 0
-                    ? $"Covenant assigned successfully. {supervisorName} is now responsible for {departmentName} at {location}."
-                    : "Failed to assign covenant.";
+                    return rowsAffected > 0
+                        ? $"Covenant assigned successfully. {supervisorName} is now responsible for {departmentName} at {location}."
+                        : "Failed to assign covenant.";
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"Error assigning covenant: {ex.Message}";
             }
         }
     }
@@ -384,7 +360,7 @@ public class AdminService : IAdminService
                             id: reader.GetInt32("id"),
                             name: reader.GetString("name"),
                             email: reader.GetString("email"),
-                            department: supervisedDepartment ?? new Department() 
+                            department: supervisedDepartment ?? new Department()
                         );
                     }
                 }
@@ -412,28 +388,11 @@ public class AdminService : IAdminService
                 return rowsAffected > 0;
             }
 
-            //get supervisor id
-            //string getSupervisorIdQuery = @"SELECT SupervisorID FROM Reallocation WHERE RequestID = @RequestID";
-            //int supervisorId = 0;
-            //using (var getSupervisorIdCmd = new MySqlCommand(getSupervisorIdQuery, connection))
-            //{
-            //    getSupervisorIdCmd.Parameters.AddWithValue("@RequestID", requestId);
-            //    using (var reader = await getSupervisorIdCmd.ExecuteReaderAsync())
-            //    {
-            //        if (await reader.ReadAsync())
-            //        {
-            //            supervisorId = reader["SupervisorID"] != DBNull.Value ? Convert.ToInt32(reader["SupervisorID"]) : 0;
-            //        }
-            //    }
-            //    return supervisorId;
-            //}
         }
     }
 
 
 
-
-    
     public async Task<bool> ApproveRequestReallocation(int requestId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -443,19 +402,20 @@ public class AdminService : IAdminService
             {
                 try
                 {
-                    // Get all necessary reallocation data
+                    // Get reallocation data
                     string selectQuery = @"
-        SELECT 
-            r.RequestedDepartment, 
-            r.RequestLocation, 
-            r.number_cab, 
-            r.RequestWing, 
-            r.RequestLevel,
-            r.CurrentCabinetID,
-            r.CurrentDepartment,
-            r.CurrentLocation
-        FROM Reallocation r
-        WHERE r.RequestID = @RequestID AND r.RequestStatus = 'Pending'";
+                    SELECT 
+                        r.RequestedDepartment, 
+                        r.RequestLocation, 
+                        r.number_cab, 
+                        r.RequestWing, 
+                        r.RequestLevel,
+                        r.CurrentCabinetID,
+                        r.CurrentDepartment,
+                        r.CurrentLocation,
+                        r.RequestStatus
+                    FROM Reallocation r
+                    WHERE r.RequestID = @RequestID";
 
                     string? newDepartment = null;
                     string? newLocation = null;
@@ -465,6 +425,7 @@ public class AdminService : IAdminService
                     string? oldCabinetId = null;
                     string? oldDepartment = null;
                     string? oldLocation = null;
+                    string? requestStatus = null;
 
                     using (var selectCmd = new MySqlCommand(selectQuery, connection, transaction))
                     {
@@ -473,6 +434,13 @@ public class AdminService : IAdminService
                         {
                             if (await reader.ReadAsync())
                             {
+                                requestStatus = reader["RequestStatus"]?.ToString();
+                                if (requestStatus != "Pending")
+                                {
+                                    await transaction.RollbackAsync();
+                                    Console.WriteLine($"Request {requestId} is not pending. Status: {requestStatus}");
+                                    return false;
+                                }
                                 newDepartment = reader["RequestedDepartment"]?.ToString();
                                 newLocation = reader["RequestLocation"]?.ToString();
                                 cabinetNumber = reader["number_cab"] != DBNull.Value ? Convert.ToInt32(reader["number_cab"]) : 0;
@@ -485,32 +453,42 @@ public class AdminService : IAdminService
                             else
                             {
                                 await transaction.RollbackAsync();
-                                return false; // Request not found or not pending
+                                Console.WriteLine($"Request {requestId} not found.");
+                                return false;
                             }
                         }
                     }
-                    var lockerChange = 0;
-                    // 1. Temporarily set cabinet_id in Lockers to NULL (allowed since cabinet_id is DEFAULT NULL)
-                    string tempUpdateLockersQuery = @"
-        UPDATE Lockers 
-        SET cabinet_id = NULL
-        WHERE cabinet_id = @OldCabinetId";
 
-                    using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
+                    if (string.IsNullOrEmpty(oldCabinetId))
                     {
-                        tempLockersCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
-                     lockerChange=  await tempLockersCmd.ExecuteNonQueryAsync();
+                        await transaction.RollbackAsync();
+                        Console.WriteLine($"Invalid old cabinet ID for request {requestId}.");
+                        return false;
                     }
 
-                    // 2. Update Cabinet information - this will regenerate the cabinet_id
+                    //int lockerChange = 0;
+                    //// Temporarily set cabinet_id in Lockers to NULL
+                    //string tempUpdateLockersQuery = @"
+                    //UPDATE Lockers 
+                    //SET cabinet_id = NULL
+                    //WHERE cabinet_id = @OldCabinetId";
+
+                    //using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
+                    //{
+                    //    tempLockersCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
+                    //    lockerChange = await tempLockersCmd.ExecuteNonQueryAsync();
+                    //    Console.WriteLine($"Updated {lockerChange} lockers to NULL cabinet_id.");
+                    //}
+
+                    // Update Cabinet information
                     string updateCabinetQuery = @"
-        UPDATE Cabinets 
-        SET 
-            department_name = @NewDepartment,
-            wing = @NewWing,
-            level = @NewLevel,
-            location = @NewLocation
-        WHERE cabinet_id = @OldCabinetId";
+                    UPDATE Cabinets 
+                    SET 
+                        department_name = @NewDepartment,
+                        wing = @NewWing,
+                        level = @NewLevel,
+                        location = @NewLocation
+                    WHERE cabinet_id = @OldCabinetId";
 
                     using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
                     {
@@ -524,6 +502,8 @@ public class AdminService : IAdminService
                         if (rowsAffected == 0)
                         {
                             await transaction.RollbackAsync();
+                            Console.WriteLine($"Failed to update cabinet {oldCabinetId}. Rows affected: {rowsAffected}. " +
+    $"Parameters: department_name={newDepartment}, wing={newWing}, level={newLevel}, location={newLocation}");
                             return false;
                         }
                     }
@@ -531,11 +511,11 @@ public class AdminService : IAdminService
                     // Get the new cabinet_id that was generated
                     string? newCabinetId = null;
                     string getNewCabinetIdQuery = @"
-        SELECT cabinet_id FROM Cabinets 
-        WHERE department_name = @NewDepartment 
-        AND wing = @NewWing 
-        AND level = @NewLevel 
-        AND number_cab = @CabinetNumber";
+    SELECT cabinet_id FROM Cabinets 
+    WHERE department_name = @NewDepartment 
+    AND wing = @NewWing 
+    AND level = @NewLevel 
+    AND number_cab = @CabinetNumber";
 
                     using (var getCabinetCmd = new MySqlCommand(getNewCabinetIdQuery, connection, transaction))
                     {
@@ -548,189 +528,282 @@ public class AdminService : IAdminService
                         if (string.IsNullOrEmpty(newCabinetId))
                         {
                             await transaction.RollbackAsync();
+                            Console.WriteLine($"Failed to retrieve new cabinet ID for {newDepartment}, {newWing}, {newLevel}, {cabinetNumber}.");
                             return false;
                         }
                     }
 
-                    if (lockerChange > 0)
+
+
+                    var lockerIds = new List<(string OldId, string NewId)>();
+                    string selectLockersQuery = @"
+    SELECT Id 
+    FROM Lockers 
+    WHERE Id LIKE CONCAT(@OldCabinetIdPattern, '%')";
+
+                    using (var selectLockersCmd = new MySqlCommand(selectLockersQuery, connection, transaction))
                     {
-                        // 3. Retrieve all Lockers to update their IDs
-                        var lockerIds = new List<(string OldId, string NewId)>();
-                        string selectLockersQuery = @"
-        SELECT Id 
-        FROM Lockers 
-        WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')";
-
-                        using (var selectLockersCmd = new MySqlCommand(selectLockersQuery, connection, transaction))
+                        selectLockersCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
+                        selectLockersCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
+                        using (var reader = await selectLockersCmd.ExecuteReaderAsync())
                         {
-                            selectLockersCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-                            selectLockersCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-                            using (var reader = await selectLockersCmd.ExecuteReaderAsync())
+                            while (await reader.ReadAsync())
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    string oldLockerId = reader["Id"]?.ToString() ?? string.Empty;
-                                    string newLockerId = $"{newCabinetId}-{oldLockerId.Split('-').Last()}";
-                                    lockerIds.Add((oldLockerId, newLockerId));
-                                }
+                                string oldLockerId = reader["Id"]?.ToString() ?? string.Empty;
+                                string newLockerId = $"{newCabinetId}-{oldLockerId.Split('-').Last()}";
+                                lockerIds.Add((oldLockerId, newLockerId));
                             }
                         }
+                    }
 
-                        // 4. Store affected student IDs and nullify their locker_id
-                        //            var affectedStudents = new List<int>();
-                        //            string nullifyStudentsQuery = @"
-                        //SELECT id 
-                        //FROM Students 
-                        //WHERE locker_id IN (
-                        //    SELECT Id 
-                        //    FROM Lockers 
-                        //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
-                        //)";
 
-                        //            using (var nullifyStudentsCmd = new MySqlCommand(nullifyStudentsQuery, connection, transaction))
-                        //            {
-                        //                nullifyStudentsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-                        //                nullifyStudentsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-                        //                using (var reader = await nullifyStudentsCmd.ExecuteReaderAsync())
-                        //                {
-                        //                    while (await reader.ReadAsync())
-                        //                    {
-                        //                        affectedStudents.Add(Convert.ToInt32(reader["id"]));
-                        //                    }
-                        //                }
-                        //            }
+                    // Update lockers
+                    foreach (var (oldLockerId, newLockerId) in lockerIds)
+                    {
+                        string updateLockerQuery = @"
+                            UPDATE Lockers 
+                            SET 
+                                Id = @NewLockerId
+                            WHERE Id = @OldLockerId";
 
-                        //            string updateStudentsToNullQuery = affectedStudents.Any()
-                        //                ? $"UPDATE Students SET locker_id = NULL WHERE id IN ({string.Join(",", affectedStudents)})"
-                        //                : "UPDATE Students SET locker_id = NULL WHERE 1=0";
-
-                        //            using (var updateStudentsNullCmd = new MySqlCommand(updateStudentsToNullQuery, connection, transaction))
-                        //            {
-                        //                await updateStudentsNullCmd.ExecuteNonQueryAsync();
-                        //            }
-
-                        // 5. Store affected reservation IDs and nullify their LockerId
-                        //            var affectedReservations = new List<string>();
-                        //            string nullifyReservationsQuery = @"
-                        //SELECT Id 
-                        //FROM Reservations 
-                        //WHERE LockerId IN (
-                        //    SELECT Id 
-                        //    FROM Lockers 
-                        //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')
-                        //)";
-
-                        //            using (var nullifyReservationsCmd = new MySqlCommand(nullifyReservationsQuery, connection, transaction))
-                        //            {
-                        //                nullifyReservationsCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-                        //                nullifyReservationsCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-                        //                using (var reader = await nullifyReservationsCmd.ExecuteReaderAsync())
-                        //                {
-                        //                    while (await reader.ReadAsync())
-                        //                    {
-                        //                        affectedReservations.Add(reader["Id"]?.ToString() ?? string.Empty);
-                        //                    }
-                        //                }
-                        //            }
-
-                        //            string updateReservationsToNullQuery = affectedReservations.Any()
-                        //                ? $"UPDATE Reservations SET LockerId = NULL WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
-                        //                : "UPDATE Reservations SET LockerId = NULL WHERE 1=0";
-
-                        //            using (var updateReservationsNullCmd = new MySqlCommand(updateReservationsToNullQuery, connection, transaction))
-                        //            {
-                        //                await updateReservationsNullCmd.ExecuteNonQueryAsync();
-                        //            }
-
-                        // 6. Update Lockers with new IDs, department, and cabinet_id
-                        foreach (var (oldLockerId, newLockerId) in lockerIds)
+                        using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
                         {
-                            string updateLockerQuery = @"
-            UPDATE Lockers 
-            SET 
-                Id = @NewLockerId,
-                DepartmentName = @NewDepartment,
-                cabinet_id = @NewCabinetId
-            WHERE Id = @OldLockerId";
-
-                            using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+                            lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+                            lockerCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
+                            lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
+                            lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
+                            int rowsAffected = await lockerCmd.ExecuteNonQueryAsync();
+                            if (rowsAffected == 0)
                             {
-                                lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                                lockerCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
-                                lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
-                                lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
-                                await lockerCmd.ExecuteNonQueryAsync();
+                                await transaction.RollbackAsync();
+                                Console.WriteLine($"Failed to update locker {oldLockerId} to {newLockerId}.");
+                                return false;
                             }
                         }
-                    }//this is new here
+                    }
 
 
-                        // Update the Students table with the new locker_id for affected students
-                        //string updateStudentsQuery = affectedStudents.Any()
-                        //    ? $"UPDATE Students SET locker_id = @NewLockerId WHERE id IN ({string.Join(",", affectedStudents)})"
-                        //    : "UPDATE Students SET locker_id = @NewLockerId WHERE 1=0";
-
-                        //using (var studentsCmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
-                        //{
-                        //    studentsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                        //    await studentsCmd.ExecuteNonQueryAsync();
-                        //}
-
-                        // Update the Reservations table with the new LockerId for affected reservations
-                        //string updateReservationsQuery = affectedReservations.Any()
-                        //    ? $"UPDATE Reservations SET LockerId = @NewLockerId WHERE Id IN ({string.Join(",", affectedReservations.Select(r => $"'{r}'"))})"
-                        //    : "UPDATE Reservations SET LockerId = @NewLockerId WHERE 1=0";
-
-                        //using (var reservationsCmd = new MySqlCommand(updateReservationsQuery, connection, transaction))
-                        //{
-                        //    reservationsCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-                        //    await reservationsCmd.ExecuteNonQueryAsync();
-                        //}
-
-            //            // Update Reservations with the new Locker ID and status
-            //            string updateReservationsStatusQuery = @"
-            //UPDATE Reservations 
-            //SET 
-            //    LockerId = @NewLockerId,
-            //    Status = 'RESERVED'
-            //WHERE LockerId = @OldLockerId";
-
-            //            using (var reservationsStatusCmd = new MySqlCommand(updateReservationsStatusQuery, connection, transaction))
-            //            {
-            //                reservationsStatusCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-            //                reservationsStatusCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
-            //                await reservationsStatusCmd.ExecuteNonQueryAsync();
-            //            }
-            //        }
-
-                    // 7. Mark the reallocation request as approved
+                    // Mark reallocation request as approved
                     string approveQuery = @"
-        UPDATE Reallocation 
-        SET 
-            RequestStatus = 'Approved'    
-        WHERE RequestID = @RequestID";
+                    UPDATE Reallocation 
+                    SET RequestStatus = 'Approved'    
+                    WHERE RequestID = @RequestID";
 
                     using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
                     {
                         approveCmd.Parameters.AddWithValue("@RequestID", requestId);
-
                         await approveCmd.ExecuteNonQueryAsync();
                     }
 
                     await transaction.CommitAsync();
+                    Console.WriteLine($"Reallocation request {requestId} approved successfully.");
                     return true;
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    Console.WriteLine($"Error approving reallocation: {ex.Message}");
-
-                    throw;
-
+                    Console.WriteLine($"Error approving reallocation {requestId}: {ex.Message}\nStack Trace: {ex.StackTrace}");
+                    return false; // Changed to return false instead of rethrowing for testability
                 }
             }
         }
     }
+
+    //public async Task<bool> ApproveRequestReallocation(int requestId)
+    //{
+    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    //    {
+    //        await connection.OpenAsync();
+    //        using (var transaction = await connection.BeginTransactionAsync())
+    //        {
+    //            try
+    //            {
+    //                // Get all necessary reallocation data
+    //                string selectQuery = @"
+    //    SELECT 
+    //        r.RequestedDepartment, 
+    //        r.RequestLocation, 
+    //        r.number_cab, 
+    //        r.RequestWing, 
+    //        r.RequestLevel,
+    //        r.CurrentCabinetID,
+    //        r.CurrentDepartment,
+    //        r.CurrentLocation
+    //    FROM Reallocation r
+    //    WHERE r.RequestID = @RequestID AND r.RequestStatus = 'Pending'";
+
+    //                string? newDepartment = null;
+    //                string? newLocation = null;
+    //                int cabinetNumber = 0;
+    //                string? newWing = null;
+    //                int newLevel = 0;
+    //                string? oldCabinetId = null;
+    //                string? oldDepartment = null;
+    //                string? oldLocation = null;
+
+    //                using (var selectCmd = new MySqlCommand(selectQuery, connection, transaction))
+    //                {
+    //                    selectCmd.Parameters.AddWithValue("@RequestID", requestId);
+    //                    using (var reader = await selectCmd.ExecuteReaderAsync())
+    //                    {
+    //                        if (await reader.ReadAsync())
+    //                        {
+    //                            newDepartment = reader["RequestedDepartment"]?.ToString();
+    //                            newLocation = reader["RequestLocation"]?.ToString();
+    //                            cabinetNumber = reader["number_cab"] != DBNull.Value ? Convert.ToInt32(reader["number_cab"]) : 0;
+    //                            newWing = reader["RequestWing"]?.ToString();
+    //                            newLevel = reader["RequestLevel"] != DBNull.Value ? Convert.ToInt32(reader["RequestLevel"]) : 0;
+    //                            oldCabinetId = reader["CurrentCabinetID"]?.ToString();
+    //                            oldDepartment = reader["CurrentDepartment"]?.ToString();
+    //                            oldLocation = reader["CurrentLocation"]?.ToString();
+    //                        }
+    //                        else
+    //                        {
+    //                            await transaction.RollbackAsync();
+    //                            return false;// Request not found or not pending
+    //                        }
+    //                    }
+    //                }
+    //                var lockerChange = 0;
+    //                // 1. Temporarily set cabinet_id in Lockers to NULL (allowed since cabinet_id is DEFAULT NULL)
+    //                string tempUpdateLockersQuery = @"
+    //    UPDATE Lockers 
+    //    SET cabinet_id = NULL
+    //    WHERE cabinet_id = @OldCabinetId";
+
+    //                using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
+    //                {
+    //                    tempLockersCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
+    //                 lockerChange=  await tempLockersCmd.ExecuteNonQueryAsync();
+    //                }
+
+    //                // 2. Update Cabinet information - this will regenerate the cabinet_id
+    //                string updateCabinetQuery = @"
+    //    UPDATE Cabinets 
+    //    SET 
+    //        department_name = @NewDepartment,
+    //        wing = @NewWing,
+    //        level = @NewLevel,
+    //        location = @NewLocation
+    //    WHERE cabinet_id = @OldCabinetId";
+
+    //                using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
+    //                {
+    //                    updateCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
+    //                    updateCmd.Parameters.AddWithValue("@NewWing", newWing);
+    //                    updateCmd.Parameters.AddWithValue("@NewLevel", newLevel);
+    //                    updateCmd.Parameters.AddWithValue("@NewLocation", newLocation);
+    //                    updateCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
+
+    //                    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+    //                    if (rowsAffected == 0)
+    //                    {
+    //                        await transaction.RollbackAsync();
+    //                        return false;
+    //                    }
+    //                }
+
+    //                // Get the new cabinet_id that was generated
+    //                string? newCabinetId = null;
+    //                string getNewCabinetIdQuery = @"
+    //    SELECT cabinet_id FROM Cabinets 
+    //    WHERE department_name = @NewDepartment 
+    //    AND wing = @NewWing 
+    //    AND level = @NewLevel 
+    //    AND number_cab = @CabinetNumber";
+
+    //                using (var getCabinetCmd = new MySqlCommand(getNewCabinetIdQuery, connection, transaction))
+    //                {
+    //                    getCabinetCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
+    //                    getCabinetCmd.Parameters.AddWithValue("@NewWing", newWing);
+    //                    getCabinetCmd.Parameters.AddWithValue("@NewLevel", newLevel);
+    //                    getCabinetCmd.Parameters.AddWithValue("@CabinetNumber", cabinetNumber);
+
+    //                    newCabinetId = await getCabinetCmd.ExecuteScalarAsync() as string;
+    //                    if (string.IsNullOrEmpty(newCabinetId))
+    //                    {
+    //                        await transaction.RollbackAsync();
+    //                        return false;
+    //                    }
+    //                }
+
+    //                if (lockerChange > 0)
+    //                {
+    //                    // 3. Retrieve all Lockers to update their IDs
+    //                    var lockerIds = new List<(string OldId, string NewId)>();
+    //                    string selectLockersQuery = @"
+    //    SELECT Id 
+    //    FROM Lockers 
+    //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')";
+
+    //                    using (var selectLockersCmd = new MySqlCommand(selectLockersQuery, connection, transaction))
+    //                    {
+    //                        selectLockersCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
+    //                        selectLockersCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
+    //                        using (var reader = await selectLockersCmd.ExecuteReaderAsync())
+    //                        {
+    //                            while (await reader.ReadAsync())
+    //                            {
+    //                                string oldLockerId = reader["Id"]?.ToString() ?? string.Empty;
+    //                                string newLockerId = $"{newCabinetId}-{oldLockerId.Split('-').Last()}";
+    //                                lockerIds.Add((oldLockerId, newLockerId));
+    //                            }
+    //                        }
+    //                    }
+
+
+    //                    // 6. Update Lockers with new IDs, department, and cabinet_id
+    //                    foreach (var (oldLockerId, newLockerId) in lockerIds)
+    //                    {
+    //                        string updateLockerQuery = @"
+    //        UPDATE Lockers 
+    //        SET 
+    //            Id = @NewLockerId,
+    //            DepartmentName = @NewDepartment,
+    //            cabinet_id = @NewCabinetId
+    //        WHERE Id = @OldLockerId";
+
+    //                        using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+    //                        {
+    //                            lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
+    //                            lockerCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
+    //                            lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
+    //                            lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
+    //                            await lockerCmd.ExecuteNonQueryAsync();
+    //                        }
+    //                    }
+    //                }//this is new here
+
+
+
+    //                // 7. Mark the reallocation request as approved
+    //                string approveQuery = @"
+    //    UPDATE Reallocation 
+    //    SET 
+    //        RequestStatus = 'Approved'    
+    //    WHERE RequestID = @RequestID";
+
+    //                using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
+    //                {
+    //                    approveCmd.Parameters.AddWithValue("@RequestID", requestId);
+
+    //                    await approveCmd.ExecuteNonQueryAsync();
+    //                }
+
+    //                await transaction.CommitAsync();
+    //                return true;
+    //            }
+    //            catch (Exception ex)
+    //            {
+    //                await transaction.RollbackAsync();
+    //                Console.WriteLine($"Error approving reallocation: {ex.Message}");
+
+    //                throw;
+
+    //            }
+    //        }
+    //    }
+    //}
     public async Task<List<string>> GetAffectedStudentAsync(string cabinetId)
     {
         var affectedStudents = new List<string>();
@@ -765,20 +838,8 @@ public class AdminService : IAdminService
         return affectedStudents;
     }
     //emas 
-    public void Login()
-    {
-        throw new NotImplementedException();
-    }
 
-    public void NotifyStudents()
-    {
-        throw new NotImplementedException();
-    }
 
-    public void RespondForwardedReport(string respond)
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<List<Reallocation>> ReallocationResponse()
     {
@@ -817,11 +878,6 @@ public class AdminService : IAdminService
     }
 
 
-
-    public void SignCabinetToNewSupervisour()
-    {
-        throw new NotImplementedException();
-    }
 
 
     public async Task<List<Report>> ViewForwardedReports()
@@ -901,14 +957,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
     }
 
 
-    public void ViewNotifications()
-    {
-        throw new NotImplementedException();
-    }
 
 
-
-    
 
     public async Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
@@ -1120,24 +1170,31 @@ where r.Type='THEFT' and r.SentToAdmin=1
 
     public async Task<bool> ResolveReport(int reportId, string? resolutionDetails)
     {
-        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        try
         {
-            await connection.OpenAsync();
-
-            var query = @"UPDATE Reports 
-                     SET Status = 'RESOLVED', 
-                         ResolvedDate = @ResolvedDate,
-                         ResolvedDetails = @ResolutionDetails
-                     WHERE Id = @ReportId";
-
-            using (var command = new MySqlCommand(query, connection))
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                command.Parameters.AddWithValue("@ReportId", reportId);
-                command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
-                command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
+                await connection.OpenAsync();
 
-                return await command.ExecuteNonQueryAsync() > 0;
+                var query = @"UPDATE Reports 
+                         SET Status = 'RESOLVED', 
+                             ResolvedDate = @ResolvedDate,
+                             ResolvedDetails = @ResolutionDetails
+                         WHERE Id = @ReportId";
+
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ReportId", reportId);
+                    command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
+                    command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
+
+                    return await command.ExecuteNonQueryAsync() > 0;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            return false;
         }
     }
 
@@ -1161,21 +1218,28 @@ where r.Type='THEFT' and r.SentToAdmin=1
 
     public async Task<bool> RejectReport(int reportId)
     {
-        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        try
         {
-            await connection.OpenAsync();
+            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                await connection.OpenAsync();
 
-            var query = @"UPDATE Reports 
+                var query = @"UPDATE Reports 
                      SET Status = 'REJECTED', 
                          ResolvedDate = @ResolvedDate
                      WHERE Id = @ReportId";
 
-            using (var command = new MySqlCommand(query, connection))
-            {
-                command.Parameters.AddWithValue("@ReportId", reportId);
-                command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
-                return await command.ExecuteNonQueryAsync() > 0;
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ReportId", reportId);
+                    command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
+                    return await command.ExecuteNonQueryAsync() > 0;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            return false;
         }
     }
 
@@ -1245,7 +1309,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 return id;
             }
         }
-        
+
     }
 
     public async Task<Reallocation> GetReallocationRequestById(int requestId)
@@ -1281,7 +1345,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
         return null; // Return null if no reallocation request is found
     }
 
-    
+
     public async Task<object> GetSemesterSettings()
     {
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
@@ -1302,7 +1366,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
         return new { Id = 0, SemesterEndDate = (DateTime?)null };
     }
 
-    public async Task<bool> SaveSemesterSettings(DateTime endDate , int? existingId=null)
+    public async Task<bool> SaveSemesterSettings(DateTime endDate, int? existingId = null)
     {
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
@@ -1418,5 +1482,5 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
         return emails;
     }
-    
+
 }

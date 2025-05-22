@@ -38,6 +38,7 @@ namespace JUSTLockers.Controllers
             var supervisors = await _adminService.ViewAllSupervisorInfo();
             var departments = await _adminService.GetDepartments();
             ViewBag.Departments = departments;
+
             return View(supervisors);
         }
 
@@ -54,7 +55,7 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+       [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSupervisor(Supervisor supervisor)
         {
             try
@@ -65,6 +66,7 @@ namespace JUSTLockers.Controllers
                 if (!employeeExists)
                 {
                     return Json(new { success = false, message = "Employee not found in the system." });
+                    
                 }
 
                 // Check if supervisor already exists
@@ -143,8 +145,7 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public IActionResult AdminDashboard()
         {
-            // Logic to show the Assign Cabinet page
-            // return View();
+           
             return View("~/Views/Home/AdminDashboard.cshtml");
         }
         [HttpPost]
@@ -153,10 +154,9 @@ namespace JUSTLockers.Controllers
 
             if (ModelState.IsValid)
             {
-                // Call the AssignCabinet method and capture the returned message
                 string message = _adminService.AssignCabinet(model);
 
-                // Set the message to TempData
+                
                 if (message.StartsWith("Cabinet added"))
                 {
                     TempData["SuccessMessage"] = message;
@@ -180,7 +180,6 @@ namespace JUSTLockers.Controllers
         public async Task<IActionResult> ViewSupervisorInfo(string filter = "All")
         {
             //sorry emas 
-            // var supervisors = await _adminService.ViewAllSupervisorInfo(filter);
             var supervisors = await _adminService.ViewAllSupervisorInfo();
             ViewData["Filter"] = filter;
             return View("~/Views/Admin/ViewSupervisorInfo.cshtml", supervisors);
@@ -227,7 +226,7 @@ namespace JUSTLockers.Controllers
             }
             else
             {
-                TempData["Error"] = "Failed to approve the reallocation request."+$"{success}";
+                TempData["Error"] = "Failed to approve the reallocation request. "+ $"{success}";
             }
             return RedirectToAction("ReallocationResponse", "Admin");
         }
@@ -358,7 +357,7 @@ namespace JUSTLockers.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResolveReport(int reportId, string? resolutionDetails)
+        public async Task<IActionResult> SolveReport(int reportId, string? resolutionDetails)
         {
             try
             {
@@ -424,12 +423,6 @@ namespace JUSTLockers.Controllers
             {
                 // Check if department is assigned to any supervisor
                 var isAssigned = await _adminService.IsDepartmentAssigned(departmentName, location);
-
-                //if (isAssigned!=0)
-                //{
-                //    // You might want to add logic here to check if it's assigned to the current supervisor
-                //    // being edited, in which case it wouldn't be an error
-                //}
 
                 return Json(new { isAssigned });
             }

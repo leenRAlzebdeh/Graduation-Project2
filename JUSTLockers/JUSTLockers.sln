@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35825.156 d17.13
+VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JUSTLockers", "JUSTLockers.csproj", "{DA300BE7-A378-389A-9062-C28CDAE15379}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JUSTLockers.Tests", "..\JUSTLockers.Tests\JUSTLockers.Tests.csproj", "{B6055B60-50A1-4F5C-B44B-2AB05C46E9AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{DA300BE7-A378-389A-9062-C28CDAE15379}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA300BE7-A378-389A-9062-C28CDAE15379}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA300BE7-A378-389A-9062-C28CDAE15379}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6055B60-50A1-4F5C-B44B-2AB05C46E9AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6055B60-50A1-4F5C-B44B-2AB05C46E9AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6055B60-50A1-4F5C-B44B-2AB05C46E9AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6055B60-50A1-4F5C-B44B-2AB05C46E9AF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

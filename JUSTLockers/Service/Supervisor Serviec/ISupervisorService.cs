@@ -3,7 +3,7 @@ using JUSTLockers.Service;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JUSTLockers.Services;
-public interface ISupervisorService : IUserActions, ILockerActions
+public interface ISupervisorService 
 {
         Task<List<Student>> ViewAllStudentReservations(int? userId, int? searchstu = null);
         Task<string> ReallocationRequest(Reallocation model);
@@ -24,11 +24,6 @@ public interface ISupervisorService : IUserActions, ILockerActions
     public  Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model);
 
     public  Task<DepartmentInfo> GetDepartmentInfo(int userId);
-
-        void Notify();
-        void ManualReserve();
- 
-    
 
 
 }

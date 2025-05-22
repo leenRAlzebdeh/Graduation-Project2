@@ -32,65 +32,6 @@ namespace WebApplication5.Controllers
 
 
 
-        //[HttpPost]
-        //public IActionResult Login(int id, string password)
-        //{
-        //    string role = IsValidUser(id, password);
-        //    HttpContext.Session.SetInt32("UserId", id);
-        //    var claims = new List<Claim>
-        //    {
-        //        new Claim(ClaimTypes.NameIdentifier, id.ToString())
-        //    };
-
-        //    var identity = new ClaimsIdentity(claims, "MyCookieAuth");
-        //    var principal = new ClaimsPrincipal(identity);
-
-        //     HttpContext.SignInAsync("MyCookieAuth", principal);
-
-        //    if (role == "Admin")
-        //    {
-
-        //        return View("~/Views/Home/AdminDashboard.cshtml");
-        //    }
-        //    else if (role == "Supervisor")
-
-        //    {
-        //       // HttpContext.Session.SetInt32("UserId", id);
-        //        return RedirectToAction("SupervisorDashboard", "Supervisor");
-        //    }
-        //    else if (role == "Student")
-        //    {
-        //       // HttpContext.Session.SetInt32("UserId", id);
-        //        //return View("~/Views/Home/StudentDashboard.cshtml");
-        //        return RedirectToAction("StudentDashboard", "Student");
-        //    }
-        //    else
-        //    {
-        //        // Invalid credentials
-        //        ViewBag.Error = "Invalid ID or Password.";
-        //        return View("~/Views/Home/Login.cshtml");
-        //    }
-
-
-
-        //    //if (IsValidUser(id, password))
-        //    //{
-        //    //    // return RedirectToAction("LockerIssues", "Admin");
-        //    //    // return RedirectToAction("~/Views/Admin/AddCabinet.cshtml");
-        //    //    //  return View("~/Views/Admin/AddCabinet.cshtml");
-        //    //    HttpContext.Session.SetInt32("UserId", id);
-        //    //    return View("~/Views/Home/AdminDashboard.cshtml");
-        //    //  //  return RedirectToAction("AdminDashboard", "Admin");
-        //    //} 
-        //    //else
-        //    //{
-        //    //    ViewBag.Error = "Invalid ID or password.";
-        //    //    return View("~/Views/Home/Login.cshtml"); // Show the login page again
-
-
-        //    //}
-        //}
-
         [HttpPost]
         public async Task<IActionResult> Login(int id, string password)
         {
@@ -146,27 +87,6 @@ namespace WebApplication5.Controllers
 
             try
             {
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    string query = @"
-                //SELECT 'Admin' AS role FROM Admins WHERE id = @ID AND password = @Password
-                //UNION
-                //SELECT 'Supervisor' AS role FROM Supervisors WHERE id = @ID AND password = @Password
-                //UNION
-                //SELECT 'Student' AS role FROM Students WHERE id = @ID AND password = @Password
-                //LIMIT 1"; // To ensure only one role is returned if duplicates exist
-
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        command.Parameters.AddWithValue("@ID", id);
-                //        command.Parameters.AddWithValue("@Password", password); // Consider using hashed passwords
-
-                //        connection.Open();
-                //        var result = command.ExecuteScalar();
-
-                //        return result != null ? result.ToString() : null;
-                //    }
-                //}
                 return _userActions.Login(id, password);
             }
             catch (Exception ex)
