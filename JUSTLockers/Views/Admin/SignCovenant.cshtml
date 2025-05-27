@@ -133,6 +133,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if(Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center">No supervisors's covenant found.</td>
+                            </tr>
+                        }
                         @foreach (var supervisor in Model.Distinct())
                         {
                             <tr>
