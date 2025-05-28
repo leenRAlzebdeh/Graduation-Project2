@@ -624,9 +624,7 @@ WHERE
                             if (supervisorLocation == model.RequestLocation && supervisorDepartment == model.RequestedDepartment)
                             {
                                 return "You Don't have  Admin's Approve To Reallcoate a cabinet inside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
-                            }
-
-                           
+                            }     
                         }
                         else
                         {

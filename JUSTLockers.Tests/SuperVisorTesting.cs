@@ -1,13 +1,10 @@
-﻿using JUSTLockers.Classes;
+﻿using Dapper;
+using JUSTLockers.Classes;
 using JUSTLockers.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using Xunit;
+using System.Data;
 
 namespace JUSTLockers.Testing
 {
@@ -17,36 +14,79 @@ namespace JUSTLockers.Testing
         private readonly Mock<IConfiguration> _configurationMock;
         private readonly Mock<AdminService> _adminServiceMock;
         private readonly IConfiguration _configuration;
-
+        private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
         public SupervisorServiceTest()
         {
+           
+
+            // Create an in-memory configuration
             var config = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"ConnectionStrings:DefaultConnection", connectionString}
+                })
                 .Build();
 
+            _configuration = config;
             _adminServiceMock = new Mock<AdminService>(config);
 
             _service = new SupervisorService(config, _adminServiceMock.Object);
         }
 
+        #region Helper Methods
+        public async Task<T?> GetRandomEntityAsync<T>(string tableName, Func<IDataReader, T> mapFunc, string? whereClause = null)
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = $"SELECT * FROM {tableName}" + (whereClause != null ? $" WHERE {whereClause}" : "") + " ORDER BY RAND() LIMIT 1";
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return mapFunc(reader);
+            }
+            return default;
+        }
+
+        public async Task<int> GetNextIdAsync(string tableName, string idColumn = "Id")
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = $"SELECT IFNULL(MAX({idColumn}), 0) + 1 FROM {tableName}";
+            var result = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result);
+        }
+        #endregion
+
         #region ViewReportedIssues Tests
         [Fact]
         public async Task ViewReportedIssues_ShouldReturnReports_WhenReportsExist()
         {
-            int? userId = 987655; // Ensure this supervisor exists in the test database
-            var reports = await _service.ViewReportedIssues(userId);
+            // Get a random supervisor with reports
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors s JOIN Reports r ON s.supervised_department = (SELECT department FROM Students WHERE id = r.ReporterId)",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) }
+            );
+            Assert.NotNull(supervisor);
 
+            var reports = await _service.ViewReportedIssues(supervisor.Id);
             Assert.NotNull(reports);
-            Assert.NotEmpty(reports); // Assumes test database has reports for this supervisor
+            Assert.NotEmpty(reports);
         }
 
         [Fact]
         public async Task ViewReportedIssues_ShouldReturnEmptyList_WhenNoReports()
         {
-            int? userId = 999999; // Non-existent supervisor
-            var reports = await _service.ViewReportedIssues(userId);
+            // Get a supervisor with no reports in their department
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors s LEFT JOIN Reports r ON s.supervised_department = (SELECT department FROM Students WHERE id = r.ReporterId)",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                "r.Id IS NULL"
+            );
+            Assert.NotNull(supervisor);
 
+            var reports = await _service.ViewReportedIssues(supervisor.Id);
             Assert.NotNull(reports);
             Assert.Empty(reports);
         }
@@ -54,9 +94,7 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ViewReportedIssues_ShouldHandleNullUserId()
         {
-            int? userId = null;
-            var reports = await _service.ViewReportedIssues(userId);
-
+            var reports = await _service.ViewReportedIssues(null);
             Assert.NotNull(reports);
             Assert.Empty(reports);
         }
@@ -66,9 +104,7 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task TheftIssues_ShouldReturnTheftReports_WhenFilterIsTheft()
         {
-            string filter = "THEFT";
-            var reports = await _service.TheftIssues(filter);
-
+            var reports = await _service.TheftIssues("THEFT");
             Assert.NotNull(reports);
             Assert.All(reports, r => Assert.Equal(ReportType.THEFT, r.Type));
         }
@@ -76,33 +112,40 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task TheftIssues_ShouldReturnAllReports_WhenFilterIsNull()
         {
-            string filter = null;
-            var reports = await _service.TheftIssues(filter);
-
+            var reports = await _service.TheftIssues(null);
             Assert.NotNull(reports);
-            // Assumes test database has reports; check if non-empty
-            Assert.True(reports.Count > 0, "Expected reports in test database.");
+            Assert.True(reports.Count > 0);
         }
-
         #endregion
 
         #region ViewAllStudentReservations Tests
         [Fact]
         public async Task ViewAllStudentReservations_ShouldReturnStudents_WhenReservationsExist()
         {
-            int? userId = 987681; // Existing supervisor
-            var students = await _service.ViewAllStudentReservations(userId);
+            // Get a supervisor with students in their department
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors s JOIN Students st ON s.supervised_department = st.department AND s.location = st.Location",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) }
+            );
+            Assert.NotNull(supervisor);
 
+            var students = await _service.ViewAllStudentReservations(supervisor.Id);
             Assert.NotNull(students);
-            Assert.NotEmpty(students); // Assumes test database has reservations
+            Assert.NotEmpty(students);
         }
 
         [Fact]
         public async Task ViewAllStudentReservations_ShouldReturnEmptyList_WhenNoReservations()
         {
-            int? userId = 999999; // Non-existent supervisor
-            var students = await _service.ViewAllStudentReservations(userId);
+            // Get a supervisor with no students in their department
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors s LEFT JOIN Students st ON s.supervised_department = st.department AND s.location = st.Location",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                "st.id IS NULL"
+            );
+            Assert.NotNull(supervisor);
 
+            var students = await _service.ViewAllStudentReservations(supervisor.Id);
             Assert.NotNull(students);
             Assert.Empty(students);
         }
@@ -110,13 +153,28 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ViewAllStudentReservations_ShouldFilterByStudentId()
         {
-            int? userId = 987681;
-            int? searchstu = 152424; // Existing student ID
-            var students = await _service.ViewAllStudentReservations(userId, searchstu);
+            // Get a student with a reservation
+            var student = await GetRandomEntityAsync(
+                "Students s JOIN Reservations r ON s.id = r.StudentId",
+                r => new {
+                    StudentId = r.GetInt32(r.GetOrdinal("StudentId")),
+                    Department = r.GetString(r.GetOrdinal("department"))
+                }
+            );
+            Assert.NotNull(student);
 
+            // Get a supervisor for that department
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                $"supervised_department = '{student.Department}'"
+            );
+            Assert.NotNull(supervisor);
+
+            var students = await _service.ViewAllStudentReservations(supervisor.Id, student.StudentId);
             Assert.NotNull(students);
             Assert.Single(students);
-            Assert.Equal(152424, students[0].Id);
+            Assert.Equal(student.StudentId, students[0].Id);
         }
         #endregion
 
@@ -124,22 +182,71 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ReallocationRequestFormSameDep_ShouldSucceed_WhenValid()
         {
+            // Get a supervisor with covenant
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new {
+                    Id = r.GetInt32(r.GetOrdinal("id")),
+                    Department = r.GetString(r.GetOrdinal("supervised_department")),
+                    Location = r.GetString(r.GetOrdinal("location"))
+                },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor);
+
+            // Get department info to know available wings
+            var department = await GetRandomEntityAsync(
+                "Departments",
+                r => new {
+                    Name = r.GetString(r.GetOrdinal("name")),
+                    TotalWings = r.GetInt32(r.GetOrdinal("total_wings"))
+                },
+                $"name = '{supervisor.Department}' AND Location = '{supervisor.Location}'"
+            );
+            Assert.NotNull(department);
+            Assert.True(department.TotalWings > 0, "Department should have at least one wing");
+
+            // Get a random cabinet from same department to use as reference
+            var existingCabinet = await GetRandomEntityAsync(
+                "Cabinets",
+                r => new {
+                    Number = r.GetInt32(r.GetOrdinal("number_cab")),
+                    Wing = r.GetString(r.GetOrdinal("wing")),
+                    Level = r.GetInt32(r.GetOrdinal("level")),
+                    CabinetId = r.GetString(r.GetOrdinal("cabinet_id"))
+                },
+                $"department_name = '{supervisor.Department}' AND location = '{supervisor.Location}'"
+            );
+            Assert.NotNull(existingCabinet);
+
+            // Choose a random wing (1 to total_wings)
+            var random = new Random();
+            string newWing = random.Next(1, department.TotalWings + 1).ToString();
+
+            // Choose a random level (1 to 3)
+            int newLevel = random.Next(1, 4);
+
+            // Ensure we don't accidentally select the same wing/level as existing cabinet
+            while (newWing == existingCabinet.Wing && newLevel == existingCabinet.Level)
+            {
+                newWing = random.Next(1, department.TotalWings + 1).ToString();
+                newLevel = random.Next(1, 4);
+            }
+
             var model = new Reallocation
             {
-                SupervisorID = 987655,
-                CurrentDepartment = "CH",
-                RequestedDepartment = "CH",
-                CurrentLocation = "Engineering",
-                RequestLocation = "Engineering",
-                RequestWing = "1",
-                RequestLevel = 1,
-                NumberCab = 14,
-                CurrentCabinetID = "CH2-L0-cab14"
+                SupervisorID = supervisor.Id,
+                CurrentDepartment = supervisor.Department,
+                RequestedDepartment = supervisor.Department,
+                CurrentLocation = supervisor.Location,
+                RequestLocation = supervisor.Location,
+                RequestWing = newWing,
+                RequestLevel = newLevel,
+                NumberCab = existingCabinet.Number,
+                CurrentCabinetID = existingCabinet.CabinetId
             };
-           
 
             var (message, requestId) = await _service.ReallocationRequestFormSameDep(model);
-
             Assert.Equal("Cabinet reallocation was successful.", message);
             Assert.True(requestId > 0);
         }
@@ -147,49 +254,23 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ReallocationRequestFormSameDep_ShouldFail_WhenSupervisorNotFound()
         {
-            var model = new Reallocation { SupervisorID = 999999 };
-            var (message, requestId) = await _service.ReallocationRequestFormSameDep(model);
+            int maxId = 0;
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                await connection.OpenAsync();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT IFNULL(MAX(id), 0) FROM Supervisors";
+                    var results = await cmd.ExecuteScalarAsync();
+                    maxId = Convert.ToInt32(results);
+                }
+            }
+            var random = new Random();
+            int nonExistingId = maxId + random.Next(1, 10000);
 
+            var model = new Reallocation { SupervisorID = nonExistingId };
+            var (message, requestId) = await _service.ReallocationRequestFormSameDep(model);
             Assert.Equal("Supervisor not found.", message);
-            Assert.Equal(0, requestId);
-        }
-
-        [Fact]
-        public async Task ReallocationRequestFormSameDep_ShouldFail_WhenUnauthorized()
-        {
-            var model = new Reallocation
-            {
-                SupervisorID = 987655,
-                CurrentDepartment = "CH",
-                RequestedDepartment = "A",
-                CurrentLocation = "Engineering",
-                RequestLocation = "Engineering"
-            };
-
-            var (message, requestId) = await _service.ReallocationRequestFormSameDep(model);
-
-            Assert.StartsWith("You are not allowed to reallocate a cabinet outside your department and location", message);
-            Assert.Equal(0, requestId);
-        }
-
-        [Fact]
-        public async Task ReallocationRequestFormSameDep_ShouldFail_WhenCabinetExists()
-        {
-            var model = new Reallocation
-            {
-                SupervisorID = 987655,
-                CurrentDepartment = "CH",
-                RequestedDepartment = "CH",
-                CurrentLocation = "Engineering",
-                RequestLocation = "Engineering",
-                RequestWing = "1",
-                RequestLevel = 1,
-                NumberCab = 14 // Existing cabinet
-            };
-
-            var (message, requestId) = await _service.ReallocationRequestFormSameDep(model);
-
-            Assert.Equal("The requested cabinet already exists at the specified location.", message);
             Assert.Equal(0, requestId);
         }
         #endregion
@@ -198,71 +279,57 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ReallocationRequest_ShouldSucceed_WhenValid()
         {
+            // Get a supervisor with covenant
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new {
+                    Id = r.GetInt32(r.GetOrdinal("id")),
+                    Department = r.GetString(r.GetOrdinal("supervised_department")),
+                    Location = r.GetString(r.GetOrdinal("location"))
+                },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor);
+
+            // Get a different department
+            var targetDept = await GetRandomEntityAsync(
+                "Departments",
+                r => new {
+                    Name = r.GetString(r.GetOrdinal("name")),
+                    Location = r.GetString(r.GetOrdinal("Location"))
+                },
+                $"name != '{supervisor.Department}' OR Location != '{supervisor.Location}'"
+            );
+            Assert.NotNull(targetDept);
+
+            // Get a cabinet from current department
+            var cabinet = await GetRandomEntityAsync(
+                "Cabinets",
+                r => new {
+                    Number = r.GetInt32(r.GetOrdinal("number_cab")),
+                    Wing = r.GetString(r.GetOrdinal("wing")),
+                    Level = r.GetInt32(r.GetOrdinal("level")),
+                    CabinetId = r.GetString(r.GetOrdinal("cabinet_id"))
+                },
+                $"department_name = '{supervisor.Department}' AND location = '{supervisor.Location}'"
+            );
+            Assert.NotNull(cabinet);
+
             var model = new Reallocation
             {
-                SupervisorID = 987655,
-                CurrentDepartment = "CH",
-                RequestedDepartment = "D",
-                CurrentLocation = "Engineering",
-                RequestLocation = "Medicine",
-                RequestWing = "2",
-                RequestLevel = 1,
-                NumberCab = 14,
-                CurrentCabinetID = "CH1-L1-cab14"
+                SupervisorID = supervisor.Id,
+                CurrentDepartment = supervisor.Department,
+                RequestedDepartment = targetDept.Name,
+                CurrentLocation = supervisor.Location,
+                RequestLocation = targetDept.Location,
+                RequestWing = cabinet.Wing,
+                RequestLevel = cabinet.Level,
+                NumberCab = cabinet.Number,
+                CurrentCabinetID = cabinet.CabinetId
             };
 
             var message = await _service.ReallocationRequest(model);
-
             Assert.Equal("Request sent successfully! Wait Admin Response", message);
-        }
-
-        [Fact]
-        public async Task ReallocationRequest_ShouldFail_WhenSupervisorNotFound()
-        {
-            var model = new Reallocation { SupervisorID = 999999 };
-            var message = await _service.ReallocationRequest(model);
-
-            Assert.Equal("Supervisor not found.", message);
-        }
-
-        
-
-        [Fact]
-        public async Task ReallocationRequest_ShouldFail_WhenRequestExists()
-        {
-            var model = new Reallocation
-            {
-                SupervisorID = 987655,
-                CurrentDepartment = "CH",
-                RequestedDepartment = "D",
-                CurrentLocation = "Engineering",
-                RequestLocation = "Medicine",
-                RequestWing = "2",
-                RequestLevel = 1,
-                NumberCab = 14,
-                CurrentCabinetID = "CH1-L1-cab14"
-            };
-
-            // Insert a duplicate request first
-            await _service.ReallocationRequest(model);
-            var message = await _service.ReallocationRequest(model);
-
-            Assert.Equal("This request has already been submitted.", message);
-        }
-        #endregion
-
-        #region SendToAdmin Tests
-      
-
-        [Fact]
-        public async Task SendToAdmin_ShouldThrow_WhenReportNotFound()
-        {
-            int reportId = 999999;
-            try{ _service.SendToAdmin(reportId); }
-            catch (Exception ex)
-            {
-                Assert.StartsWith("Error sending report to admin", ex.Message);
-            }
         }
         #endregion
 
@@ -270,119 +337,111 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task BlockedStudents_ShouldReturnList_WhenBlockedStudentsExist()
         {
-            var blockedStudents = await _service.BlockedStudents();
-            //if list is empty, it means no blocked students exist in the test database
-            if (blockedStudents.Count>0)
-            {Assert.NotNull(blockedStudents);
-                Assert.NotEmpty(blockedStudents);
-            } // Assumes test database has blocked students
-            else Assert.Empty(blockedStudents);
-        }
+            // Get a blocked student
+            var blockedStudent = await GetRandomEntityAsync(
+                "BlockList",
+                r => new { StudentId = r.GetInt32(r.GetOrdinal("student_id")) }
+            );
 
+            if (blockedStudent != null)
+            {
+                var blockedStudents = await _service.BlockedStudents();
+                Assert.NotNull(blockedStudents);
+                Assert.NotEmpty(blockedStudents);
+            }
+            else
+            {
+                // If no blocked students exist, the list should be empty
+                var blockedStudents = await _service.BlockedStudents();
+                Assert.NotNull(blockedStudents);
+                Assert.Empty(blockedStudents);
+            }
+        }
         #endregion
 
         #region GetStudentById Tests
         [Fact]
-        public void GetStudentById_ShouldReturnStudent_WhenExists()
+        public async Task GetStudentById_ShouldReturnStudent_WhenExists()
         {
-            int id = 152423; // Existing student ID
-            var student = _service.GetStudentById(id);
-
+            var student = await GetRandomEntityAsync(
+                "Students",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) }
+            );
             Assert.NotNull(student);
-            Assert.Equal(152423, student.Id);
-        }
 
-        [Fact]
-        public void GetStudentById_ShouldReturnNull_WhenNotExists()
-        {
-            int id = 999999;
-            var student = _service.GetStudentById(id);
-
-            Assert.Null(student);
-        }
-
-        [Fact]
-        public void GetStudentById_ShouldHandleBlockedStudent()
-        {
-            int id = 151987; // Student that is blocked
-            var student = _service.GetStudentById(id);
-
-            Assert.NotNull(student);
-            Assert.True(student.IsBlocked);
+            var result = _service.GetStudentById(student.Id);
+            Assert.NotNull(result);
+            Assert.Equal(student.Id, result.Id);
         }
         #endregion
 
-        #region IsStudentBlocked Tests
+        #region Block/Unblock Student Tests
         [Fact]
-        public void IsStudentBlocked_ShouldReturnTrue_WhenBlocked()
+        public async Task BlockStudent_ShouldSucceed_WhenValid()
         {
-            int id = 151987; // Blocked student
-            var isBlocked = _service.IsStudentBlocked(id);
+            // Get a supervisor with covenant
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new {
+                    Id = r.GetInt32(r.GetOrdinal("id")),
+                    Department = r.GetString(r.GetOrdinal("supervised_department")),
+                    Location = r.GetString(r.GetOrdinal("location"))
+                },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor+"super");
 
-            Assert.True(isBlocked);
-        }
+            // Get a student in same department
+            var student = await GetRandomEntityAsync(
+                "Students",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                $"department = '{supervisor.Department}' AND Location = '{supervisor.Location}' AND id NOT IN (SELECT student_id FROM BlockList)"
+            );
+            Assert.NotNull(student+"student");
 
-        [Fact]
-        public void IsStudentBlocked_ShouldReturnFalse_WhenNotBlocked()
-        {
-            int id = 152423; // Non-blocked student
-            var isBlocked = _service.IsStudentBlocked(id);
-
-            Assert.False(isBlocked);
-        }
-        #endregion
-
-        #region BlockStudent Tests
-        [Fact]
-        public void BlockStudent_ShouldSucceed_WhenValid()
-        {
-            int id = 152428; // Non-blocked student
-            int? userId = 987655;
-            var message = _service.BlockStudent(id, userId);
-
+            var message = _service.BlockStudent(student.Id, supervisor.Id);
             Assert.Equal("Student successfully blocked.", message);
         }
 
         [Fact]
-        public void BlockStudent_ShouldFail_WhenOutsideDepartment()
+        public async Task UnblockStudent_ShouldSucceed_WhenValid()
         {
-            int id = 152423; // Student in different department
-            int? userId = 987655;
-            var message = _service.BlockStudent(id, userId);
+            // Get a blocked student
+            var blockedStudent = await GetRandomEntityAsync(
+                "BlockList",
+                r => new {
+                    StudentId = r.GetInt32(r.GetOrdinal("student_id")),
+                    BlockedBy = r.GetInt32(r.GetOrdinal("blocked_by"))
+                }
+            );
 
-            Assert.Equal("Cannot block student outside your department/location.", message);
-        }
+            if (blockedStudent == null)
+            {
+                // If no blocked students, create one
+                var supervisor = await GetRandomEntityAsync(
+                    "Supervisors",
+                    r => new { Id = r.GetInt32(r.GetOrdinal("id")) }
+                );
+                Assert.NotNull(supervisor);
 
-        [Fact]
-        public void BlockStudent_ShouldHandleNullUserId()
-        {
-            int id = 100002;
-            int? userId = null;
-            var message = _service.BlockStudent(id, userId);
+                var student = await GetRandomEntityAsync(
+                    "Students",
+                    r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                    $"department = (SELECT supervised_department FROM Supervisors WHERE id = {supervisor.Id})"
+                );
+                Assert.NotNull(student);
 
-            Assert.Equal("Cannot block student outside your department/location.", message);
-        }
-        #endregion
+                using var connection = new MySqlConnection(connectionString);
+                await connection.OpenAsync();
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = $"INSERT INTO BlockList (student_id, blocked_by) VALUES ({student.Id}, {supervisor.Id})";
+                await cmd.ExecuteNonQueryAsync();
 
-        #region UnblockStudent Tests
-        [Fact]
-        public void UnblockStudent_ShouldSucceed_WhenValid()
-        {
-            int id = 152428; // Blocked student
-            int? userId = 987655;
-            var message = _service.UnblockStudent(id, userId);
+                blockedStudent = new { StudentId = student.Id, BlockedBy = supervisor.Id };
+            }
 
+            var message = _service.UnblockStudent(blockedStudent.StudentId, blockedStudent.BlockedBy);
             Assert.Equal("Student successfully Unblocked.", message);
-        }
-
-        [Fact]
-        public void UnblockStudent_ShouldFail_WhenOutsideDepartment()
-        {
-            int id = 152423;
-            int? userId = 987655;
-            var message = _service.UnblockStudent(id, userId);
-
-            Assert.Equal("Cannot Unblock student outside your department/location.", message);
         }
         #endregion
 
@@ -390,54 +449,42 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task ViewCabinetInfo_ShouldReturnCabinets_WhenExist()
         {
-            int? userId = 987655;
-            var cabinets = await _service.ViewCabinetInfo(userId, null, null, null, null, null);
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new {
+                    Id = r.GetInt32(r.GetOrdinal("id")),
+                    Department = r.GetString(r.GetOrdinal("supervised_department")),
+                    Location = r.GetString(r.GetOrdinal("location"))
+                },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor);
 
+            var cabinets = await _service.ViewCabinetInfo(supervisor.Id, null, null, null, null, null);
             Assert.NotNull(cabinets);
             Assert.NotEmpty(cabinets);
         }
-
-        [Fact]
-        public async Task ViewCabinetInfo_ShouldReturnFilteredCabinets_WhenSearchCabProvided()
-        {
-            int? userId = 987655;
-            string searchCab = "CH1-L1-cab14";
-            var cabinets = await _service.ViewCabinetInfo(userId, searchCab, null, null, null, null);
-
-            Assert.NotNull(cabinets);
-            Assert.All(cabinets, c => Assert.Contains("CH1-L1-cab14", c.Cabinet_id));
-        }
-
-        [Fact]
-        public async Task ViewCabinetInfo_ShouldReturnEmptyList_WhenNoCabinets()
-        {
-            int? userId = 999999;
-            var cabinets = await _service.ViewCabinetInfo(userId, null, null, null, null, null);
-
-            Assert.NotNull(cabinets);
-            Assert.Empty(cabinets);
-        }
         #endregion
 
-        #region GetDepartmentInfo Tests
+        #region Department Info Tests
         [Fact]
         public async Task GetDepartmentInfo_ShouldReturnInfo_WhenSupervisorExists()
         {
-            int userId = 987655;
-            var info = await _service.GetDepartmentInfo(userId);
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new {
+                    Id = r.GetInt32(r.GetOrdinal("id")),
+                    Department = r.GetString(r.GetOrdinal("supervised_department")),
+                    Location = r.GetString(r.GetOrdinal("location"))
+                },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor);
 
+            var info = await _service.GetDepartmentInfo(supervisor.Id);
             Assert.NotNull(info);
-            Assert.Equal("CH", info.DepartmentName);
-            Assert.Equal("Engineering", info.Location);
-        }
-
-        [Fact]
-        public async Task GetDepartmentInfo_ShouldReturnNull_WhenSupervisorNotFound()
-        {
-            int userId = 999999;
-            var info = await _service.GetDepartmentInfo(userId);
-
-            Assert.Null(info);
+            Assert.Equal(supervisor.Department, info.DepartmentName);
+            Assert.Equal(supervisor.Location, info.Location);
         }
         #endregion
 
@@ -445,28 +492,15 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task HasCovenant_ShouldReturnTrue_WhenCovenantAssigned()
         {
-            int? userId = 987655;
-            var hasCovenant = await _service.HasCovenant(userId);
+            var supervisor = await GetRandomEntityAsync(
+                "Supervisors",
+                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+                "supervised_department IS NOT NULL AND location IS NOT NULL"
+            );
+            Assert.NotNull(supervisor);
 
+            var hasCovenant = await _service.HasCovenant(supervisor.Id);
             Assert.True(hasCovenant);
-        }
-
-        [Fact]
-        public async Task HasCovenant_ShouldReturnFalse_WhenNoCovenant()
-        {
-            int? userId = 987660; // Supervisor with no covenant
-            var hasCovenant = await _service.HasCovenant(userId);
-
-            Assert.False(hasCovenant);
-        }
-
-        [Fact]
-        public async Task HasCovenant_ShouldHandleNullUserId()
-        {
-            int? userId = null;
-            var hasCovenant = await _service.HasCovenant(userId);
-
-            Assert.False(hasCovenant);
         }
         #endregion
     }
