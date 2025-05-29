@@ -221,16 +221,15 @@
                      <div class="col-sm-6 col-md-2">
                         <label for="RequestLocation" class="form-label">Location</label>
                         <select id="RequestLocation" name="RequestLocation" class="form-select" required>
-                            <option value="">Select</option>
-                            <option value="Engineering">Engineering</option>
-                            <option value="Medicine">Medicine</option>
+                                <option value="">All</option>
+
                         </select>
                     </div>
 
                     <div class="col-sm-6 col-md-2">
                         <label for="RequestedDepartment" class="form-label">Department</label>
                         <select id="RequestedDepartment" name="RequestedDepartment" class="form-select" required>
-                            <option value="">Select</option>
+                                <option value="">All Deps</option>
 
                         </select>
                     </div>
@@ -275,71 +274,134 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script src="~/js/admin.js"></script>
     <script>
+          const userId = @userId;
         document.addEventListener("DOMContentLoaded", function () {
+             const locationSelect = document.getElementById("RequestLocation");
+            const departmentSelect = document.getElementById("RequestedDepartment");
+                        const wingSelect = document.getElementById("RequestWing");
 
-            // Location change event
-            document.getElementById("RequestLocation").addEventListener("change", function () {
-                const selectedLocation = this.value;
-                const departmentSelect = document.getElementById("RequestedDepartment");
 
-                fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
-                    .then(response => response.json())
+             if (userId) {
+                fetch(`/Supervisor/GetUserLocationAndDepartment?userId=${userId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error("Failed to fetch location/department");
+                        return response.json();
+                    })
                     .then(data => {
-                        departmentSelect.innerHTML = "";
-                        const defaultOption = document.createElement("option");
-                        defaultOption.textContent = "All Dep";
-                        departmentSelect.appendChild(defaultOption);
+                        if (data) {
+                            // Set location and department dropdowns
+                            locationSelect.innerHTML = `<option selected value="${data.location}">${data.location}</option>`;
+                            departmentSelect.innerHTML = `<option selected value="${data.department}">${data.department}</option>`;
+                            console.log("Location and department set:", data.location, data.department);
+                            // Load wings immediately
+                            loadWings(data.department);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
 
-                        data.forEach(dept => {
-                            const option = document.createElement("option");
-                            option.value = dept;
-                            option.textContent = dept;
-                            departmentSelect.appendChild(option);
-                        });
-
-                        departmentSelect.dispatchEvent(new Event("change")); // Trigger to load wings and supervisor
-                    });
+             // Department change event
+            departmentSelect.addEventListener("change", function () {
+                const department = this.value;
+                loadWings(department);
             });
 
+                   function loadWings(department) {
+            if (!department) return;
+            wingSelect.innerHTML = ""; // Clear previous
 
-
-
-                   // Department change event
-        document.getElementById("RequestedDepartment").addEventListener("change", function () {
-            const department = this.value;
-            const location = document.getElementById("RequestLocation").value;
-
-            const wingSelect = document.getElementById("RequestWing");
+            // Add default option
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "All wings";
+            wingSelect.appendChild(defaultOption);
 
             fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Clear existing options
-                    wingSelect.innerHTML = "";
-
-                    // Optional: Add a default placeholder
-                    const defaultOption = document.createElement("option");
-                    defaultOption.text = "Select";
-                    defaultOption.disabled = true;
-                    defaultOption.selected = true;
-                    wingSelect.appendChild(defaultOption);
-
-                    // Add new options
                     data.forEach(wing => {
                         const option = document.createElement("option");
                         option.value = wing;
                         option.textContent = wing;
                         wingSelect.appendChild(option);
                     });
-                })
-                .catch(error => {
-                    console.error("Error fetching wings:", error);
                 });
-        });
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+           // Location change event
+            // document.getElementById("RequestLocation").addEventListener("change", function () {
+            //    const selectedLocation = this.value;
+            //     const departmentSelect = document.getElementById("RequestedDepartment");
+
+            //     fetch(`/Cabinet/GetDepartments?location=${encodeURIComponent(selectedLocation)}`)
+            //         .then(response => response.json())
+            //         .then(data => {
+            //             departmentSelect.innerHTML = "";
+            //            const defaultOption = document.createElement("option");
+            //             defaultOption.textContent = "All Dep";
+            //            departmentSelect.appendChild(defaultOption);
+
+            //             data.forEach(dept => {
+            //                 const option = document.createElement("option");
+            //                 option.value = dept;
+            //                 option.textContent = dept;
+            //                 departmentSelect.appendChild(option);
+            //             });
+
+            //             departmentSelect.dispatchEvent(new Event("change")); Trigger to load wings and supervisor
+            //         });
+            // });
+
+
+
+
+                   // Department change event
+        // document.getElementById("RequestedDepartment").addEventListener("change", function () {
+        //     const department = this.value;
+        //     const location = document.getElementById("RequestLocation").value;
+
+        //     const wingSelect = document.getElementById("RequestWing");
+
+        //     fetch(`/Cabinet/GetWings?departmentName=${encodeURIComponent(department)}`)
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             Clear existing options
+        //             wingSelect.innerHTML = "";
+
+        //             Optional: Add a default placeholder
+        //             const defaultOption = document.createElement("option");
+        //             defaultOption.text = "Select";
+        //             defaultOption.disabled = true;
+        //             defaultOption.selected = true;
+        //             wingSelect.appendChild(defaultOption);
+
+        //             Add new options
+        //             data.forEach(wing => {
+        //                 const option = document.createElement("option");
+        //                 option.value = wing;
+        //                 option.textContent = wing;
+        //                 wingSelect.appendChild(option);
+        //             });
+        //         })
+        //         .catch(error => {
+        //             console.error("Error fetching wings:", error);
+        //         });
+        // });
 
 
             // Automatically trigger location change to load departments
-            document.getElementById("RequestLocation").dispatchEvent(new Event("change"));
+           // document.getElementById("RequestLocation").dispatchEvent(new Event("change"));
 
 
 
