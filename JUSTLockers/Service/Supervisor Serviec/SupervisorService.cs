@@ -6,21 +6,21 @@ namespace JUSTLockers.Services;
 
 
 public class SupervisorService : ISupervisorService
-    {
-        private readonly IConfiguration _configuration;
+{
+    private readonly IConfiguration _configuration;
     private readonly AdminService _adminService;
 
-    public SupervisorService(IConfiguration configuration , AdminService adminService)
-        {
-            _configuration = configuration;
-            _adminService = adminService;
-        }
-        public void Login()
-        {
-            throw new NotImplementedException();
-        }
+    public SupervisorService(IConfiguration configuration, AdminService adminService)
+    {
+        _configuration = configuration;
+        _adminService = adminService;
+    }
+    public void Login()
+    {
+        throw new NotImplementedException();
+    }
 
-   
+
     public async Task<List<Report>> ViewReportedIssues(int? userId)
     {
         var reports = new List<Report>();
@@ -66,7 +66,8 @@ WHERE
           
           ";
 
-            using (var command = new MySqlCommand(query, connection)) {
+            using (var command = new MySqlCommand(query, connection))
+            {
                 command.Parameters.AddWithValue("@userId", userId);
                 using (var reader = await command.ExecuteReaderAsync())
                 {
@@ -109,15 +110,15 @@ WHERE
 
     public async Task<List<Report>> TheftIssues(string filter)
     {
-        
+
 
         var reports = new List<Report>();
-        
-            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                await connection.OpenAsync();
 
-                var query = @"
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"
         SELECT 
             r.Id AS ReportId,
             r.Subject AS ProblemDescription,
@@ -144,44 +145,44 @@ WHERE
         WHERE (@Filter IS NULL OR r.Type = @Filter)
     ";
 
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
 
-                    using (var reader = await command.ExecuteReaderAsync())
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
                     {
-                        while (await reader.ReadAsync())
+                        reports.Add(new Report
                         {
-                            reports.Add(new Report
+                            ReportId = reader.GetInt32("ReportId"),
+                            Reporter = new Student(
+                                reader.GetInt32("ReporterId"),
+                                reader.GetString("ReporterName"),
+                                reader.GetString("ReporterEmail"),
+                                reader.GetString("DepartmentName")
+                            ),
+                            Locker = new Locker
                             {
-                                ReportId = reader.GetInt32("ReportId"),
-                                Reporter = new Student(
-                                    reader.GetInt32("ReporterId"),
-                                    reader.GetString("ReporterName"),
-                                    reader.GetString("ReporterEmail"),
-                                    reader.GetString("DepartmentName")
-                                ),
-                                Locker = new Locker
-                                {
-                                    LockerId = reader.GetString("LockerNumber"),
-                                    Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
-                                    Department = reader.GetString("DepartmentName"),
-                                },
-                                Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
-                                Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
-                                Subject = reader.GetString("ProblemDescription"),
-                                Statement = reader.GetString("DetailedDescription"),
-                                ReportDate = reader.GetDateTime("ReportDate"),
-                                ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
-                                ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
-                                ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                                ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
-                                SentToAdmin = reader.GetBoolean("SentToAdmin")
-                            });
-                        }
+                                LockerId = reader.GetString("LockerNumber"),
+                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                Department = reader.GetString("DepartmentName"),
+                            },
+                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                            Subject = reader.GetString("ProblemDescription"),
+                            Statement = reader.GetString("DetailedDescription"),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                            SentToAdmin = reader.GetBoolean("SentToAdmin")
+                        });
                     }
                 }
             }
+        }
         return reports;
 
     }
@@ -581,7 +582,7 @@ WHERE
                     }
                     catch (Exception rollbackEx)
                     {
-                      return ("Error during transaction rollback.",0);
+                        return ("Error during transaction rollback.", 0);
                     }
                     return ($"Error processing reallocation request: {ex.Message}", 0);
                 }
@@ -591,9 +592,9 @@ WHERE
 
 
     public void Notify()
-        {
-            throw new NotImplementedException();
-        }
+    {
+        throw new NotImplementedException();
+    }
     //here 
 
     public async Task<string> ReallocationRequest(Reallocation model)
@@ -624,7 +625,7 @@ WHERE
                             if (supervisorLocation == model.RequestLocation && supervisorDepartment == model.RequestedDepartment)
                             {
                                 return "You Don't have  Admin's Approve To Reallcoate a cabinet inside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
-                            }     
+                            }
                         }
                         else
                         {
@@ -710,7 +711,7 @@ WHERE
                 command.Parameters.AddWithValue("@Id", reportId);
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
-       }
+            }
         }
         catch (Exception ex)
         {
@@ -745,7 +746,7 @@ WHERE
         return (location, department);
     }
 
-    public async Task<List<Reallocation>> ReallocationReqestsInfo(int? id, string? filter, string?location ,string? department)
+    public async Task<List<Reallocation>> ReallocationReqestsInfo(int? id, string? filter, string? location, string? department)
     {
         var reallocations = new List<Reallocation>();
 
@@ -862,7 +863,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
     }
 
-  
+
 
     public Student GetStudentById(int id)
     {
@@ -887,7 +888,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                    reader["Location"]?.ToString() ?? ""
                 )
                 {
-                    LockerId = reader["locker_id"].ToString() ,
+                    LockerId = reader["locker_id"].ToString(),
                     IsBlocked = IsStudentBlocked(id)
                 };
             }
@@ -910,7 +911,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
         }
     }
 
-   
+
     public string BlockStudent(int id, int? userId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -940,7 +941,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 insertCommand.ExecuteNonQuery();
 
 
-               
+
                 return "Student successfully blocked.";
             }
             else
@@ -1123,7 +1124,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
                 }
             }
-            
+
         }
         catch (Exception ex)
         {
