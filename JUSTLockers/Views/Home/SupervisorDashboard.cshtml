@@ -96,7 +96,7 @@
         <!-- Welcome Section -->
         <section class="management">
             <div class="welcome-box">
-                <h2>Welcome Back, Super 👋</h2>
+                <h2>Welcome Back, Super <span id="name"></span> 👋</h2>
                 <p>
                     Everything is set and ready to go.<br />
                     You can now reserve lockers, view your reservations, and report issues all in one place.
@@ -115,5 +115,26 @@
             });
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+             fetch('/Dashboard/GetNameJson')
+        .then(response => response.json())
+        .then(data => {
+            const name = document.getElementById("name");
+            if (name) {
+                name.innerHTML = data || "Unknown User";
+            }
+        })
+        .catch(() => {
+            const name = document.getElementById("name");
+            if (name) {
+                name.textContent = "Error fetching admin name";
+            }
+        });
+
+        });
+    </script>
+
+
 </body>
 </html>

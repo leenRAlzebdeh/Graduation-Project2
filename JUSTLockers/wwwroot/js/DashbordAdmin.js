@@ -71,8 +71,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             const adminNameElement = document.getElementById("admin-name");
+            const name = document.getElementById("name");
             if (adminNameElement) {
                 adminNameElement.textContent = data || "Unknown User";
+                name.innerHTML = data || "Unknown User";
             }
         })
         .catch(() => {
