@@ -392,7 +392,7 @@ WHERE
                     if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment ||
                         supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
                     {
-                        return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}. You need Admin approval", 0);
+                        return ($"You are not allowed to reallocate a cabinet outside your covenant of department and location: {supervisorDepartment}/{supervisorLocation}. ", 0);
                     }
 
                     // Step 3: Validate the requested cabinet (replace the empty if () ; statement)
@@ -717,7 +717,96 @@ WHERE
             throw new Exception($"Error sending report to admin: {ex.Message}");
         }
     }
+    public async Task<(string? Location, string? Department)> GetSupervisorLocationAndDepartment(int userId)
+    {
+        string? location = null;
+        string? department = null;
 
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            string query = "SELECT location, supervised_department FROM Supervisors WHERE id = @userId";
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@userId", userId);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        location = reader["location"]?.ToString();
+                        department = reader["supervised_department"]?.ToString();
+                    }
+                }
+            }
+        }
+
+        return (location, department);
+    }
+
+    public async Task<List<Reallocation>> ReallocationReqestsInfo(int? id, string? filter, string?location ,string? department)
+    {
+        var reallocations = new List<Reallocation>();
+
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"SELECT RequestID, SupervisorID, CurrentDepartment, RequestLocation, CurrentLocation,
+                             RequestedDepartment, CurrentCabinetID, NewCabinetID, RequestStatus, RequestDate
+                      FROM Reallocation
+                      WHERE RequestedDepartment != CurrentDepartment AND SupervisorID = @id and CurrentDepartment=@department and CurrentLocation=@location ";
+
+            if (!string.IsNullOrEmpty(filter) && filter.ToLower() != "all")
+            {
+                query += " AND RequestStatus = @filter";
+            }
+
+            query += " ORDER BY RequestDate DESC";
+
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@id", id ?? 0);
+                command.Parameters.AddWithValue("@department", department ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@location", location ?? (object)DBNull.Value);
+
+
+                if (!string.IsNullOrEmpty(filter) && filter.ToLower() != "all")
+                {
+                    // Normalize filter ( pending -- Pending)
+                    filter = char.ToUpper(filter[0]) + filter.Substring(1).ToLower();
+                    command.Parameters.AddWithValue("@filter", filter);
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        reallocations.Add(new Reallocation
+                        {
+                            RequestID = reader["RequestID"] != DBNull.Value ? Convert.ToInt32(reader["RequestID"]) : 0,
+                            SupervisorID = reader["SupervisorID"] != DBNull.Value ? Convert.ToInt32(reader["SupervisorID"]) : 0,
+                            CurrentDepartment = reader["CurrentDepartment"]?.ToString(),
+                            RequestedDepartment = reader["RequestedDepartment"]?.ToString(),
+                            CurrentCabinetID = reader["CurrentCabinetID"]?.ToString(),
+                            NewCabinetID = reader["NewCabinetID"]?.ToString(),
+                            CurrentLocation = reader["CurrentLocation"]?.ToString(),
+                            RequestLocation = reader["RequestLocation"]?.ToString(),
+                            RequestStatus = reader["RequestStatus"] != DBNull.Value
+                                ? (RequestStatus)Enum.Parse(typeof(RequestStatus), reader["RequestStatus"].ToString(), true)
+                                : RequestStatus.PENDING,
+                            RequestDate = reader["RequestDate"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["RequestDate"]).AddHours(3)
+                                : DateTime.MinValue
+                        });
+                    }
+                }
+            }
+        }
+
+        return reallocations;
+    }
 
 
 

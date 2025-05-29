@@ -24,6 +24,7 @@ public interface ISupervisorService
     public  Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model);
 
     public  Task<DepartmentInfo> GetDepartmentInfo(int userId);
+    public  Task<List<Reallocation>> ReallocationReqestsInfo(int? id, string? filter, string? location, string? department);
 
 
 }

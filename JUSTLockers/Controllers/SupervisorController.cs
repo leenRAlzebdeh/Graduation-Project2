@@ -172,9 +172,16 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
-        public IActionResult ReallocationRequestForm()
+        public async Task<IActionResult> ReallocationRequestForm(string? filter)
         {
-            return View("~/Views/Supervisor/ReallocationRequest.cshtml");
+            int? supervisorId = HttpContext.Session.GetInt32("UserId");
+
+            var (location, department) = await _superService.GetSupervisorLocationAndDepartment(supervisorId.Value);
+
+            var ReallocationReq = await _superService.ReallocationReqestsInfo(supervisorId,filter,location,department);
+            ViewBag.CurrentFilter = filter ?? "all"; // Save the selected filter (default to "all")
+
+            return View("~/Views/Supervisor/ReallocationRequest.cshtml", ReallocationReq);
         }
         [HttpGet]
         public IActionResult ReallocationRequestFormSameDepartment()
