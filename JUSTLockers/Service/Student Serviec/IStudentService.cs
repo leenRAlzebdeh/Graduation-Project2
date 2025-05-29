@@ -6,14 +6,12 @@ public interface IStudentService
 {
 
     public bool HasLocker(int? userId);
-    public Task<Reservation> ViewReservationInfo(int studentId);
 
     Task<bool> SaveReportAsync(int ReportID,int reporterId, string LockerId, string problemType,string Subject, string description, IFormFile imageFile);
 
     public  Task DeleteReport(int reportId);
     public Task<List<Report>> ViewAllReports(int? studentId);
 
-    public Task<List<Locker>> ViewAvailableLockers(string departmentName);
    // public Task<bool> ReserveLocker(int studentId, string lockerId);
     public Task<bool> CancelReservation(int studentId, string status);
     public Task<DepartmentInfo> GetDepartmentInfo(int studentId);

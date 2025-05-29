@@ -1,16 +1,13 @@
 using JUSTLockers.DataBase;
 using JUSTLockers.Service;
 using JUSTLockers.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
+builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 36))));
 builder.Services.AddSingleton<AdminService>();
 builder.Services.AddScoped<SupervisorService>();

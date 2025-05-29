@@ -624,9 +624,7 @@ WHERE
                             if (supervisorLocation == model.RequestLocation && supervisorDepartment == model.RequestedDepartment)
                             {
                                 return "You Don't have  Admin's Approve To Reallcoate a cabinet inside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
-                            }
-
-                           
+                            }     
                         }
                         else
                         {
@@ -867,6 +865,12 @@ JOIN Supervisors su ON bs.blocked_by = su.id
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
+            //check if the student is not blocked
+            if (!IsStudentBlocked(id))
+            {
+                return "Student is not blocked.";
+            }
+
             string checkQuery = @"
             SELECT COUNT(*) 
             FROM Students s

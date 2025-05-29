@@ -1,99 +1,26 @@
-﻿using System;
+﻿using JUSTLockers.Classes;
+using JUSTLockers.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using MySqlConnector;
+using System;
 using System.Data;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
-using JUSTLockers.Classes;
-using JUSTLockers.Services;
-using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
 
 namespace JUSTLockers.Service
 {
     public class StudentService : IStudentService
     {
         private readonly IConfiguration _configuration;
-
-        public StudentService(IConfiguration configuration)
+        private readonly IMemoryCache _memoryCache;
+        public StudentService(IConfiguration configuration, IMemoryCache memoryCache)
         {
             _configuration = configuration;
-        }
-        
-        //leen may not use it 
-        public async Task<List<Locker>> ViewAvailableLockers(string departmentName)
-        {
-            var availableLockers = new List<Locker>();
-
-            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                await connection.OpenAsync();
-
-                var query = @"SELECT Id, DepartmentName, Status 
-                              FROM Lockers 
-                              WHERE DepartmentName = @DepartmentName 
-                              AND Status = 'EMPTY'";
-
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@DepartmentName", departmentName);
-
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            availableLockers.Add(new Locker
-                            {
-                                LockerId = reader.GetString("Id"),
-                                Department = reader.GetString("DepartmentName"),
-                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("Status"))
-                            });
-                        }
-                    }
-                }
-            }
-
-            return availableLockers;
-        }
-        //leen
-        
-        //may not use it 
-        public async Task<Reservation> ViewReservationInfo(int studentId)
-        {
-            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                await connection.OpenAsync();
-                var query = @"
-                    SELECT r.Id, r.LockerId, r.ReservationDate, r.Status, 
-                           l.Department, s.name AS StudentName, s.id AS StudentId
-                    FROM Reservations r
-                    JOIN Lockers l ON r.LockerId = l.Id
-                    JOIN Students s ON r.StudentId = s.id
-                    WHERE r.StudentId = @StudentId AND r.Status = 'RESERVED'";
-
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@StudentId", studentId);
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        if (await reader.ReadAsync())
-                        {
-                            return new Reservation
-                            {
-                                Id = reader.GetString("Id"),
-                                LockerId = reader.GetString("LockerId"),
-                                StudentName = reader.GetString("StudentName"),
-                                Date = reader.GetDateTime("ReservationDate"),
-                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status")),
-                                StudentId = reader.GetInt32("StudentId")
-                            };
-                        }
-                    }
-                }
-            }
-            return null;
+            _memoryCache = memoryCache;
         }
 
-        
         public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
         {
             try
@@ -261,6 +188,8 @@ namespace JUSTLockers.Service
 
         public async Task<bool> CancelReservation(int studentId , string status)
         {
+            _memoryCache.Remove($"CurrentReservation_{studentId}"); // Clear cache for current reservation
+
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -394,6 +323,11 @@ namespace JUSTLockers.Service
         public async Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string location)
         {
             var wings = new List<WingInfo>();
+            string cacheKey = $"AvailableWings_{departmentName}_{location}";
+            if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
+            {
+                return cachedWings;
+            }
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -423,8 +357,6 @@ namespace JUSTLockers.Service
                     HAVING AvailableLockers > 0
                     ORDER BY c.wing, c.level";
 
-
-
                 using (var command = new MySqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@DepartmentName", departmentName);
@@ -444,10 +376,18 @@ namespace JUSTLockers.Service
                     }
                 }
             }
+            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
             return wings;
         }
         public async Task<Reservation> GetCurrentReservationAsync(int studentId)
         {
+            //use inMemoryCache to store the reservation data for 5 minutes
+            string cacheKey = $"CurrentReservation_{studentId}";
+            if (_memoryCache.TryGetValue(cacheKey, out Reservation cachedReservation))
+            {
+                return cachedReservation;
+            }
+
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -469,19 +409,22 @@ namespace JUSTLockers.Service
                     {
                         if (await reader.ReadAsync())
                         {
-                            return new Reservation
+                            var reservation = new Reservation
                             {
-                                StudentId=reader.GetInt32("StudentId"),
                                 Id = reader.GetString("Id"),
                                 LockerId = reader.GetString("LockerId"),
-                                StudentName = reader.GetString("StudentName"),
                                 Date = reader.GetDateTime("ReservationDate"),
+                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status")),
+                                StudentId = reader.GetInt32("StudentId"),
+                                StudentName = reader.GetString("StudentName"),
                                 Department = reader.GetString("DepartmentName"),
                                 Location = reader.GetString("location"),
-                                Status = (ReservationStatus)Enum.Parse(typeof(ReservationStatus), reader.GetString("Status")),
                                 Wing = reader.GetString("wing"),
                                 Level = reader.GetInt32("level")
                             };
+                            _memoryCache.Set(cacheKey, reservation, TimeSpan.FromMinutes(5)); // Cache for 5 minutes
+                            return reservation;
+
                         }
                     }
                 }
@@ -510,6 +453,23 @@ namespace JUSTLockers.Service
                                 return null; // Student is blocked, cannot reserve
                             }
                         }
+
+                        //check if student already has a locker reserved
+                        var hasLockerQuery = @"
+                            SELECT COUNT(*) 
+                            FROM Reservations 
+                            WHERE StudentId = @StudentId AND Status = 'RESERVED'";
+                        using (var hasLockerCmd = new MySqlCommand(hasLockerQuery, connection, transaction))
+                            {
+                            hasLockerCmd.Parameters.AddWithValue("@StudentId", studentId);
+                            var lockerCount = Convert.ToInt32(await hasLockerCmd.ExecuteScalarAsync());
+                            if (lockerCount > 0)
+                            {
+                                return null; // Student already has a locker reserved
+                            }
+                        }
+
+
 
                         // Find a cabinet with either available capacity or existing EMPTY lockers
                         var findCabinetQuery = @"
