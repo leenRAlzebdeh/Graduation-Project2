@@ -1402,49 +1402,49 @@ where r.Type='THEFT' and r.SentToAdmin=1
 
     public async Task<bool> ClearReservationsAndReports()
     {
-        //using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-        //await connection.OpenAsync();
+        using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await connection.OpenAsync();
 
-        //using var transaction = await connection.BeginTransactionAsync();
+        using var transaction = await connection.BeginTransactionAsync();
 
-        //try
-        //{
-        //    // Update lockers to EMPTY
-        //    var updateLockersQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE Status = 'RESERVED'";
-        //    using (var cmd = new MySqlCommand(updateLockersQuery, connection, transaction))
-        //    {
-        //        await cmd.ExecuteNonQueryAsync();
-        //    }
+        try
+        {
+            // Update lockers to EMPTY
+            var updateLockersQuery = "UPDATE Lockers SET Status = 'EMPTY' WHERE Status = 'RESERVED'";
+            using (var cmd = new MySqlCommand(updateLockersQuery, connection, transaction))
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
 
-        //    // update reservations
-        //    var deleteReservationsQuery = "UPDATE Reservations SET Status = 'CANCELED'";
-        //    using (var cmd = new MySqlCommand(deleteReservationsQuery, connection, transaction))
-        //    {
-        //        await cmd.ExecuteNonQueryAsync();
-        //    }
+            // update reservations
+            var deleteReservationsQuery = "UPDATE Reservations SET Status = 'CANCELED'";
+            using (var cmd = new MySqlCommand(deleteReservationsQuery, connection, transaction))
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
 
-        //    // Delete reports
-        //    var deleteReportsQuery = "DELETE FROM Reports WHERE Status = 'RESOLVED' OR Status = 'REJECTED'";
-        //    using (var cmd = new MySqlCommand(deleteReportsQuery, connection, transaction))
-        //    {
-        //        await cmd.ExecuteNonQueryAsync();
-        //    }
+            // Delete reports
+            var deleteReportsQuery = "DELETE FROM Reports WHERE Status = 'RESOLVED' OR Status = 'REJECTED'";
+            using (var cmd = new MySqlCommand(deleteReportsQuery, connection, transaction))
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
 
-        //    //update students
-        //    var updateStudentsQuery = "UPDATE Students SET locker_id = NULL ";
-        //    using (var cmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
-        //    {
-        //        await cmd.ExecuteNonQueryAsync();
-        //    }
+            //update students
+            var updateStudentsQuery = "UPDATE Students SET locker_id = NULL ";
+            using (var cmd = new MySqlCommand(updateStudentsQuery, connection, transaction))
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
 
-        //    await transaction.CommitAsync();
-        //    return true;
-        //}
-        //catch
-        //{
-        //    await transaction.RollbackAsync();
-        //    return false;
-        //}
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
         return true;
     }
 

@@ -2,6 +2,7 @@
 using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
@@ -14,7 +15,7 @@ namespace JUSTLockers.Testing
         private readonly StudentService _service;
         private readonly IConfiguration _configuration;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
-
+        private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
         public StudentServiceTest()
         {
             var config = new ConfigurationBuilder()
@@ -25,7 +26,7 @@ namespace JUSTLockers.Testing
                 .Build();
 
             _configuration = config;
-            _service = new StudentService(config);
+            _service = new StudentService(config, memoryCache);
         }
 
         #region Helper Methods
@@ -382,7 +383,7 @@ namespace JUSTLockers.Testing
             var student = await GetRandomEntityAsync(
                 "Students s JOIN Cabinets c ON s.department = c.department_name AND s.Location = c.location LEFT JOIN BlockList b ON s.id = b.student_id",
                 r => new { Id = r.GetInt32(r.GetOrdinal("id")), Department = r.GetString(r.GetOrdinal("department_name")), Location = r.GetString(r.GetOrdinal("location")), Wing = r.GetString(r.GetOrdinal("wing")), Level = r.GetInt32(r.GetOrdinal("level")) },
-                "b.student_id IS NULL"
+                "b.student_id IS NULL AND s.locker_id IS NULL"
             );
             Assert.NotNull(student);
 

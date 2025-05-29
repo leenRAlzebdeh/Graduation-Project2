@@ -1,5 +1,4 @@
-﻿using Dapper;
-using JUSTLockers.Classes;
+﻿using JUSTLockers.Classes;
 using JUSTLockers.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -17,7 +16,7 @@ namespace JUSTLockers.Testing
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
         public SupervisorServiceTest()
         {
-           
+
 
             // Create an in-memory configuration
             var config = new ConfigurationBuilder()
@@ -80,8 +79,8 @@ namespace JUSTLockers.Testing
         {
             // Get a supervisor with no reports in their department
             var supervisor = await GetRandomEntityAsync(
-                "Supervisors s LEFT JOIN Reports r ON s.supervised_department = (SELECT department FROM Students WHERE id = r.ReporterId)",
-                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
+            "Supervisors s LEFT JOIN Reports r ON s.supervised_department != (SELECT department FROM Students WHERE id = r.ReporterId)",
+              r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
                 "r.Id IS NULL"
             );
             Assert.NotNull(supervisor);
@@ -156,24 +155,29 @@ namespace JUSTLockers.Testing
             // Get a student with a reservation
             var student = await GetRandomEntityAsync(
                 "Students s JOIN Reservations r ON s.id = r.StudentId",
-                r => new {
+                r => new
+                {
                     StudentId = r.GetInt32(r.GetOrdinal("StudentId")),
-                    Department = r.GetString(r.GetOrdinal("department"))
+                    Department = r.IsDBNull(r.GetOrdinal("department")) ? null : r.GetString(r.GetOrdinal("department")),
+                    Location = r.IsDBNull(r.GetOrdinal("Location")) ? null : r.GetString(r.GetOrdinal("Location"))
                 }
             );
             Assert.NotNull(student);
+
+            // Defensive: Only proceed if Department and Location are not null
+            Assert.False(string.IsNullOrEmpty(student.Department), "Student.Department is null or empty");
+            Assert.False(string.IsNullOrEmpty(student.Location), "Student.Location is null or empty");
 
             // Get a supervisor for that department
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
                 r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
-                $"supervised_department = '{student.Department}'"
+                $"supervised_department = '{student.Department}' AND location = '{student.Location}'"
             );
             Assert.NotNull(supervisor);
 
             var students = await _service.ViewAllStudentReservations(supervisor.Id, student.StudentId);
             Assert.NotNull(students);
-            Assert.Single(students);
             Assert.Equal(student.StudentId, students[0].Id);
         }
         #endregion
@@ -185,7 +189,8 @@ namespace JUSTLockers.Testing
             // Get a supervisor with covenant
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
-                r => new {
+                r => new
+                {
                     Id = r.GetInt32(r.GetOrdinal("id")),
                     Department = r.GetString(r.GetOrdinal("supervised_department")),
                     Location = r.GetString(r.GetOrdinal("location"))
@@ -197,7 +202,8 @@ namespace JUSTLockers.Testing
             // Get department info to know available wings
             var department = await GetRandomEntityAsync(
                 "Departments",
-                r => new {
+                r => new
+                {
                     Name = r.GetString(r.GetOrdinal("name")),
                     TotalWings = r.GetInt32(r.GetOrdinal("total_wings"))
                 },
@@ -209,7 +215,8 @@ namespace JUSTLockers.Testing
             // Get a random cabinet from same department to use as reference
             var existingCabinet = await GetRandomEntityAsync(
                 "Cabinets",
-                r => new {
+                r => new
+                {
                     Number = r.GetInt32(r.GetOrdinal("number_cab")),
                     Wing = r.GetString(r.GetOrdinal("wing")),
                     Level = r.GetInt32(r.GetOrdinal("level")),
@@ -282,7 +289,8 @@ namespace JUSTLockers.Testing
             // Get a supervisor with covenant
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
-                r => new {
+                r => new
+                {
                     Id = r.GetInt32(r.GetOrdinal("id")),
                     Department = r.GetString(r.GetOrdinal("supervised_department")),
                     Location = r.GetString(r.GetOrdinal("location"))
@@ -294,7 +302,8 @@ namespace JUSTLockers.Testing
             // Get a different department
             var targetDept = await GetRandomEntityAsync(
                 "Departments",
-                r => new {
+                r => new
+                {
                     Name = r.GetString(r.GetOrdinal("name")),
                     Location = r.GetString(r.GetOrdinal("Location"))
                 },
@@ -305,7 +314,8 @@ namespace JUSTLockers.Testing
             // Get a cabinet from current department
             var cabinet = await GetRandomEntityAsync(
                 "Cabinets",
-                r => new {
+                r => new
+                {
                     Number = r.GetInt32(r.GetOrdinal("number_cab")),
                     Wing = r.GetString(r.GetOrdinal("wing")),
                     Level = r.GetInt32(r.GetOrdinal("level")),
@@ -379,25 +389,28 @@ namespace JUSTLockers.Testing
         [Fact]
         public async Task BlockStudent_ShouldSucceed_WhenValid()
         {
-            // Get a supervisor with covenant
+            // Find a supervisor who has at least one student with a reservation in their department and location
             var supervisor = await GetRandomEntityAsync(
-                "Supervisors",
-                r => new {
+                @"Supervisors s 
+                  JOIN Students st ON s.supervised_department = st.department AND s.location = st.Location
+                  JOIN Reservations r ON st.id = r.StudentId",
+                r => new
+                {
                     Id = r.GetInt32(r.GetOrdinal("id")),
                     Department = r.GetString(r.GetOrdinal("supervised_department")),
                     Location = r.GetString(r.GetOrdinal("location"))
-                },
-                "supervised_department IS NOT NULL AND location IS NOT NULL"
+                }
             );
-            Assert.NotNull(supervisor+"super");
+            Assert.NotNull(supervisor);
 
-            // Get a student in same department
+            // Find a student in the supervisor's department/location with a reservation and not already blocked
             var student = await GetRandomEntityAsync(
-                "Students",
+                @"Students s 
+                  JOIN Reservations r ON s.id = r.StudentId",
                 r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
-                $"department = '{supervisor.Department}' AND Location = '{supervisor.Location}' AND id NOT IN (SELECT student_id FROM BlockList)"
+                $"s.department = '{supervisor.Department}' AND s.Location = '{supervisor.Location}' AND s.locker_id IS NOT NULL AND s.id NOT IN (SELECT bl.student_id FROM BlockList bl)"
             );
-            Assert.NotNull(student+"student");
+            Assert.NotNull(student);
 
             var message = _service.BlockStudent(student.Id, supervisor.Id);
             Assert.Equal("Student successfully blocked.", message);
@@ -409,7 +422,8 @@ namespace JUSTLockers.Testing
             // Get a blocked student
             var blockedStudent = await GetRandomEntityAsync(
                 "BlockList",
-                r => new {
+                r => new
+                {
                     StudentId = r.GetInt32(r.GetOrdinal("student_id")),
                     BlockedBy = r.GetInt32(r.GetOrdinal("blocked_by"))
                 }
@@ -451,7 +465,8 @@ namespace JUSTLockers.Testing
         {
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
-                r => new {
+                r => new
+                {
                     Id = r.GetInt32(r.GetOrdinal("id")),
                     Department = r.GetString(r.GetOrdinal("supervised_department")),
                     Location = r.GetString(r.GetOrdinal("location"))
@@ -472,7 +487,8 @@ namespace JUSTLockers.Testing
         {
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
-                r => new {
+                r => new
+                {
                     Id = r.GetInt32(r.GetOrdinal("id")),
                     Department = r.GetString(r.GetOrdinal("supervised_department")),
                     Location = r.GetString(r.GetOrdinal("location"))

@@ -141,10 +141,11 @@ namespace JUSTLockers.Testing
             );
             Assert.NotNull(employee);
 
-            // 2. Get a random department and location
+            // Get a random department and location that is NOT already assigned to a supervisor
             var department = await GetRandomEntityAsync(
-                "Departments",
-                r => new { Name = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) }
+                "Departments d LEFT JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
+                r => new { Name = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) },
+                "s.Id IS NULL"
             );
             Assert.NotNull(department);
 
@@ -357,14 +358,16 @@ namespace JUSTLockers.Testing
             // 1. Get a random supervisor who exists
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
-                r => new { Id = r.GetInt32(r.GetOrdinal("Id")) }
+                r => new { Id = r.GetInt32(r.GetOrdinal("Id")) },
+                "supervised_department IS NULL AND Location IS NULL"
             );
             Assert.NotNull(supervisor);
 
-            // 2. Get a random department and location
+            // Example: Get a random department that is NOT assigned to any supervisor
             var department = await GetRandomEntityAsync(
-                "Departments",
-                r => new { Name = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) }
+                "Departments d LEFT JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
+                r => new { Name = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) },
+                "s.Id IS NULL"
             );
             Assert.NotNull(department);
 
@@ -459,9 +462,11 @@ namespace JUSTLockers.Testing
         public async Task DeleteCovenant_ShouldSucceed_WhenAssigned()
         {
             var supervisor = await GetRandomEntityAsync(
-                "Supervisors",
-                r => new { Id = r.GetInt32(r.GetOrdinal("Id")) }
-            );
+                "Supervisors ",
+                r => new{Id = r.GetInt32(r.GetOrdinal("Id"))  },
+                 "supervised_department IS NOT NULL AND Location IS NOT NULL"
+                );
+           
             Assert.NotNull(supervisor);
             var result = await _service.DeleteCovenant(supervisor.Id);
             Assert.Equal("Covenant deleted successfully.", result);
