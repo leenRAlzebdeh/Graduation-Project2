@@ -82,6 +82,16 @@
             font-weight: bold;
         }
 
+        
+        .reserve-btn:disabled {
+            background-color: deeppink; /* Gray color to indicate it's disabled */
+            color: white; /* Light gray text */
+            cursor: not-allowed; /* Change cursor to indicate it's not clickable */
+        }
+
+    
+
+ 
 
     </style>
 </head>
@@ -103,7 +113,7 @@
             <li class="has-submenu">
                 <div class="submenu-toggle">
                     <i class="fas fa-archive"></i>
-                    <span>Report Management</span>
+                    <span>Students Management</span>
                     <i class="fas fa-chevron-down arrow"></i>
                 </div>
                 <ul class="pretty-submenu" id="cabinet-submenu">
@@ -369,7 +379,7 @@
                         showStatusMessage("Locker reserved successfully");
 
 
-                      // window.location.reload();
+                       window.location.reload();
 
                     } catch (error) {
                         statusDiv.textContent = error.message;

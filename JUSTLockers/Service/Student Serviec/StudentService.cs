@@ -323,11 +323,11 @@ namespace JUSTLockers.Service
         public async Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string location)
         {
             var wings = new List<WingInfo>();
-            string cacheKey = $"AvailableWings_{departmentName}_{location}";
-            if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
-            {
-                return cachedWings;
-            }
+           // string cacheKey = $"AvailableWings_{departmentName}_{location}";
+            //if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
+            //{
+            //    return cachedWings;
+            //}
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -376,7 +376,7 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
+          //  _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
             return wings;
         }
         public async Task<Reservation> GetCurrentReservationAsync(int studentId)

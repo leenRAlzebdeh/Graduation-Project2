@@ -53,6 +53,12 @@ namespace JUSTLockers.Controllers
 
         }
         [HttpGet]
+        public IActionResult Profile()
+        {
+            return View("~/Views/Supervisor/Profile.cshtml");
+
+        }
+        [HttpGet]
         public async Task<IActionResult> ViewCabinetInfoSuper(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
         {
             int? userId = HttpContext.Session.GetInt32("UserId");
@@ -287,10 +293,13 @@ namespace JUSTLockers.Controllers
          [HttpGet]
         public IActionResult ReserveLocker()
         {
+
             return View("~/Views/Supervisor/ReservationView.cshtml");
         }
         public async Task<IActionResult> ReservationView()
         {
+
+
           
             int? userId = HttpContext.Session.GetInt32("UserId");
 
@@ -332,7 +341,7 @@ namespace JUSTLockers.Controllers
                 };
             }
 
-            return View(wingsInfo);
+            return View("~/Views/Supervisor/ReservationView.cshtml",wingsInfo);
         }
 
 
