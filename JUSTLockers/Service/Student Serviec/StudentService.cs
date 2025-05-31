@@ -345,11 +345,11 @@ namespace JUSTLockers.Service
         public async Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string location)
         {
             var wings = new List<WingInfo>();
-            string cacheKey = $"AvailableWings_{departmentName}_{location}";
-            if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
-            {
-                return cachedWings;
-            }
+           // string cacheKey = $"AvailableWings_{departmentName}_{location}";
+            //if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
+            //{
+            //    return cachedWings;
+            //}
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {

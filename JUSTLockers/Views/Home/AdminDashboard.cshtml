@@ -115,7 +115,7 @@
         <section class="management">
 
             <div class="welcome-box">
-                <h2>Welcome Back, Admin 👋</h2>
+                <h2>Welcome Back, Admin <span id="name"></span> 👋</h2>
                 <p>
                     Everything is set and ready to go.<br />
                     You can now manage cabinets, approve requests, and monitor reports all in one place.
@@ -141,7 +141,25 @@
     </main>
 
     <script src="~/js/DashbordAdmin.js"></script>
-    <script src="~/js/admin.js"></script> 
-    
+    <script src="~/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+             fetch('/Dashboard/GetNameJson')
+        .then(response => response.json())
+        .then(data => {
+            const name = document.getElementById("name");
+            if (name) {
+                name.innerHTML = data || "Unknown User";
+            }
+        })
+        .catch(() => {
+            const name = document.getElementById("name");
+            if (name) {
+                name.textContent = "Error fetching admin name";
+            }
+        });
+
+        });
+    </script>
 </body>
 </html>
