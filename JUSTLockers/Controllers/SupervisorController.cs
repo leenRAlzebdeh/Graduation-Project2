@@ -302,8 +302,6 @@ namespace JUSTLockers.Controllers
         }
         public async Task<IActionResult> ReservationView()
         {
-
-
           
             int? userId = HttpContext.Session.GetInt32("UserId");
 

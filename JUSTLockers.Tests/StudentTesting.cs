@@ -4,6 +4,7 @@ using JUSTLockers.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using MySqlConnector;
 using System.Data;
@@ -29,6 +30,13 @@ namespace JUSTLockers.Testing
             _configuration = config;
             _serviceAdmin = new AdminService(_configuration, memoryCache);
             _service = new StudentService(config, memoryCache, _serviceAdmin);
+        }
+        [Fact]
+        public void Setup()
+        {
+            // Ensure the database is in a known state before each test
+            using var connection = new MySqlConnection(connectionString);
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
         }
 
         #region Helper Methods

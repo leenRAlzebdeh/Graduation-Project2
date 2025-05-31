@@ -1000,8 +1000,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                     command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
-                    
-                    _memoryCache.Remove("ForwardedReports");
+
+                    AdminService.ClearCache(_memoryCache, "ForwardedReports");
                     AdminService.ClearCache(_memoryCache, "Reports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
@@ -1050,7 +1050,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
             {
                 command.Parameters.AddWithValue("@ReportId", reportId);
                 AdminService.ClearCache(_memoryCache, "Reports");
-                _memoryCache.Remove("ForwardedReports");
+                AdminService.ClearCache(_memoryCache, "ForwardedReports");
                 return await command.ExecuteNonQueryAsync() > 0;
             }
         }
@@ -1073,7 +1073,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                     AdminService.ClearCache(_memoryCache, "Reports");
-                    _memoryCache.Remove("ForwardedReports");
+                    AdminService.ClearCache(_memoryCache, "ForwardedReports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }
@@ -1246,15 +1246,21 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
 
         var rowsAffected = await command.ExecuteNonQueryAsync();
-        _memoryCache.Remove("SemesterSettings"); // Clear cache after saving settings
+        AdminService.ClearCache(_memoryCache, "SemesterSettings"); // Clear cache after saving settings
         return rowsAffected > 0;
 
     }
     public async Task<bool> ClearReservationsAndReports()
     {
-        _memoryCache.Remove("ForwardedReports");
-        _memoryCache.Remove("ReallocationResponse");
-        _memoryCache.Remove("SemesterSettings"); 
+        AdminService.ClearCache(_memoryCache, "ForwardedReports");
+        AdminService.ClearCache(_memoryCache, "ReallocationResponse");
+        AdminService.ClearCache(_memoryCache, "SemesterSettings"); 
+        AdminService.ClearCache(_memoryCache, "StudentReservation_");
+        AdminService.ClearCache(_memoryCache, "CabinetInfo_");
+        AdminService.ClearCache(_memoryCache, "AvailableWings_");
+        AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+        AdminService.ClearCache(_memoryCache, $"CurrentReservation_");
+        AdminService.ClearCache(_memoryCache, $"HasLocker-");
 
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();

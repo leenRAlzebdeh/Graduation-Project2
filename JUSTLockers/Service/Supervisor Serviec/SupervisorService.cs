@@ -205,13 +205,25 @@ WHERE
         {
             await connection.OpenAsync();
 
+            //var query = @"
+            //SELECT s.id, s.name, s.email, s.Major, s.locker_id
+            //FROM Students s
+            //JOIN Supervisors su 
+            //  ON s.department = su.supervised_department 
+            //  AND s.Location = su.location
+            //WHERE su.id = @userId and s.locker_id is not null";
+
             var query = @"
             SELECT s.id, s.name, s.email, s.Major, s.locker_id
             FROM Students s
-            JOIN Supervisors su 
-              ON s.department = su.supervised_department 
-              AND s.Location = su.location
-            WHERE su.id = @userId and s.locker_id is not null";
+            JOIN Supervisors su
+            JOIN Reservations r
+            on r.StudentId= s.id
+            AND r.Status='Reserved'
+            AND su.location = s.Location
+            WHERE su.id =@userId and s.locker_id is not NULL 
+            AND r.LockerId LIKE CONCAT(@supervised_department, '%')";
+
 
             if (searchstu.HasValue)
             {
@@ -221,6 +233,7 @@ WHERE
             using (var command = new MySqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@userId", userId);
+                command.Parameters.AddWithValue("@supervised_department", (await GetSupervisorLocationAndDepartment(userId.Value)).Department ?? (object)DBNull.Value);
 
                 if (searchstu.HasValue)
                 {
@@ -577,7 +590,7 @@ WHERE
                     int rowsAffected = await command.ExecuteNonQueryAsync();
 
                     AdminService.ClearCache(_memoryCache, "ReallocationRequests_");
-                    AdminService.ClearCache(_memoryCache, "ReallocationResponse"); 
+                    AdminService.ClearCache(_memoryCache, "ReallocationResponse");
 
                     return rowsAffected > 0 ? "Request sent successfully! Wait Admin Response" : "Failed to send request.";
                 }
@@ -807,6 +820,12 @@ JOIN Supervisors su ON bs.blocked_by = su.id
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
+            // Check if the student is already blocked
+            if (IsStudentBlocked(id))
+            {
+                return "Student is already blocked.";
+            }
+
             string checkQuery = @"
             SELECT COUNT(*) 
             FROM Students s
@@ -833,7 +852,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
                 AdminService.ClearCache(_memoryCache, "BlockedStudents");
                 AdminService.ClearCache(_memoryCache, "IsStudentBlocked");
-                AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}"); 
+                AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}");
                 AdminService.ClearCache(_memoryCache, "AvailableWings_");
                 AdminService.ClearCache(_memoryCache, "AvailableLockers_");
                 AdminService.ClearCache(_memoryCache, $"HasLocker-{id}");
@@ -1009,7 +1028,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 }
             }
         }
-        
+
         return null;
     }
     public bool HasCovenant(int? userId)

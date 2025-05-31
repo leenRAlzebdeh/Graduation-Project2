@@ -100,6 +100,7 @@ namespace JUSTLockers.Service
                         AdminService.ClearCache(_memoryCache,"AvailableLockers_");
                         AdminService.ClearCache(_memoryCache,$"CurrentReservation_"); 
                         AdminService.ClearCache(_memoryCache,$"HasLocker-"); 
+                        AdminService.ClearCache(_memoryCache,$"StudentReservation_");
 
 
                         // Step 4: Commit transaction
