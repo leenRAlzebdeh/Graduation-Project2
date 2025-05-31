@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var userId = Context.Session.GetInt32("UserId");
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -197,7 +201,7 @@
             <li class="nav-item">
                 <a href="@Url.Action("Profile", "Supervisor")">
                     <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                    <span>Profile</span>
                 </a>
             </li>
 
@@ -234,43 +238,44 @@
             <div class="profile-modern-card">
                 <!-- Avatar Side -->
                 <div class="avatar-section">
-                    <img id="avatarImage" src="/photos/images/adminpic.jpg" alt="Avatar" class="avatar-img">
-                    <button class="btn-change" onclick="toggleEdit()">Change Photo</button>
+                    <img id="avatarImage" src="/photos/images/profile-icon.jpg" alt="Avatar" class="avatar-img">
+                    @* <button class="btn-change" onclick="toggleEdit()">Change Photo</button> *@
                 </div>
 
                 <!-- Info Side -->
                 <div class="info-section">
                     <h2 id="formTitle">Account</h2>
-                    <p class="desc">Edit your name, avatar, etc.</p>
+                   @* <p class="desc">Edit your name, avatar, etc.</p> *@
 
                     <!-- View Form -->
                     <div id="viewProfile">
                         <div class="form-columns">
                             <div class="column">
                                 <label>Name</label>
-                                <input type="text" value="User name" disabled>
+                                <input type="text" id="name" name="name" readonly>
 
                                 <label>Email</label>
-                                <input type="email" value="mi@xpaytech.co" disabled>
+                                <input type="email" id="email" readonly>
 
-                                <label>Phone</label>
-                                <input type="text" value="+20-01274318900" disabled>
                             </div>
                             <div class="column">
                                 <label>ID</label>
-                                <input type="text" value="Supervisor01" disabled>
+                                <input type="text" id="id" readonly>
 
-                                <label>Department</label>
-                                <input type="text" value="Computer Engineering" disabled>
+                                <label>Supervised Department</label>
+                                <input type="text" id="dept" readonly>
+
+                              @*   <label>Location</label>
+                                <input type="text" id="location" readonly> *@
                             </div>
                         </div>
-                        <div class="form-footer">
-                            <button type="button" class="btn-update" onclick="toggleEdit()">Update Settings</button>
-                        </div>
+                        @* <div class="form-footer">
+                            <button type="button" class="btn-update" >Update Settings</button>
+                        </div> *@
                     </div>
 
                     <!-- Edit Form -->
-                    <form id="editProfileForm" style="display: none;">
+                    @* <form id="editProfileForm" style="display: none;">
                         <div class="form-columns">
                             <div class="column">
                                 <label>Name</label>
@@ -294,7 +299,7 @@
                             <button type="submit" class="btn-update">Save</button>
                             <button type="button" class="btn-cancel" onclick="toggleEdit()">Cancel</button>
                         </div>
-                    </form>
+                    </form> *@
                 </div>
             </div>
         </section>
@@ -313,27 +318,65 @@
             });
         });
     </script>
+  
     <script>
+        const userId = '@userId';
         document.addEventListener('DOMContentLoaded', () => {
-             fetch('/Dashboard/GetNameJson')
-        .then(response => response.json())
-        .then(data => {
-            const name = document.getElementById("name");
-            if (name) {
-                name.innerHTML = data || "Unknown User";
+          
+            const id = document.getElementById("id");
+            if (id) {
+                id.value = userId || "Unknown ID";
+                console.log("User ID set to:", userId);
             }
-        })
-        .catch(() => {
-            const name = document.getElementById("name");
-            if (name) {
-                name.textContent = "Error fetching admin name";
-            }
-        });
 
-        });
+            
+
+
+        fetch(`/Account/GetUser?id=${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const nameInput = document.getElementById("name");
+                const emailInput = document.getElementById("email");
+                const departmentInput = document.getElementById("dept");
+                const locationInput = document.getElementById("location");
+
+                if (data.status === "Success") {
+                    if (nameInput) nameInput.value = data.employee || "N/A";
+                    if (emailInput) emailInput.value = data.email || "N/A";
+                    if (departmentInput) departmentInput.value = (data.supervisedDepartment+"/"+data.location) || "N/A";
+                   // if (locationInput) locationInput.innerHTML = data.location || "N/A";
+                    console.log("User details fetched successfully:", data);
+                } else if (data.status === "Not Found") {
+                    if (nameInput) nameInput.value = "User not found";
+                    if (emailInput) emailInput.value = "";
+                    if (departmentInput) departmentInput.value = "";
+                    if (locationInput) locationInput.value = "";
+                } else {
+                    if (nameInput) nameInput.value = "Error fetching user data";
+                    if (emailInput) emailInput.value = "";
+                    if (departmentInput) departmentInput.value = "";
+                    if (locationInput) locationInput.value = "";
+                }
+            })
+            .catch(() => {
+                const nameInput = document.getElementById("name");
+                if (nameInput) nameInput.value = "Error fetching user data";
+                console.error("Failed to fetch user data.");
+            });
+
+
+
+
+
+
+               });
+
+
+
+
     </script>
 
-    <script>
+    @* <script>
         function toggleEdit() {
             const view = document.getElementById("viewProfile");
             const form = document.getElementById("editProfileForm");
@@ -356,7 +399,7 @@
             };
             reader.readAsDataURL(event.target.files[0]);
         }
-    </script>
+    </script> *@
 
 </body>
 </html>
