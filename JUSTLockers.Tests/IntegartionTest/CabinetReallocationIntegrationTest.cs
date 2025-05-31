@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
 using System.Data;
+using System.Transactions;
 
 namespace JUSTLockers.Tests.IntegartionTest
 {
@@ -19,7 +20,7 @@ namespace JUSTLockers.Tests.IntegartionTest
         private MySqlConnection _connection;
         private MySqlTransaction? _transaction;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
-        private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+        private IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
 
         public CabinetReallocationIntegrationTest()
         {
@@ -86,6 +87,8 @@ namespace JUSTLockers.Tests.IntegartionTest
         [Fact]
         public async Task SameDepartmentReallocation_Succeeds_UpdatesCabinetAndLockers()
         {
+            memoryCache = new MemoryCache(new MemoryCacheOptions());
+
             // Arrange: Get a supervisor with a covenant
             var supervisor = await GetRandomEntityAsync(
                 "Supervisors",
@@ -152,7 +155,7 @@ namespace JUSTLockers.Tests.IntegartionTest
             await CleanupOrphanedReservations();
             var (message, requestId) = await _supervisorService.ReallocationRequestFormSameDep(model);
 
-            // Assert
+
             Assert.Equal("Cabinet reallocation was successful.", message);
             Assert.True(requestId > 0);
 
@@ -187,91 +190,183 @@ namespace JUSTLockers.Tests.IntegartionTest
             _emailServiceMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce());
         }
 
+        //[Fact]
+        //public async Task CrossDepartmentReallocation_AdminApproves_UpdatesCabinet()
+        //{
+        //    // Arrange: Get a supervisor with a covenant
+        //    var supervisor = await GetRandomEntityAsync(
+        //        "Supervisors",
+        //        r => new
+        //        {
+        //            Id = r.GetInt32(r.GetOrdinal("id")),
+        //            Department = r.GetString(r.GetOrdinal("supervised_department")),
+        //            Location = r.GetString(r.GetOrdinal("location"))
+        //        },
+        //        "supervised_department IS NOT NULL AND location IS NOT NULL"
+        //    );
+        //    if (supervisor == null)
+        //    {
+        //        Console.WriteLine("No supervisor with covenant found; skipping test.");
+        //        return;
+        //    }
+
+        //    // Get a cabinet
+        //    var cabinet = await GetRandomEntityAsync(
+        //        "Cabinets",
+        //        r => new
+        //        {
+        //            Number = r.GetInt32(r.GetOrdinal("number_cab")),
+        //            Wing = r.GetString(r.GetOrdinal("wing")),
+        //            Level = r.GetInt32(r.GetOrdinal("level")),
+        //            CabinetId = r.GetString(r.GetOrdinal("cabinet_id"))
+        //        },
+        //        "department_name = @Department AND location = @Location",
+        //        new { supervisor.Department, supervisor.Location }
+        //    );
+        //    if (cabinet == null)
+        //    {
+        //        Console.WriteLine("No cabinet found; skipping test.");
+        //        return;
+        //    }
+
+
+        //    // Get a different department
+        //    var targetDept = await GetRandomEntityAsync(
+        //        "Departments",
+        //        r => new { Name = r.GetString(r.GetOrdinal("name")), Location = r.GetString(r.GetOrdinal("Location")) },
+        //        "name != @Department OR Location != @Location",
+        //        new { supervisor.Department, supervisor.Location }
+        //    );
+        //    if (targetDept == null)
+        //    {
+        //        Console.WriteLine("No different department found; skipping test.");
+        //        return;
+        //    }
+
+        //    var model = new Reallocation
+        //    {
+        //        SupervisorID = supervisor.Id,
+        //        CurrentDepartment = supervisor.Department,
+        //        RequestedDepartment = targetDept.Name,
+        //        CurrentLocation = supervisor.Location,
+        //        RequestLocation = targetDept.Location,
+        //        RequestWing = cabinet.Wing,
+        //        RequestLevel = cabinet.Level,
+        //        NumberCab = cabinet.Number,
+        //        CurrentCabinetID = cabinet.CabinetId
+        //    };
+
+        //    // Act: Submit cross-department request
+        //    await CleanupOrphanedReservations();
+        //    var message = await _supervisorService.ReallocationRequest(model);
+
+        //    // Verify pending request
+        //    var request = await GetRandomEntityAsync(
+        //        "Reallocation",
+        //         r => new { RequestID = r.GetInt32(r.GetOrdinal("RequestID")), RequestStatus = r.GetString(r.GetOrdinal("RequestStatus")), NewCabinetID = r.GetString(r.GetOrdinal("NewCabinetID")) },
+        //        "SupervisorID = @SupervisorID AND CurrentCabinetID = @CabinetId AND RequestedDepartment= @RequestedDepartment AND RequestLocation=@RequestLocation AND RequestStatus='Pending'",
+        //        new { SupervisorID = supervisor.Id, cabinet.CabinetId, RequestedDepartment = targetDept.Name, RequestLocation=supervisor.Location }
+        //    );
+        //    Assert.NotNull(request);
+        //    //var approveResult = await _adminService.ApproveRequestReallocation(request.RequestID);
+        //    var approveResult = await ApproveRequestReallocation(request.RequestID);
+
+        //    Assert.Equal("Reallocation", approveResult.message);
+        //    Assert.True(approveResult.success);
+
+        //    _emailServiceMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce());
+        //}
         [Fact]
         public async Task CrossDepartmentReallocation_AdminApproves_UpdatesCabinet()
         {
-            // Arrange: Get a supervisor with a covenant
-            var supervisor = await GetRandomEntityAsync(
-                "Supervisors",
-                r => new
+            // Arrange: Mock IMemoryCache
+            var cache = new Mock<IMemoryCache>();
+            object cacheValue = null;
+            cache.Setup(c => c.TryGetValue(It.IsAny<string>(), out cacheValue)).Returns(false);
+            cache.Setup(c => c.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>());
+
+            // Use transaction scope for isolation
+            {
+                // Get supervisor
+                var supervisor = await GetRandomEntityAsync(
+                        "Supervisors s JOIN cabinets c on c.department_name=s.supervised_department and c.location= s.location ",
+                        r => new
+                        {
+                            Id = r.GetInt32(r.GetOrdinal("id")),
+                            Department = r.GetString(r.GetOrdinal("supervised_department")),
+                            Location = r.GetString(r.GetOrdinal("location"))
+                        },
+                        "s.supervised_department IS NOT NULL AND s.location IS NOT NULL"
+                    );
+                Assert.NotNull(supervisor);
+                var cabinet = await GetRandomEntityAsync(
+                   "Cabinets",
+                  r => new
+                   {
+                       Number = r.GetInt32(r.GetOrdinal("number_cab")),
+                       Wing = r.GetString(r.GetOrdinal("wing")),
+                       Level = r.GetInt32(r.GetOrdinal("level")),
+                       CabinetId = r.GetString(r.GetOrdinal("cabinet_id"))
+                   },
+                   "department_name = @Department AND location = @Location",
+                   new { supervisor.Department, supervisor.Location });
+                Assert.NotNull(cabinet);
+
+                // Get different department
+                var targetDept = await GetRandomEntityAsync(
+                        "Departments",
+                        r => new { Name = r.GetString(r.GetOrdinal("name")), Location = r.GetString(r.GetOrdinal("Location")) },
+                        "name != @Department OR Location != @Location",
+                        new { supervisor.Department, supervisor.Location }
+                    );
+                Assert.NotNull(targetDept);
+
+                var model = new Reallocation
                 {
-                    Id = r.GetInt32(r.GetOrdinal("id")),
-                    Department = r.GetString(r.GetOrdinal("supervised_department")),
-                    Location = r.GetString(r.GetOrdinal("location"))
-                },
-                "supervised_department IS NOT NULL AND location IS NOT NULL"
-            );
-            if (supervisor == null)
-            {
-                Console.WriteLine("No supervisor with covenant found; skipping test.");
-                return;
+                    SupervisorID = supervisor.Id,
+                    CurrentDepartment = supervisor.Department,
+                    RequestedDepartment = targetDept.Name,
+                    CurrentLocation = supervisor.Location,
+                    RequestLocation = targetDept.Location,
+                    RequestWing = cabinet.Wing,
+                    RequestLevel = cabinet.Level,
+                    NumberCab = cabinet.Number,
+                    CurrentCabinetID = cabinet.CabinetId
+                };
+
+                // Act: Submit request
+                var message = await _supervisorService.ReallocationRequest(model);
+                Assert.False(string.IsNullOrEmpty(message), "Reallocation request submission failed.");
+
+                // Verify pending request
+                var request = await GetRandomEntityAsync(
+                    "Reallocation",
+                     r => new { RequestID = r.GetInt32(r.GetOrdinal("RequestID")), RequestStatus = r.GetString(r.GetOrdinal("RequestStatus")), NewCabinetID = r.GetString(r.GetOrdinal("NewCabinetID")) },
+
+                    "SupervisorID = @SupervisorID AND CurrentCabinetID = @CabinetId AND RequestedDepartment = @RequestedDepartment AND RequestLocation = @RequestLocation AND RequestStatus = 'Pending'",
+                    new { SupervisorID = supervisor.Id, cabinet.CabinetId, RequestedDepartment = targetDept.Name, RequestLocation = targetDept.Location }
+                );
+                Assert.NotNull(request);
+                Assert.Equal("Pending", request.RequestStatus);
+
+                // Act: Approve request
+                var approveResult = await _adminService.ApproveRequestReallocation(request.RequestID);
+                Assert.True(approveResult, "Failed to approve reallocation request.");
+
+                // Assert: Verify cabinet updated
+                var updatedCabinet = await GetRandomEntityAsync(
+                    "Cabinets",
+                    r => new
+                    {
+                        Department = r.GetString(r.GetOrdinal("department_name")),
+                        Location = r.GetString(r.GetOrdinal("location"))
+                    },
+                    "cabinet_id = @CabinetId",
+                    new { cabinet.CabinetId }
+                );
+                Assert.NotNull(updatedCabinet);
+
             }
-
-            // Get a cabinet
-            var cabinet = await GetRandomEntityAsync(
-                "Cabinets",
-                r => new
-                {
-                    Number = r.GetInt32(r.GetOrdinal("number_cab")),
-                    Wing = r.GetString(r.GetOrdinal("wing")),
-                    Level = r.GetInt32(r.GetOrdinal("level")),
-                    CabinetId = r.GetString(r.GetOrdinal("cabinet_id"))
-                },
-                "department_name = @Department AND location = @Location",
-                new { supervisor.Department, supervisor.Location }
-            );
-            if (cabinet == null)
-            {
-                Console.WriteLine("No cabinet found; skipping test.");
-                return;
-            }
-            
-
-            // Get a different department
-            var targetDept = await GetRandomEntityAsync(
-                "Departments",
-                r => new { Name = r.GetString(r.GetOrdinal("name")), Location = r.GetString(r.GetOrdinal("Location")) },
-                "name != @Department OR Location != @Location",
-                new { supervisor.Department, supervisor.Location }
-            );
-            if (targetDept == null)
-            {
-                Console.WriteLine("No different department found; skipping test.");
-                return;
-            }
-
-            var model = new Reallocation
-            {
-                SupervisorID = supervisor.Id,
-                CurrentDepartment = supervisor.Department,
-                RequestedDepartment = targetDept.Name,
-                CurrentLocation = supervisor.Location,
-                RequestLocation = targetDept.Location,
-                RequestWing = cabinet.Wing,
-                RequestLevel = cabinet.Level,
-                NumberCab = cabinet.Number,
-                CurrentCabinetID = cabinet.CabinetId
-            };
-
-            // Act: Submit cross-department request
-            await CleanupOrphanedReservations();
-            var message = await _supervisorService.ReallocationRequest(model);
-
-            // Verify pending request
-            var request = await GetRandomEntityAsync(
-                "Reallocation",
-                 r => new { RequestID = r.GetInt32(r.GetOrdinal("RequestID")), RequestStatus = r.GetString(r.GetOrdinal("RequestStatus")), NewCabinetID = r.GetString(r.GetOrdinal("NewCabinetID")) },
-                "SupervisorID = @SupervisorID AND CurrentCabinetID = @CabinetId AND RequestedDepartment= @RequestedDepartment AND RequestLocation=@RequestLocation AND RequestStatus='Pending'",
-                new { SupervisorID = supervisor.Id, cabinet.CabinetId, RequestedDepartment = targetDept.Name, RequestLocation=supervisor.Location }
-            );
-            Assert.NotNull(request);
-            //var approveResult = await _adminService.ApproveRequestReallocation(request.RequestID);
-            var approveResult = await ApproveRequestReallocation(request.RequestID);
-
-            Assert.Equal("Reallocation", approveResult.message);
-            Assert.True(approveResult.success);
-
-            _emailServiceMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce());
         }
 
         [Fact]

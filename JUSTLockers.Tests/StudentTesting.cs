@@ -31,14 +31,6 @@ namespace JUSTLockers.Testing
             _serviceAdmin = new AdminService(_configuration, memoryCache);
             _service = new StudentService(config, memoryCache, _serviceAdmin);
         }
-        [Fact]
-        public void Setup()
-        {
-            // Ensure the database is in a known state before each test
-            using var connection = new MySqlConnection(connectionString);
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
-        }
-
         #region Helper Methods
         public async Task<T?> GetRandomEntityAsync<T>(string tableName, Func<IDataReader, T> mapFunc, string? whereClause = null)
         {
@@ -378,7 +370,12 @@ namespace JUSTLockers.Testing
                 r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
                 "r.Id IS NULL"
             );
+            if(student == null)
+            {
+                ReserveLockerInWingAndLevel_ShouldReturnLockerId_WhenSuccessful();
+            }
             Assert.NotNull(student);
+
 
             var reservation = await _service.GetCurrentReservationAsync(student.Id);
 
@@ -409,6 +406,7 @@ namespace JUSTLockers.Testing
                 "Students s JOIN BlockList b ON s.id = b.student_id JOIN Cabinets c ON s.department = c.department_name AND s.Location = c.location",
                 r => new { Id = r.GetInt32(r.GetOrdinal("id")), Department = r.GetString(r.GetOrdinal("department_name")), Location = r.GetString(r.GetOrdinal("location")), Wing = r.GetString(r.GetOrdinal("wing")), Level = r.GetInt32(r.GetOrdinal("level")) }
             );
+            
             Assert.NotNull(student);
 
             var lockerId = await _service.ReserveLockerInWingAndLevel(student.Id, student.Department, student.Location, student.Wing, student.Level);

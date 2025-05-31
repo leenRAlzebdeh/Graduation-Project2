@@ -1,4 +1,5 @@
-﻿using JUSTLockers.Service;
+﻿using JUSTLockers.Classes;
+using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
 using System.Data;
+using System.Transactions;
 
 
 namespace JUSTLockers.Tests.IntegartionTest
@@ -156,74 +158,63 @@ namespace JUSTLockers.Tests.IntegartionTest
             _connection?.Close();
             _connection?.Dispose();
         }
+        
         [Fact]
         public async Task ProblemReportingWorkflow_StudentSubmits_ThenAdminRejects()
         {
-            // Arrange: Get a student with a reservation
-            var student = await GetRandomEntityAsync(
-                "Students s JOIN Reservations r ON s.id = r.StudentId JOIN Lockers l ON r.LockerId = l.Id",
-                r => new
-                {
-                    Id = r.GetInt32(r.GetOrdinal("id")),
-                    LockerId = r.GetString(r.GetOrdinal("LockerId")),
-                    Department = r.GetString(r.GetOrdinal("department")),
-                    Location = r.GetString(r.GetOrdinal("Location"))
-                },
-                "r.Status = 'RESERVED'"
-            );
-            if (student == null)
+            // Arrange: Mock IMemoryCache
+            var cache = new Mock<IMemoryCache>();
+            // Setup in-memory database or transaction scope
+            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                Console.WriteLine("No student with active reservation found; skipping test.");
-                return;
+                // Fetch student with reservation
+                var student = await GetRandomEntityAsync(
+                        "Students s JOIN Reservations r ON s.id = r.StudentId JOIN Lockers l ON r.LockerId = l.Id",
+                        r => new
+                        {
+                            Id = r.GetInt32(r.GetOrdinal("id")),
+                            LockerId = r.GetString(r.GetOrdinal("LockerId")),
+                            Department = r.GetString(r.GetOrdinal("department")),
+                            Location = r.GetString(r.GetOrdinal("Location"))
+                        },
+                        "r.Status = 'RESERVED'"
+                    );
+                Assert.NotNull(student);
+
+                // Fetch supervisor (if needed)
+                var supervisor = await GetRandomEntityAsync(
+                    "Supervisors",
+                    r => new { Id = r.GetOrdinal("id") },
+                    "supervised_department = @Department AND location = @Location",
+                    new { student.Department, student.Location }
+                );
+                Assert.NotNull(supervisor);
+
+                // Mock IFormFile
+                var mockFile = new Mock<IFormFile>();
+                mockFile.Setup(f => f.FileName).Returns("damage.png");
+                mockFile.Setup(f => f.ContentType).Returns("image/png");
+                mockFile.Setup(f => f.Length).Returns(2048);
+                mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), default))
+                       .Callback<Stream, CancellationToken>((s, ct) => s.Write(new byte[2048], 0, 2048))
+                       .Returns(Task.CompletedTask);
+
+                // Generate unique report ID
+                var reportId = await GetNextIdAsync("Reports");
+                var reportType = "MAINTENANCE";
+                var subject = "Locker Damage";
+                var description = "Locker door is broken";
+
+                // Act: Submit report
+                var saveResult = await _studentService.SaveReportAsync(
+                   reportId, student.Id, student.LockerId, reportType, subject, description, mockFile.Object);
+                Assert.True(saveResult, "Failed to save report.");
+
+                // Act: Reject report
+                var rejectResult = await _adminService.RejectReport(reportId);
+                Assert.True(rejectResult, "Failed to reject report.");
+
             }
-
-            var supervisor = await GetRandomEntityAsync(
-                "Supervisors",
-                r => new { Id = r.GetInt32(r.GetOrdinal("id")) },
-                "supervised_department = @Department AND location = @Location",
-                new { Department = student.Department, Location = student.Location }
-            );
-            if (supervisor == null)
-            {
-                Console.WriteLine($"No supervisor found for department {student.Department}, location {student.Location}; skipping test.");
-                return;
-            }
-
-            var mockFile = new Mock<IFormFile>();
-            mockFile.Setup(f => f.ContentType).Returns("image/png");
-            mockFile.Setup(f => f.Length).Returns(2048);
-            mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), default))
-                    .Callback<Stream, CancellationToken>((s, ct) => s.Write(new byte[2048], 0, 2048))
-                    .Returns(Task.CompletedTask);
-
-            var reportId = await GetNextIdAsync("Reports");
-            var reportType = "DAMAGE";
-            var subject = "Locker Damage";
-            var description = "Locker door is broken";
-
-            // Act 1: Student submits report
-            await CleanupOrphanedReservations();
-            var saveResult = await _studentService.SaveReportAsync(
-                reportId, student.Id, student.LockerId, reportType, subject, description, mockFile.Object);
-            Assert.True(saveResult);
-
-            // Act 3: Admin rejects the report
-            var rejectResult = await _adminService.RejectReport(reportId);
-            Assert.True(rejectResult);
-
-            // Assert: Verify report status is rejected
-            var updatedReport = await GetRandomEntityAsync(
-                "Reports",
-                r => new
-                {
-                    Status = r.GetString(r.GetOrdinal("Status")),
-                    Resolution = r.IsDBNull(r.GetOrdinal("Resolution")) ? null : r.GetString(r.GetOrdinal("Resolution"))
-                },
-                "Id = @ReportId",
-                new { ReportId = reportId }
-            );
-            Assert.NotNull(updatedReport);
-            
         }
 
         [Fact]

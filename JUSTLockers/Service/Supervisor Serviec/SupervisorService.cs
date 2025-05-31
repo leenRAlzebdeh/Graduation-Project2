@@ -2,6 +2,7 @@ using JUSTLockers.Classes;
 using JUSTLockers.Service;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
+using System;
 namespace JUSTLockers.Services;
 
 
@@ -544,8 +545,8 @@ WHERE
                                         RequestLevel = @RequestLevel AND
                                         number_cab = @NumberCab AND
                                         CurrentCabinetID = @CurrentCabinetID AND
-                                        RequestStatus='Pending'";
-
+                                        RequestStatus='Pending'"
+;
                 using (var checkCommand = new MySqlCommand(checkQuery, connection))
                 {
                     checkCommand.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
@@ -556,7 +557,7 @@ WHERE
                     checkCommand.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
                     checkCommand.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
                     checkCommand.Parameters.AddWithValue("@NumberCab", model.NumberCab);
-                    checkCommand.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
+                    checkCommand.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID?.Trim() ?? (object)DBNull.Value);
 
                     var count = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
                     if (count > 0)

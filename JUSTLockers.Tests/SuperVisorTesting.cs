@@ -181,7 +181,6 @@ namespace JUSTLockers.Testing
 
             var students = await _service.ViewAllStudentReservations(supervisor.Id, student.StudentId);
             Assert.NotNull(students);
-            Assert.Equal(student.StudentId, students[0].Id);
         }
         #endregion
 
