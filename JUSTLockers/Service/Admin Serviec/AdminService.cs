@@ -1,5 +1,7 @@
 using Dapper;
 using JUSTLockers.Classes;
+using JUSTLockers.Service;
+using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System.Data;
 namespace JUSTLockers.Services;
@@ -7,14 +9,13 @@ namespace JUSTLockers.Services;
 public class AdminService : IAdminService
 {
 
-    // private readonly IDbConnectionFactory _connectionFactory;
     private readonly IConfiguration _configuration;
-
-    public AdminService(IConfiguration configuration)
+    private readonly IMemoryCache _memoryCache; 
+    public AdminService(IConfiguration configuration , IMemoryCache? memoryCache)
     {
         _configuration = configuration;
+        _memoryCache = memoryCache;
     }
-
     public async Task<bool> CheckEmployeeExists(int employeeId)
     {
         try
@@ -60,6 +61,7 @@ public class AdminService : IAdminService
             else
                 try
                 {
+                    
                     string queryEmployee = @"SELECT id, name, email,password FROM Employees WHERE id = @Id";
                     string querySupervisor = @"INSERT INTO Supervisors 
                                         (id, name, email, supervised_department, location,password) 
@@ -86,6 +88,11 @@ public class AdminService : IAdminService
                                 pass = reader.GetString("password");
                             }
                         }
+                        AdminService.ClearCache(_memoryCache, "AllSupervisorsInfo");
+                        AdminService.ClearCache(_memoryCache, $"IsDepartmentAssigned-{supervisor.DepartmentName}-{supervisor.Location}");
+                        AdminService.ClearCache(_memoryCache, $"SupervisorLocationDepartment_{supervisor.Id}");
+                        AdminService.ClearCache(_memoryCache, $"DepartmentInfo_{supervisor.Id}");
+                        AdminService.ClearCache(_memoryCache, $"HasCovenant_{supervisor.Id}");
 
                         using (var commandSupervisor = new MySqlCommand(querySupervisor, connection))
                         {
@@ -121,7 +128,6 @@ public class AdminService : IAdminService
             return (false, "Department and location cannot be null.");
         }
     }
-
     public async Task<bool> SupervisorExists(int supervisorId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -137,9 +143,6 @@ public class AdminService : IAdminService
             }
         }
     }
-
-
-    //emas
     public string AssignCabinet(Cabinet model)
     {
         try
@@ -167,6 +170,9 @@ public class AdminService : IAdminService
 
                     if (rowsAffected > 0)
                     {
+                        AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                        AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+                        AdminService.ClearCache(_memoryCache, "CabinetInfo_"); 
                         return "Cabinet added successfully!";
                     }
                     else
@@ -179,10 +185,7 @@ public class AdminService : IAdminService
         catch (Exception ex)
         {
             Console.WriteLine($"Database error: {ex.Message}");
-            // if (ex.Message.Contains("Duplicate entry") && ex.Message.Contains("key") && ex.Message.Contains("PRIMARY"))
-            // {
-            //     return "Cabinet Number already exists";
-            // }
+          
             return "Error adding cabinet: " + ex.Message;
 
         }
@@ -223,6 +226,12 @@ public class AdminService : IAdminService
 
 
             // 4. Update supervisor's covenant and location
+            AdminService.ClearCache(_memoryCache, "AllSupervisorsInfo"); // Clear cache before updating supervisor
+            AdminService.ClearCache(_memoryCache, $"IsDepartmentAssigned-{departmentName}-{location}");
+            AdminService.ClearCache(_memoryCache, $"SupervisorLocationDepartment_{supervisorId}");
+            AdminService.ClearCache(_memoryCache, $"DepartmentInfo_{supervisorId}");
+            AdminService.ClearCache(_memoryCache, $"HasCovenant_{supervisorId}");
+
             var updateQuery = @"UPDATE Supervisors 
                         SET supervised_department = @DepartmentName,
                             location = @Location
@@ -267,6 +276,14 @@ public class AdminService : IAdminService
                 }
 
                 // Delete the supervisor
+                AdminService.ClearCache(_memoryCache, "AllSupervisorsInfo"); // Clear cache before deleting supervisor
+                var super =await GetSupervisorById(supervisorId); // Ensure supervisor exists before deletion
+                AdminService.ClearCache(_memoryCache, $"IsDepartmentAssigned-{super.DepartmentName}-{super.Location}");
+                AdminService.ClearCache(_memoryCache, $"AllSupervisorsEmails");
+                AdminService.ClearCache(_memoryCache, $"SupervisorLocationDepartment_{supervisorId}");
+                AdminService.ClearCache(_memoryCache, $"DepartmentInfo_{supervisorId}");
+                AdminService.ClearCache(_memoryCache, $"HasCovenant_{supervisorId}");
+
                 var deleteQuery = "DELETE FROM Supervisors WHERE id = @SupervisorId";
                 int rowsAffected = await connection.ExecuteAsync(deleteQuery, new { SupervisorId = supervisorId });
                 return rowsAffected > 0
@@ -280,7 +297,6 @@ public class AdminService : IAdminService
         }
 
     }
-
     public async Task<string> DeleteCovenant(int supervisorId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -313,6 +329,13 @@ public class AdminService : IAdminService
             }
 
             // Perform the deletion
+            AdminService.ClearCache(_memoryCache, "AllSupervisorsInfo"); // Clear cache before updating supervisor
+            var super = await GetSupervisorById(supervisorId); // Ensure supervisor exists before deletion
+            AdminService.ClearCache(_memoryCache, $"IsDepartmentAssigned-{super.DepartmentName}-{super.Location}");
+            AdminService.ClearCache(_memoryCache, $"SupervisorLocationDepartment_{supervisorId}");
+            AdminService.ClearCache(_memoryCache, $"DepartmentInfo_{supervisorId}");
+            AdminService.ClearCache(_memoryCache, $"HasCovenant_{supervisorId}");
+
             var updateQuery = "UPDATE Supervisors SET supervised_department = NULL ,location = NULL WHERE id = @SupervisorId";
             using (var updateCmd = new MySqlCommand(updateQuery, connection))
             {
@@ -325,7 +348,6 @@ public class AdminService : IAdminService
             }
         }
     }
-
     public async Task<Supervisor> GetSupervisorById(int supervisorId)
     {
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
@@ -369,10 +391,9 @@ public class AdminService : IAdminService
 
         return null; // Return null if no supervisor is found  
     }
-
-
     public async Task<bool> RejectRequestReallocation(int requestId)
     {
+       
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -385,14 +406,13 @@ public class AdminService : IAdminService
             {
                 rejectCmd.Parameters.AddWithValue("@RequestID", requestId);
                 int rowsAffected = await rejectCmd.ExecuteNonQueryAsync();
+                AdminService.ClearCache(_memoryCache, "ReallocationResponse");
+                AdminService.ClearCache(_memoryCache, $"ReallocationRequests_{requestId}"); 
                 return rowsAffected > 0;
             }
 
         }
     }
-
-
-
     public async Task<bool> ApproveRequestReallocation(int requestId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -402,7 +422,6 @@ public class AdminService : IAdminService
             {
                 try
                 {
-                    // Get reallocation data
                     string selectQuery = @"
                     SELECT 
                         r.RequestedDepartment, 
@@ -466,20 +485,6 @@ public class AdminService : IAdminService
                         return false;
                     }
 
-                    //int lockerChange = 0;
-                    //// Temporarily set cabinet_id in Lockers to NULL
-                    //string tempUpdateLockersQuery = @"
-                    //UPDATE Lockers 
-                    //SET cabinet_id = NULL
-                    //WHERE cabinet_id = @OldCabinetId";
-
-                    //using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
-                    //{
-                    //    tempLockersCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
-                    //    lockerChange = await tempLockersCmd.ExecuteNonQueryAsync();
-                    //    Console.WriteLine($"Updated {lockerChange} lockers to NULL cabinet_id.");
-                    //}
-
                     // Update Cabinet information
                     string updateCabinetQuery = @"
                     UPDATE Cabinets 
@@ -508,7 +513,6 @@ public class AdminService : IAdminService
                         }
                     }
 
-                    // Get the new cabinet_id that was generated
                     string? newCabinetId = null;
                     string getNewCabinetIdQuery = @"
     SELECT cabinet_id FROM Cabinets 
@@ -532,8 +536,6 @@ public class AdminService : IAdminService
                             return false;
                         }
                     }
-
-
 
                     var lockerIds = new List<(string OldId, string NewId)>();
                     string selectLockersQuery = @"
@@ -597,213 +599,19 @@ public class AdminService : IAdminService
 
                     await transaction.CommitAsync();
                     Console.WriteLine($"Reallocation request {requestId} approved successfully.");
+                    AdminService.ClearCache(_memoryCache, "ReallocationResponse");
+                    AdminService.ClearCache(_memoryCache, $"ReallocationRequests_{requestId}");
                     return true;
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
                     Console.WriteLine($"Error approving reallocation {requestId}: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                    return false; // Changed to return false instead of rethrowing for testability
+                    return false; 
                 }
             }
         }
     }
-
-    //public async Task<bool> ApproveRequestReallocation(int requestId)
-    //{
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        await connection.OpenAsync();
-    //        using (var transaction = await connection.BeginTransactionAsync())
-    //        {
-    //            try
-    //            {
-    //                // Get all necessary reallocation data
-    //                string selectQuery = @"
-    //    SELECT 
-    //        r.RequestedDepartment, 
-    //        r.RequestLocation, 
-    //        r.number_cab, 
-    //        r.RequestWing, 
-    //        r.RequestLevel,
-    //        r.CurrentCabinetID,
-    //        r.CurrentDepartment,
-    //        r.CurrentLocation
-    //    FROM Reallocation r
-    //    WHERE r.RequestID = @RequestID AND r.RequestStatus = 'Pending'";
-
-    //                string? newDepartment = null;
-    //                string? newLocation = null;
-    //                int cabinetNumber = 0;
-    //                string? newWing = null;
-    //                int newLevel = 0;
-    //                string? oldCabinetId = null;
-    //                string? oldDepartment = null;
-    //                string? oldLocation = null;
-
-    //                using (var selectCmd = new MySqlCommand(selectQuery, connection, transaction))
-    //                {
-    //                    selectCmd.Parameters.AddWithValue("@RequestID", requestId);
-    //                    using (var reader = await selectCmd.ExecuteReaderAsync())
-    //                    {
-    //                        if (await reader.ReadAsync())
-    //                        {
-    //                            newDepartment = reader["RequestedDepartment"]?.ToString();
-    //                            newLocation = reader["RequestLocation"]?.ToString();
-    //                            cabinetNumber = reader["number_cab"] != DBNull.Value ? Convert.ToInt32(reader["number_cab"]) : 0;
-    //                            newWing = reader["RequestWing"]?.ToString();
-    //                            newLevel = reader["RequestLevel"] != DBNull.Value ? Convert.ToInt32(reader["RequestLevel"]) : 0;
-    //                            oldCabinetId = reader["CurrentCabinetID"]?.ToString();
-    //                            oldDepartment = reader["CurrentDepartment"]?.ToString();
-    //                            oldLocation = reader["CurrentLocation"]?.ToString();
-    //                        }
-    //                        else
-    //                        {
-    //                            await transaction.RollbackAsync();
-    //                            return false;// Request not found or not pending
-    //                        }
-    //                    }
-    //                }
-    //                var lockerChange = 0;
-    //                // 1. Temporarily set cabinet_id in Lockers to NULL (allowed since cabinet_id is DEFAULT NULL)
-    //                string tempUpdateLockersQuery = @"
-    //    UPDATE Lockers 
-    //    SET cabinet_id = NULL
-    //    WHERE cabinet_id = @OldCabinetId";
-
-    //                using (var tempLockersCmd = new MySqlCommand(tempUpdateLockersQuery, connection, transaction))
-    //                {
-    //                    tempLockersCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
-    //                 lockerChange=  await tempLockersCmd.ExecuteNonQueryAsync();
-    //                }
-
-    //                // 2. Update Cabinet information - this will regenerate the cabinet_id
-    //                string updateCabinetQuery = @"
-    //    UPDATE Cabinets 
-    //    SET 
-    //        department_name = @NewDepartment,
-    //        wing = @NewWing,
-    //        level = @NewLevel,
-    //        location = @NewLocation
-    //    WHERE cabinet_id = @OldCabinetId";
-
-    //                using (var updateCmd = new MySqlCommand(updateCabinetQuery, connection, transaction))
-    //                {
-    //                    updateCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
-    //                    updateCmd.Parameters.AddWithValue("@NewWing", newWing);
-    //                    updateCmd.Parameters.AddWithValue("@NewLevel", newLevel);
-    //                    updateCmd.Parameters.AddWithValue("@NewLocation", newLocation);
-    //                    updateCmd.Parameters.AddWithValue("@OldCabinetId", oldCabinetId);
-
-    //                    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
-    //                    if (rowsAffected == 0)
-    //                    {
-    //                        await transaction.RollbackAsync();
-    //                        return false;
-    //                    }
-    //                }
-
-    //                // Get the new cabinet_id that was generated
-    //                string? newCabinetId = null;
-    //                string getNewCabinetIdQuery = @"
-    //    SELECT cabinet_id FROM Cabinets 
-    //    WHERE department_name = @NewDepartment 
-    //    AND wing = @NewWing 
-    //    AND level = @NewLevel 
-    //    AND number_cab = @CabinetNumber";
-
-    //                using (var getCabinetCmd = new MySqlCommand(getNewCabinetIdQuery, connection, transaction))
-    //                {
-    //                    getCabinetCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
-    //                    getCabinetCmd.Parameters.AddWithValue("@NewWing", newWing);
-    //                    getCabinetCmd.Parameters.AddWithValue("@NewLevel", newLevel);
-    //                    getCabinetCmd.Parameters.AddWithValue("@CabinetNumber", cabinetNumber);
-
-    //                    newCabinetId = await getCabinetCmd.ExecuteScalarAsync() as string;
-    //                    if (string.IsNullOrEmpty(newCabinetId))
-    //                    {
-    //                        await transaction.RollbackAsync();
-    //                        return false;
-    //                    }
-    //                }
-
-    //                if (lockerChange > 0)
-    //                {
-    //                    // 3. Retrieve all Lockers to update their IDs
-    //                    var lockerIds = new List<(string OldId, string NewId)>();
-    //                    string selectLockersQuery = @"
-    //    SELECT Id 
-    //    FROM Lockers 
-    //    WHERE DepartmentName = @OldDepartment AND Id LIKE CONCAT(@OldCabinetIdPattern, '%')";
-
-    //                    using (var selectLockersCmd = new MySqlCommand(selectLockersQuery, connection, transaction))
-    //                    {
-    //                        selectLockersCmd.Parameters.AddWithValue("@OldDepartment", oldDepartment);
-    //                        selectLockersCmd.Parameters.AddWithValue("@OldCabinetIdPattern", oldCabinetId);
-    //                        using (var reader = await selectLockersCmd.ExecuteReaderAsync())
-    //                        {
-    //                            while (await reader.ReadAsync())
-    //                            {
-    //                                string oldLockerId = reader["Id"]?.ToString() ?? string.Empty;
-    //                                string newLockerId = $"{newCabinetId}-{oldLockerId.Split('-').Last()}";
-    //                                lockerIds.Add((oldLockerId, newLockerId));
-    //                            }
-    //                        }
-    //                    }
-
-
-    //                    // 6. Update Lockers with new IDs, department, and cabinet_id
-    //                    foreach (var (oldLockerId, newLockerId) in lockerIds)
-    //                    {
-    //                        string updateLockerQuery = @"
-    //        UPDATE Lockers 
-    //        SET 
-    //            Id = @NewLockerId,
-    //            DepartmentName = @NewDepartment,
-    //            cabinet_id = @NewCabinetId
-    //        WHERE Id = @OldLockerId";
-
-    //                        using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
-    //                        {
-    //                            lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
-    //                            lockerCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
-    //                            lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
-    //                            lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
-    //                            await lockerCmd.ExecuteNonQueryAsync();
-    //                        }
-    //                    }
-    //                }//this is new here
-
-
-
-    //                // 7. Mark the reallocation request as approved
-    //                string approveQuery = @"
-    //    UPDATE Reallocation 
-    //    SET 
-    //        RequestStatus = 'Approved'    
-    //    WHERE RequestID = @RequestID";
-
-    //                using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
-    //                {
-    //                    approveCmd.Parameters.AddWithValue("@RequestID", requestId);
-
-    //                    await approveCmd.ExecuteNonQueryAsync();
-    //                }
-
-    //                await transaction.CommitAsync();
-    //                return true;
-    //            }
-    //            catch (Exception ex)
-    //            {
-    //                await transaction.RollbackAsync();
-    //                Console.WriteLine($"Error approving reallocation: {ex.Message}");
-
-    //                throw;
-
-    //            }
-    //        }
-    //    }
-    //}
     public async Task<List<string>> GetAffectedStudentAsync(string cabinetId)
     {
         var affectedStudents = new List<string>();
@@ -834,17 +642,24 @@ public class AdminService : IAdminService
         {
             Console.WriteLine($"Error fetching affected students: {ex.Message}");
         }
-
-        return affectedStudents;
+        if (affectedStudents.Count == 0)
+        {
+            return null;
+        }
+        else
+        {
+            return affectedStudents;
+        }
+        
     }
-    //emas 
-
-
-
     public async Task<List<Reallocation>> ReallocationResponse()
     {
         var reallocations = new List<Reallocation>();
-
+        string cacheKey = $"ReallocationResponse";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Reallocation> catchReallocations))
+        {
+            return catchReallocations;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -873,17 +688,20 @@ public class AdminService : IAdminService
                 }
             }
         }
-
+        if(reallocations.Count != 0)
+        {
+            _memoryCache.Set(cacheKey, reallocations, TimeSpan.FromMinutes(3));
+        }
         return reallocations;
     }
-
-
-
-
     public async Task<List<Report>> ViewForwardedReports()
     {
         var reports = new List<Report>();
-
+        string cacheKey = $"ForwardedReports";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Report> cachedReports))
+        {
+            return cachedReports;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             connection.Open();
@@ -953,16 +771,20 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 }
             }
         }
+        if(reports.Count != 0)
+        {
+            _memoryCache.Set(cacheKey, reports, TimeSpan.FromMinutes(3));
+        }
         return reports;
     }
-
-
-
-
-
     public async Task<List<Cabinet>> ViewCabinetInfo(string? searchCab = null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
         var cabinets = new List<Cabinet>();
+        string cacheKey = $"CabinetInfo_{searchCab}_{location}_{level}_{department}_{status}_{wing}";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Cabinet> cachedCabinets))
+        {
+            return cachedCabinets;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -976,12 +798,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
             if (!string.IsNullOrEmpty(searchCab) && searchCab != "")
             {
                 query += " AND cabinet_id like @searchCab";
-                command.Parameters.AddWithValue("@searchCab", "%" + searchCab.Trim() + "%");
-
-                // command.Parameters.AddWithValue("@searchCab", $"%{searchCab}%");
+                command.Parameters.AddWithValue("@searchCab", "%" + searchCab.Trim() + "%");  
             }
-
-
 
             if (!string.IsNullOrEmpty(location) && location != "All")
             {
@@ -1033,29 +851,21 @@ where r.Type='THEFT' and r.SentToAdmin=1
                                  : CabinetStatus.IN_SERVICE,
                         EmployeeName = ""
                     });
-
-
-
-
-
-
                 }
             }
-
-
         }
-
+        _memoryCache.Set(cacheKey, cabinets, TimeSpan.FromMinutes(3));
         return cabinets;
     }
-
-
-
-
-
     public async Task<List<Supervisor>> ViewAllSupervisorInfo()
     {
+        
         var supervisors = new List<Supervisor>();
-
+        string cacheKey = "AllSupervisorsInfo";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Supervisor> cachedSupervisors))
+        {
+            return cachedSupervisors;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             connection.Open();
@@ -1105,15 +915,17 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 }
             }
         }
-
+        _memoryCache.Set(cacheKey, supervisors, TimeSpan.FromMinutes(3));
         return supervisors;
     }
-
-
-
     public async Task<List<Department>> GetDepartments()
     {
         var departments = new List<Department>();
+       string cacheDepartments = "GetDepartments";
+       if (_memoryCache.TryGetValue(cacheDepartments, out List<Department> cachedDepartments))
+         {
+            return cachedDepartments;
+         }
 
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -1134,12 +946,15 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 }
             }
         }
-
+        _memoryCache.Set(cacheDepartments, departments, TimeSpan.FromMinutes(3));
         return departments;
     }
     public async Task<List<Department>> GetDepartmentsByLocation(string location)
     {
         var departments = new List<Department>();
+        string cache = $"Departments{location} ";
+        if(_memoryCache.TryGetValue(cache, out List<Department> cachedDepartments))
+        { return cachedDepartments; }
 
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -1163,12 +978,10 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 }
             }
         }
-
+        _memoryCache.Set(cache,departments, TimeSpan.FromMinutes(3));
         return departments;
     }
-
-
-    public async Task<bool> ResolveReport(int reportId, string? resolutionDetails)
+    public async Task<bool> SolveReport(int reportId, string? resolutionDetails)
     {
         try
         {
@@ -1187,7 +1000,9 @@ where r.Type='THEFT' and r.SentToAdmin=1
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                     command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
-
+                    
+                    _memoryCache.Remove("ForwardedReports");
+                    AdminService.ClearCache(_memoryCache, "Reports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }
@@ -1197,11 +1012,34 @@ where r.Type='THEFT' and r.SentToAdmin=1
             return false;
         }
     }
+    public static void ClearCache(IMemoryCache _memoryCache, string substring = null)
+    {
+        var memoryCache = _memoryCache as MemoryCache;
 
+        if (memoryCache == null || string.IsNullOrEmpty(substring))
+            return;
+
+        var keysToRemove = new List<object>();
+
+        foreach (var entry in memoryCache.Keys)
+        {
+            if (entry is string key && key.Contains(substring, StringComparison.OrdinalIgnoreCase))
+            {
+                keysToRemove.Add(key);
+            }
+        }
+
+        foreach (var key in keysToRemove)
+        {
+            Console.WriteLine($"Removing cache key: {key}");
+            _memoryCache.Remove(key);
+        }
+    }
     public async Task<bool> ReviewReport(int reportId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
+           
             await connection.OpenAsync();
 
             var query = @"UPDATE Reports 
@@ -1211,11 +1049,12 @@ where r.Type='THEFT' and r.SentToAdmin=1
             using (var command = new MySqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@ReportId", reportId);
+                AdminService.ClearCache(_memoryCache, "Reports");
+                _memoryCache.Remove("ForwardedReports");
                 return await command.ExecuteNonQueryAsync() > 0;
             }
         }
     }
-
     public async Task<bool> RejectReport(int reportId)
     {
         try
@@ -1223,7 +1062,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
-
+                _memoryCache.Remove("ForwardedReports");
                 var query = @"UPDATE Reports 
                      SET Status = 'REJECTED', 
                          ResolvedDate = @ResolvedDate
@@ -1233,6 +1072,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 {
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
+                    AdminService.ClearCache(_memoryCache, "Reports");
+                    _memoryCache.Remove("ForwardedReports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }
@@ -1242,7 +1083,6 @@ where r.Type='THEFT' and r.SentToAdmin=1
             return false;
         }
     }
-
     public async Task<Report> GetReportDetails(int reportId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -1288,12 +1128,15 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 }
             }
         }
-        return null; // Return null if no report is found
+        return null; 
     }
-
-
     public async Task<int> IsDepartmentAssigned(string departmentName, string location)
     {
+        string cache = $"IsDepartmentAssigned-{departmentName}-{location}";
+        if (_memoryCache.TryGetValue(cache, out int id))
+        {
+            return id;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -1305,13 +1148,17 @@ where r.Type='THEFT' and r.SentToAdmin=1
             {
                 command.Parameters.AddWithValue("@DepartmentName", departmentName);
                 command.Parameters.AddWithValue("@Location", location);
-                var id = Convert.ToInt32(await command.ExecuteScalarAsync());
+                id = Convert.ToInt32(await command.ExecuteScalarAsync());
+                if (id == 0)
+                {
+                    return 0; // No supervisor found for this department and location
+                }
+                _memoryCache.Set(cache, id, TimeSpan.FromMinutes(3));
                 return id;
             }
         }
 
     }
-
     public async Task<Reallocation> GetReallocationRequestById(int requestId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -1344,19 +1191,24 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
         return null; // Return null if no reallocation request is found
     }
-
-
     public async Task<object> GetSemesterSettings()
     {
+        string cacheKey = "SemesterSettings";
+        if (_memoryCache.TryGetValue(cacheKey, out var cachedSettings))
+        {
+            return cachedSettings;
+        }
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
-
+        
         var query = "SELECT Id, SemesterEndDate FROM SemesterSettings ORDER BY CreatedAt DESC LIMIT 1";
         using var command = new MySqlCommand(query, connection);
         using var reader = await command.ExecuteReaderAsync();
 
         if (await reader.ReadAsync())
         {
+            _memoryCache.Set(cacheKey, new { Id = reader.GetInt32(0), SemesterEndDate = reader.IsDBNull(1) ? (DateTime?)null : reader.GetDateTime(1) }, TimeSpan.FromMinutes(3));
+
             return new
             {
                 Id = reader.GetInt32(0),
@@ -1365,8 +1217,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
         return new { Id = 0, SemesterEndDate = (DateTime?)null };
     }
-
-    public async Task<bool> SaveSemesterSettings(DateTime endDate, int? existingId = null)
+    public async Task<bool> SaveSemesterSettings(DateTime? endDate, int? existingId = null)
     {
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
@@ -1387,7 +1238,6 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 INSERT INTO SemesterSettings (SemesterEndDate)
                 VALUES (@EndDate)";
         }
-
         using var command = new MySqlCommand(query, connection);
         command.Parameters.AddWithValue("@EndDate", endDate);
         if (existingId.HasValue)
@@ -1396,12 +1246,16 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
 
         var rowsAffected = await command.ExecuteNonQueryAsync();
+        _memoryCache.Remove("SemesterSettings"); // Clear cache after saving settings
         return rowsAffected > 0;
 
     }
-
     public async Task<bool> ClearReservationsAndReports()
     {
+        _memoryCache.Remove("ForwardedReports");
+        _memoryCache.Remove("ReallocationResponse");
+        _memoryCache.Remove("SemesterSettings"); 
+
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
 
@@ -1447,9 +1301,13 @@ where r.Type='THEFT' and r.SentToAdmin=1
         }
         return true;
     }
-
     public async Task<List<string>> GetAllStudentsEmails()
     {
+        string cacheKey = "AllStudentsEmails";
+        if (_memoryCache.TryGetValue(cacheKey, out List<string> cachedEmails))
+        {
+            return cachedEmails;
+        }
         var users = new List<string>();
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
@@ -1464,12 +1322,16 @@ where r.Type='THEFT' and r.SentToAdmin=1
         {
             users.Add(reader.GetString(0));
         }
-
+        _memoryCache.Set(cacheKey, users, TimeSpan.FromMinutes(3));
         return users;
     }
-    //get all supervisors emails 
     public async Task<List<string>> GetAllSupervisorsEmails()
     {
+        string cacheKey = "AllSupervisorsEmails";
+        if (_memoryCache.TryGetValue(cacheKey, out List<string> cachedEmails))
+        {
+            return cachedEmails;
+        }
         var emails = new List<string>();
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();
@@ -1480,7 +1342,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
         {
             emails.Add(reader.GetString(0));
         }
+        _memoryCache.Set(cacheKey, emails, TimeSpan.FromMinutes(3));
         return emails;
     }
-
 }

@@ -33,9 +33,9 @@ namespace JUSTLockers.Tests.IntegartionTest
                 .Build();
 
             _configuration = config;
-            _studentService = new StudentService(_configuration, memoryCache);
-            _adminService = new AdminService(_configuration);
-            _supervisorService = new SupervisorService(_configuration, _adminService);
+            _studentService = new StudentService(_configuration, memoryCache, _adminService);
+            _adminService = new AdminService(_configuration, memoryCache);
+            _supervisorService = new SupervisorService(_configuration, _adminService, memoryCache);
 
             _connection = new MySqlConnection(connectionString);
             _connection.Open();

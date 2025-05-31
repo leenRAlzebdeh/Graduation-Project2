@@ -4,9 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace JUSTLockers.Service
@@ -15,12 +18,14 @@ namespace JUSTLockers.Service
     {
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
-        public StudentService(IConfiguration configuration, IMemoryCache memoryCache)
+        private readonly AdminService adminService;
+        public StudentService(IConfiguration configuration,
+            IMemoryCache? memoryCache, AdminService adminService)
         {
             _configuration = configuration;
             _memoryCache = memoryCache;
+            this.adminService = adminService;
         }
-
         public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
         {
             try
@@ -62,6 +67,10 @@ namespace JUSTLockers.Service
                         await connection.OpenAsync();
                         int rowsAffected = await command.ExecuteNonQueryAsync();
 
+                        AdminService.ClearCache(_memoryCache, "Reports");
+
+                        //_memoryCache.Remove($"ViewAllReports_{reporterId}");
+
                         return rowsAffected > 0;
                     }
                 }
@@ -72,10 +81,10 @@ namespace JUSTLockers.Service
                 return false;
             }
         }
-
         public async Task DeleteReport(int reportId)
         {
             var query = "DELETE FROM Reports WHERE Id = @Id";
+            var student = await adminService.GetReportDetails(reportId); 
 
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             using (var command = new MySqlCommand(query, connection))
@@ -84,8 +93,9 @@ namespace JUSTLockers.Service
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
             }
+            AdminService.ClearCache(_memoryCache, "Reports");
+            //_memoryCache.Remove($"ViewAllReports_{student.ReporterId}"); 
         }
-
         public async Task<(string email, Report report)> GetReportByAsync(int reportId)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -134,12 +144,14 @@ namespace JUSTLockers.Service
                 }
             }
         }
-
-
         public async Task<List<Report>> ViewAllReports(int? studentId)
         {
             var reports = new List<Report>();
-
+            string cached = $"ViewAllReports_{studentId}"; // Unique key per student
+            if (_memoryCache.TryGetValue(cached, out List<Report> cachedReports))
+            {
+                return cachedReports;
+            }
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -174,22 +186,24 @@ namespace JUSTLockers.Service
                                 ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType")
                             };
 
-
-
                             reports.Add(report);
                         }
                     }
                 }
             }
-
+            _memoryCache.Set(cached, reports, TimeSpan.FromMinutes(3));
             return reports;
         }
-
-
         public async Task<bool> CancelReservation(int studentId , string status)
         {
-            _memoryCache.Remove($"CurrentReservation_{studentId}"); // Clear cache for current reservation
-
+            AdminService.ClearCache(_memoryCache, $"CurrentReservation_{studentId}"); // Clear current reservation cache
+            var departmentInfo = await GetDepartmentInfo(studentId); // Get department info to invalidate related caches
+            if (departmentInfo != null)
+            {
+                AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                AdminService.ClearCache(_memoryCache, "AvailableLockers_"); // Invalidate available lockers cache
+                AdminService.ClearCache(_memoryCache, $"HasLocker-{studentId}"); // Invalidate has locker cache
+            }
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -280,6 +294,7 @@ namespace JUSTLockers.Service
                         }
 
                         await transaction.CommitAsync();
+
                         return true;
                     }
                     catch
@@ -290,11 +305,14 @@ namespace JUSTLockers.Service
                 }
             }
         }
-
-
-
         public async Task<DepartmentInfo> GetDepartmentInfo(int studentId)
         {
+            string cached = $"GetDepartmentInfo-{studentId}";
+            if(_memoryCache.TryGetValue(cached, out DepartmentInfo cachedvalues))
+            {
+                return cachedvalues;
+            }
+
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -307,6 +325,12 @@ namespace JUSTLockers.Service
                     {
                         if (await reader.ReadAsync())
                         {
+                            _memoryCache.Set(cached, new DepartmentInfo
+                            {
+                                DepartmentName = reader.GetString("department"),
+                                Location = reader.GetString("Location")
+                            }, TimeSpan.FromMinutes(3));
+
                             return new DepartmentInfo
                             {
                                 DepartmentName = reader.GetString("department"),
@@ -318,8 +342,6 @@ namespace JUSTLockers.Service
             }
             return null;
         }
-
-
         public async Task<List<WingInfo>> GetAvailableWingsAndLevels(string departmentName, string location)
         {
             var wings = new List<WingInfo>();
@@ -353,6 +375,9 @@ namespace JUSTLockers.Service
                         SUM(sub.CabinetAvailableLockers) AS AvailableLockers
                     FROM Cabinets c
                     JOIN (" + subquery + @") sub ON c.cabinet_id = sub.cabinet_id
+                    WHERE c.department_name = @DepartmentName
+                        AND c.location = @Location
+                        AND c.status = 'IN_SERVICE'
                     GROUP BY c.wing, c.level
                     HAVING AvailableLockers > 0
                     ORDER BY c.wing, c.level";
@@ -376,7 +401,7 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
+            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(3)); // Cache for 3 minutes
             return wings;
         }
         public async Task<Reservation> GetCurrentReservationAsync(int studentId)
@@ -431,8 +456,6 @@ namespace JUSTLockers.Service
             }
             return null;
         }
-        
-
         public async Task<string> ReserveLockerInWingAndLevel(int studentId, string departmentName, string location, string wing, int level)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -641,6 +664,11 @@ namespace JUSTLockers.Service
                         }
 
                         await transaction.CommitAsync();
+
+                        AdminService.ClearCache(_memoryCache, "AvailableWings_"); 
+                        AdminService.ClearCache(_memoryCache, "AvailableLockers_"); // Invalidate available lockers cache
+                        AdminService.ClearCache(_memoryCache, $"HasLocker-{studentId}");
+                        AdminService.ClearCache(_memoryCache, $"CurrentReservation_{studentId}"); // Clear current reservation cache
                         return lockerId;
                     }
                     catch
@@ -655,7 +683,11 @@ namespace JUSTLockers.Service
         {
 
             bool hasLocker = false;
-
+            string cached = $"HasLocker-{userId}";
+            if(_memoryCache.TryGetValue(cached, out bool cachedHasLocker))
+            {
+                return cachedHasLocker;
+            }
             try
 
             {
@@ -689,11 +721,16 @@ namespace JUSTLockers.Service
                 throw ex;
             }
 
-
+            _memoryCache.Set(cached, hasLocker, TimeSpan.FromMinutes(3));
             return hasLocker;
         }
         public async Task<bool> IsStudentBlocked(int studentId)
         {
+            string cached = $"IsStudentBlocked-{studentId}";
+            if(_memoryCache.TryGetValue(cached,out bool cachedHasStudentBlocked))
+            {
+                return cachedHasStudentBlocked;
+            }
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -702,15 +739,19 @@ namespace JUSTLockers.Service
                 {
                     command.Parameters.AddWithValue("@StudentId", studentId);
                     var count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                    _memoryCache.Set(cached, count > 0, TimeSpan.FromMinutes(3));
                     return count > 0;
                 }
             }
         }
-
         public async Task<List<WingInfo>> GetAllAvailableLockerCounts(string location = null, string department = null, string wing = null, int? level = null)
         {
             var wings = new List<WingInfo>();
-
+            string cacheKey = $"AvailableLockers_{location ?? "null"}_{department ?? "null"}_{wing ?? "null"}_{level?.ToString() ?? "null"}";
+            if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
+            {
+                return cachedWings;
+            }
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -788,18 +829,19 @@ namespace JUSTLockers.Service
                     }
                 }
             }
+            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
             return wings;
         }
-
         public async Task<FilterOptions> GetFilterOptions()
         {
             var options = new FilterOptions();
-
+            
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
 
                 // Get all locations
+                
                 var locationQuery = "SELECT DISTINCT location FROM Departments";
                 using (var cmd = new MySqlCommand(locationQuery, connection))
                 {
@@ -876,11 +918,8 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-
             return options;
         }
-
-
     }
     public class FilterOptions
     {
@@ -894,7 +933,6 @@ namespace JUSTLockers.Service
         public string DepartmentName { get; set; }
         public string Location { get; set; }
     }
-
     public class WingInfo
     {
         public string Location { get; set; }
@@ -903,7 +941,6 @@ namespace JUSTLockers.Service
         public string Department { get; set; }
         public int AvailableLockers { get; set; }
     }
-
     public class ReservationRequest
     {
         public int StudentId { get; set; }
@@ -912,7 +949,6 @@ namespace JUSTLockers.Service
         public string Wing { get; set; }
         public int Level { get; set; }
     }
-
     public class LockerInfo
     {
         public string Id { get; set; }

@@ -14,6 +14,7 @@ namespace JUSTLockers.Testing
     {
         private readonly StudentService _service;
         private readonly IConfiguration _configuration;
+        private readonly AdminService _serviceAdmin;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
         private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
         public StudentServiceTest()
@@ -26,7 +27,8 @@ namespace JUSTLockers.Testing
                 .Build();
 
             _configuration = config;
-            _service = new StudentService(config, memoryCache);
+            _serviceAdmin = new AdminService(_configuration, memoryCache);
+            _service = new StudentService(config, memoryCache, _serviceAdmin);
         }
 
         #region Helper Methods

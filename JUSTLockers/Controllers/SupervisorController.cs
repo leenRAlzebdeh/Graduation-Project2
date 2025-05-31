@@ -5,6 +5,7 @@ using JUSTLockers.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JUSTLockers.Controllers
 {
@@ -19,13 +20,15 @@ namespace JUSTLockers.Controllers
         private readonly IStudentService _studentService;
         private readonly AdminService _adminService;
         private readonly NotificationService _notificationService;
-        public SupervisorController(SupervisorService superService, IConfiguration configuration, IStudentService studentService , AdminService adminService,NotificationService notificationService)
+        private readonly IMemoryCache _memoryCache;
+        public SupervisorController(SupervisorService superService, IConfiguration configuration, IStudentService studentService , AdminService adminService,NotificationService notificationService,IMemoryCache memoryCache)
         {
             _superService = superService;
             _configuration = configuration;
             _studentService = studentService;
             _adminService = adminService;
             _notificationService = notificationService;
+            _memoryCache = memoryCache;
         }
 
         //}
@@ -178,7 +181,7 @@ namespace JUSTLockers.Controllers
 
             var (location, department) = await _superService.GetSupervisorLocationAndDepartment(supervisorId.Value);
 
-            var ReallocationReq = await _superService.ReallocationReqestsInfo(supervisorId,filter,location,department);
+            var ReallocationReq = await _superService.ReallocationRequestsInfo(supervisorId,filter,location,department);
             ViewBag.CurrentFilter = filter ?? "all"; // Save the selected filter (default to "all")
 
             return View("~/Views/Supervisor/ReallocationRequest.cshtml", ReallocationReq);
@@ -235,7 +238,8 @@ namespace JUSTLockers.Controllers
                 _notificationService.SendStudentEmail(student.Email, EmailMessageType.StudentUnblocked, null);
                 TempData["Message"] = message;
             }
-
+            _memoryCache.Remove($"HasLocker-{id}");
+            _memoryCache.Remove($"IsStudentBlocked-{id}");
             return RedirectToAction("BlockStudent");
         }
 
@@ -299,9 +303,6 @@ namespace JUSTLockers.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Check if student is blocked
-            //bool isBlocked = await _studentService.IsStudentBlocked(studentId.Value);
-            //ViewBag.IsBlocked = isBlocked;
 
             // Get department info
             var departmentInfo = await _superService.GetDepartmentInfo(userId.Value);
@@ -339,7 +340,7 @@ namespace JUSTLockers.Controllers
         public async Task<bool> HasCovenant(int? userId)
         {
 
-            bool hasCovenant = await _superService.HasCovenant(userId);
+            bool hasCovenant = _superService.HasCovenant(userId);
 
             return hasCovenant;
         }

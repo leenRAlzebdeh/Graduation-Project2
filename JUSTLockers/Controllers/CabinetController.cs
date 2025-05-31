@@ -33,22 +33,9 @@ namespace JUSTLockers.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(string cabinetId, string status)
         {
-            //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            //{
-            //    connection.Open();
-            //    string query = "UPDATE Cabinets SET status = @status WHERE cabinet_id = @id";
-
-            //    using (var cmd = new MySqlCommand(query, connection))
-            //    {
-            //        cmd.Parameters.AddWithValue("@status", status);
-            //        cmd.Parameters.AddWithValue("@id", cabinetId);
-            //        cmd.ExecuteNonQuery();
-            //    }OUT_OF_SERVICE
-            //}
-
-            await _cabinetService.UpdateStatusAsync(cabinetId, status);
 
             var student = await _adminService.GetAffectedStudentAsync(cabinetId);
+            await _cabinetService.UpdateStatusAsync(cabinetId, status); 
             var cabinet = await _cabinetService.GetCabinetAsync(cabinetId);
            
             switch(status)
@@ -62,7 +49,6 @@ namespace JUSTLockers.Controllers
                 case nameof(CabinetStatus.DAMAGED):
                     _notificationService.SendStudentsEmail(student, CabinetStatus.DAMAGED, cabinet);
                     break;
-
             }
             
             return Ok();
@@ -73,34 +59,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    string query = "SELECT number_cab, location, department_name, wing, level FROM Cabinets WHERE cabinet_id = @cabinet_id";
-
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        command.Parameters.AddWithValue("@cabinet_id", cabinet_id);
-                //        connection.Open();
-
-                //        using (var reader = command.ExecuteReader())
-                //        {
-                //            if (reader.Read())
-                //            {
-                //                var cabinet = new
-                //                {
-                //                    number_cab = reader["number_cab"].ToString(),
-                //                    location = reader["location"].ToString(),
-                //                    department_name = reader["department_name"].ToString(),
-                //                    wing = reader["wing"].ToString(),
-                //                    level = reader["level"].ToString()
-                //                };
-
-                //                return Json(cabinet);
-                //            }
-                //        }
-                //    }
-  
-                //}
+               
                var cabinet= await _cabinetService.GetCabinetAsync(cabinet_id);
                 if (cabinet != null)
                 {
@@ -123,28 +82,8 @@ namespace JUSTLockers.Controllers
         [HttpGet]
         public async Task<JsonResult> GetDepartments(string location)
         {
-           // List<string> departments = new List<string>();
             try
             {
-
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    string query = "SELECT name FROM Departments WHERE Location = @Location";
-
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        command.Parameters.AddWithValue("@Location", location);
-                //        connection.Open();
-
-                //        using (var reader = command.ExecuteReader())
-                //        {
-                //            while (reader.Read())
-                //            {
-                //                departments.Add(reader["name"].ToString());
-                //            }
-                //        }
-                //    }
-                //}
                 var departments =await _cabinetService.GetDepartmentsAsync(location);
                 return departments != null ? Json(departments) : Json("Not Found");
             }
@@ -159,24 +98,6 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    string query = "SELECT name FROM Supervisors WHERE supervised_department = @departmentName and location =@location";
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        command.Parameters.AddWithValue("@departmentName", departmentName);
-                //        command.Parameters.AddWithValue("@location", location);
-                //        connection.Open();
-                //        var supervisorName = command.ExecuteScalar()?.ToString();
-
-                //        if (string.IsNullOrEmpty(supervisorName))
-                //        {
-                //            return Json(new { status = "Not Found", supervisor = "" });
-                //        }
-
-                //        return Json(new { status = "Success", supervisor = supervisorName });
-                //    }
-                //}
                 var supervisor = _cabinetService.GetSupervisorAsync(departmentName, location);
                 return Json(supervisor);
             }
@@ -193,24 +114,6 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                //using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                //{
-                //    string query = "SELECT id FROM Supervisors WHERE supervised_department = @departmentName and location =@location";
-                //    using (var command = new MySqlCommand(query, connection))
-                //    {
-                //        command.Parameters.AddWithValue("@departmentName", departmentName);
-                //        command.Parameters.AddWithValue("@location", location);
-                //        connection.Open();
-                //        var supervisorName = command.ExecuteScalar()?.ToString();
-
-                //        if (string.IsNullOrEmpty(supervisorName))
-                //        {
-                //            return Json(new { status = "Not Found", supervisor = "" });
-                //        }
-
-                //        return Json(new { status = "Success", supervisor = supervisorName });
-                //    }
-                //}
                 var supervisorId = _cabinetService.GetSupervisorIdAsync(departmentName, location);
                 return Json(supervisorId);
             }
@@ -239,58 +142,12 @@ namespace JUSTLockers.Controllers
                         return Json(result.ToString()); // Return the last cabinet number as a string
                     }
                 }
-                //var lastCabinetNumber = _cabinetService.GetLastCabinetNumberAsync();
-                //return Json(lastCabinetNumber.ToString());
             }
             catch (Exception ex)
             {
                 return Json("Error fetching last cabinet number: " + ex.Message); // Return error message if an exception occurs
             }
         }
-       
-        /*
-        [HttpGet]
-        public List<Cabinet> GetLatestCabinets()
-        {
-         
-                var cabinets = new List<Cabinet>();
-                string query = "SELECT * FROM Cabinets ORDER BY Id DESC LIMIT 5";
-
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    {
-                        connection.Open();
-                        using (var command = new MySqlCommand(query, connection))
-                        {
-                            using (var reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    cabinets.Add(new Cabinet
-                                    {
-                                        CabinetNumber = reader.GetInt32("number_cab"),
-                                        Location = reader.GetString("location"),
-                                        Department = reader.GetString("department_name"),
-                                        Wing = reader.GetInt32("wing"),
-                                        Level = reader.GetInt32("level"),
-                                        Capacity = reader.GetInt32("Capacity"),
-                                        EmployeeId = reader.GetInt32("supervisor_id"),
-                                        // EmployeeName = reader.GetString("EmployeeName"),
-                                        cabinet_id = reader.GetString("cabinet_id"),
-                                        Status = (CabinetStatus)Enum.Parse(typeof(CabinetStatus), reader.GetString("Status")),
-
-                                    });
-                                }
-                            }
-                        }
-
-                        return cabinets;
-
-                    }
-                }
-            
-           
-        }*/
        
 
         [HttpGet]
@@ -317,8 +174,7 @@ namespace JUSTLockers.Controllers
                                       .ToList();
 
                 return Json(wings);
-                //var wings = _cabinetService.GetWingsAsync(departmentName);
-                //return  Json(wings) ;
+                
 
             }
             catch (Exception ex)

@@ -264,7 +264,7 @@
 //        {
 //            // Arrange
 //            var report = new JUSTLockers.Classes.Report { ReportId = 1 };
-//            _mockAdminService!.Setup(a => a.ResolveReport(1, "Fixed issue")).ReturnsAsync(true);
+//            _mockAdminService!.Setup(a => a.SolveReport(1, "Fixed issue")).ReturnsAsync(true);
 //            _mockStudentService!.Setup(a => a.GetReportByAsync(1)).ReturnsAsync(("student@example.com", report));
 
 //            // Act

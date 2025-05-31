@@ -1,6 +1,7 @@
 ﻿using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -25,6 +26,7 @@ namespace WebApplication5.Controllers
         {
             // Clear the session or authentication cookie
             HttpContext.Session.Clear();
+            MemoryCache cache = null; // Assuming you have a MemoryCache instance set up
             await HttpContext.SignOutAsync("MyCookieAuth");
 
             return RedirectToAction("Login", "Home");
@@ -39,6 +41,7 @@ namespace WebApplication5.Controllers
 
             string role = IsValidUser(id, password);
             HttpContext.Session.SetInt32("UserId", id);
+            
 
             if (role != null)
             {

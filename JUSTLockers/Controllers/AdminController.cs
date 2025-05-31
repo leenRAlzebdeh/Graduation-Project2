@@ -3,6 +3,7 @@ using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System;
 using static Dapper.SqlMapper;
@@ -21,7 +22,8 @@ namespace JUSTLockers.Controllers
         private readonly IEmailService _emailService;
         private readonly NotificationService _notificationService;
         private readonly IStudentService _studentService;
-        public AdminController(AdminService adminService, IConfiguration configuration, IEmailService emailService, NotificationService notificationService, IStudentService studentService)
+        public AdminController(AdminService adminService, IConfiguration configuration, 
+            IEmailService emailService, NotificationService notificationService, IStudentService studentService)
         {
             _adminService = adminService;
             _configuration = configuration;
@@ -165,7 +167,7 @@ namespace JUSTLockers.Controllers
                 {
                     TempData["ErrorMessage"] = message;
                 }
-
+               
 
                 return RedirectToAction("AddCabinet");
             }
@@ -219,10 +221,13 @@ namespace JUSTLockers.Controllers
                 //some method for the notification system
                 _notificationService.SendSupervisorEmail(SupervisorID, null, EmailMessageType.ReallocationApproved, requestId);
                 var affectedSuper = await _adminService.IsDepartmentAssigned(RequestedDepartment, RequestLocation);
-              
                 var reallocationRequest = await _adminService.GetReallocationRequestById(requestId);
-                _notificationService.SendSupervisorReallocationEmail(affectedSuper, null, EmailMessageType.ReallocationCabinet, requestId , reallocationRequest);
-                _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, reallocationRequest);
+                if(affectedSuper != 0)
+                {
+                    _notificationService.SendSupervisorReallocationEmail(affectedSuper, null, EmailMessageType.ReallocationCabinet, requestId, reallocationRequest);
+                }
+                if(student != null)
+                    _notificationService.SendStudentReallocationEmail(student, EmailMessageType.StudentReallocation, reallocationRequest);
                 TempData["Success"] = "Reallocation request approved successfully.";
             }
             else
@@ -362,7 +367,7 @@ namespace JUSTLockers.Controllers
         {
             try
             {
-                var success = await _adminService.ResolveReport(reportId, resolutionDetails);
+                var success = await _adminService.SolveReport(reportId, resolutionDetails);
                 if (success)
                 {
                     var (email, report) = await _studentService.GetReportByAsync(reportId);
@@ -466,7 +471,7 @@ namespace JUSTLockers.Controllers
                     return RedirectToAction("SemesterSettings");
                 }
 
-                var result = await _adminService.SaveSemesterSettings(endDate.Value, settingsId);
+                var result = await _adminService.SaveSemesterSettings(endDate, settingsId);
                 if (result)
                 {
                     var message = settingsId.HasValue ? "Semester end date updated successfully." : "Semester end date scheduled successfully.";

@@ -37,7 +37,7 @@ public interface IAdminService
     public Task<List<Department>> GetDepartments();
     public Task<List<Department>> GetDepartmentsByLocation(string location);
     //done
-    public Task<bool> ResolveReport(int reportId, string? resolutionDetails);
+    public Task<bool> SolveReport(int reportId, string? resolutionDetails);
     //done
     public Task<bool> RejectReport(int reportId);
     //done

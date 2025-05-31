@@ -1,7 +1,6 @@
 namespace JUSTLockers.Services;
 
 using JUSTLockers.Classes;
-using System.Net.NetworkInformation;
 
 public class NotificationService
 {
@@ -20,8 +19,12 @@ public class NotificationService
         if (supervisor == null)
         {
             supervisor = await _adminService.GetSupervisorById(supervisorId);
+            if (supervisor == null)
+            {
+                return; // Supervisor not found, exit early
+            }
         }
-
+        
         var emailData = new Dictionary<string, string>
             {
                 { "Name", supervisor.Name },
@@ -38,7 +41,10 @@ public class NotificationService
         if (supervisor == null)
         {
             supervisor = await _adminService.GetSupervisorById(supervisorId);
-
+            if (supervisor == null)
+            {
+                return; // Supervisor not found, exit early
+            }
         }
 
         var emailData = new Dictionary<string, string>
@@ -100,7 +106,7 @@ public class NotificationService
         var emailData = new Dictionary<string, string>
             {
                 { "ReportId", report.ReportId.ToString() },
-                { "ResolutionDetails", report.ResolutionDetails }
+                { "ResolutionDetails", report.ResolutionDetails??"You can see your problem details in the system" }
             };
         await _emailService.UpdateStudentRepositoryAsync(studentEmail, type, emailData);
     }

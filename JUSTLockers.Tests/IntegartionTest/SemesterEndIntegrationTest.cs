@@ -1,5 +1,6 @@
 ﻿using JUSTLockers.Classes;
 using JUSTLockers.Services;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using System;
@@ -18,6 +19,7 @@ namespace JUSTLockers.Tests.IntegartionTest
         private readonly MySqlConnection _connection;
         private MySqlTransaction? _transaction;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
+        private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
 
         public SemesterEndIntegrationTest()
         {
@@ -29,7 +31,7 @@ namespace JUSTLockers.Tests.IntegartionTest
                 .Build();
 
             _configuration = config;
-            _adminService = new AdminService(_configuration);
+            _adminService = new AdminService(_configuration, memoryCache);
 
             _connection = new MySqlConnection(connectionString);
             _connection.Open();

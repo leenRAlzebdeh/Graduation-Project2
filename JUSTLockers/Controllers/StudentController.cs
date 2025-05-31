@@ -22,10 +22,6 @@ namespace JUSTLockers.Controllers
             _configuration = configuration;
         }
        
-
-      
-
-
         public IActionResult Index()
         {
             return View();
@@ -162,6 +158,7 @@ namespace JUSTLockers.Controllers
 
             try
             {
+
                 var reservation = await _studentService.GetCurrentReservationAsync(studentId);
                 return View("~/Views/Student/ViewReservationInfo.cshtml", reservation);
 
@@ -202,15 +199,6 @@ namespace JUSTLockers.Controllers
             ViewBag.HasLocker = _studentService.HasLocker(studentId);
             return View("~/Views/Home/StudentDashboard.cshtml",reports);
         }
-        //[HttpGet]
-        //public async Task<IActionResult> DisplayReports()
-        //{
-            
-        //        var reports = await _studentService.ViewAllReports();
-      
-        //        return View("~/Views/Student/DisplayReports.cshtml", reports);
-        //}
-
 
         [HttpGet]
         public async Task<IActionResult> DeleteReport(int id)
@@ -251,50 +239,6 @@ namespace JUSTLockers.Controllers
             
            
         }
-
-        //public bool HasLocker(int? userId)
-        //{ 
-            
-        //    bool hasLocker = false;
-
-        //    try
-
-        //    {
-        //        int count;
-               
-
-              
-
-               
-        //        string query = @"SELECT COUNT(*) FROM Reservations 
-        //         WHERE StudentId = @userId
-        //         AND LockerId IS NOT NULL 
-        //        ";
-
-        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        //        {
-        //            connection.Open();
-        //            using (var cmd = new MySqlCommand(query, connection))
-        //            {
-        //                cmd.Parameters.AddWithValue("@userId", userId);
-
-        //                count = Convert.ToInt32(cmd.ExecuteScalar());
-        //                hasLocker = count > 0;
-
-        //            }
-        //        }
-
-              
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //        TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
-        //    }
-
-
-        //    return hasLocker;
-        //}
 
         [HttpGet]
         public JsonResult GetLastReportIDJson()

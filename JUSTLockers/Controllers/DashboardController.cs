@@ -185,6 +185,28 @@ namespace JUSTLockers.Controllers
             }
         }
 
+        [HttpGet]
+        public JsonResult GetSemesterSettings()
+        {
+            try
+            {
+                string query = "SELECT SemesterEndDate FROM SemesterSettings"; // Assuming there's only one row in SemesterSettings
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        return Json(result?.ToString() ?? "Semester not found");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json("Error fetching semester settings: " + ex.Message);
+            }
+        }
+
 
     }
 }

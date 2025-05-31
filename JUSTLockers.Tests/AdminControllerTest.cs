@@ -1,10 +1,12 @@
 using JUSTLockers.Classes;
 using JUSTLockers.Controllers;
+using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
@@ -19,16 +21,15 @@ namespace JUSTLockers.Testing
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly AdminController _controller;
         private readonly IConfiguration _configuration;
-        private readonly Mock<IStudentService> _studentService;
+        private readonly IStudentService _studentService;
         private readonly Mock<NotificationService> _notificationServiceMock;
         private readonly Mock<AdminService> _adminServiceMock;
         private readonly SupervisorService _supervisorServiceMock;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
+        private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+
         public AdminControllerTest()
         {
-           // var connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
-
-            // Create an in-memory configuration
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
@@ -37,20 +38,19 @@ namespace JUSTLockers.Testing
                 .Build();
 
             _configuration = config;
-            _service = new AdminService(_configuration);
-            _service = new AdminService(config);
-            _supervisorServiceMock= new SupervisorService(_configuration,_service);
+            _studentService = new StudentService(_configuration, memoryCache, _service);
+            _service = new AdminService(_configuration, memoryCache);
+            _supervisorServiceMock = new SupervisorService(_configuration, _service, memoryCache);
             // Mock only what you need
             _emailServiceMock = new Mock<IEmailService>();
             _notificationServiceMock = new Mock<NotificationService>(_emailServiceMock.Object, _service);
-            _studentService = new Mock<IStudentService>();
 
             _controller = new AdminController(
                 _service,
                 config,
                 _emailServiceMock.Object,
                 _notificationServiceMock.Object,
-                _studentService.Object);
+                _studentService);
 
             _controller.TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
         }
@@ -595,7 +595,7 @@ namespace JUSTLockers.Testing
             );
             Assert.NotNull(report);
 
-            var result = await _service.ResolveReport(report.ReportId, "Test resolution " + Guid.NewGuid());
+            var result = await _service.SolveReport(report.ReportId, "Test resolution " + Guid.NewGuid());
             Assert.True(result);
         }
 
@@ -617,7 +617,7 @@ namespace JUSTLockers.Testing
             var random = new Random();
             int nonExistingId = maxId + random.Next(1, 10000);
 
-            var result = await _service.ResolveReport(nonExistingId, "Test resolution " + Guid.NewGuid());
+            var result = await _service.SolveReport(nonExistingId, "Test resolution " + Guid.NewGuid());
             Assert.False(result);
         }
 

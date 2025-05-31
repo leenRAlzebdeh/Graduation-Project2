@@ -394,25 +394,42 @@
     </div>
 
     <!-- JavaScript for Countdown -->
-    <script>
-        const semesterEnd = new Date('2025-06-30T23:59:59').getTime();
-        
-        function updateCountdown() {
-            const now = new Date().getTime();
-            const distance = semesterEnd - now;
-
-            if (distance < 0) {
-                document.getElementById("countdown").innerText = "Expired";
-                return;
+    
+        <script>
+            function fetchSemesterEndDate() {
+                fetch('/Dashboard/GetSemesterSettings').then(response => response.json())
+                    .then(data => {
+                        const lockerExpiration = document.getElementById("countdown");
+                        if (data === "Semester not found" || !data) {
+                            console.error("No semester end date found");
+                            lockerExpiration.innerText = "No semester date set";
+                            return;
+                        }
+                        const semesterEnd = new Date(data).getTime();
+                        if (isNaN(semesterEnd)) {
+                            console.error("Invalid date format:", data);
+                            lockerExpiration.innerText = "No End date";
+                            return;
+                        }
+                        const countdown = () => {
+                            const now = new Date().getTime();
+                            const distance = semesterEnd - now;
+                            if (distance < 0) {
+                                lockerExpiration.innerText = "Semester ended";
+                                return;
+                            }
+                            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                            lockerExpiration.innerText = `${days} days left`;
+                        };
+                        setInterval(countdown, 1000);
+                        countdown();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error:", error.message);
+                    });
             }
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            document.getElementById("countdown").innerText = days + " days left";
-        }
-
-        setInterval(updateCountdown, 1000);
-        updateCountdown();
-    </script>
+            fetchSemesterEndDate();
+        </script>
     <script src="~/js/DashbordAdmin.js"></script>
     <script>
 

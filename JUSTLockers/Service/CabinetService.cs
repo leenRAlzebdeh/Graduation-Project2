@@ -1,4 +1,5 @@
 ﻿using JUSTLockers.Services;
+using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 
 namespace JUSTLockers.Service
@@ -8,13 +9,15 @@ namespace JUSTLockers.Service
         private readonly IConfiguration _configuration;
         private readonly NotificationService _notificationService;
         private readonly IStudentService _studentService;
-        public CabinetService(IConfiguration configuration, NotificationService notificationService, IStudentService studentService)
+        private readonly IMemoryCache _memoryCache;
+        public CabinetService(IConfiguration configuration,
+            NotificationService notificationService, IStudentService studentService, IMemoryCache memoryCache)
         {
             _configuration = configuration;
             _notificationService = notificationService;
             _studentService = studentService;
+            _memoryCache = memoryCache;
         }
-
         public async Task UpdateStatusAsync(string cabinetId, string status)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -40,11 +43,12 @@ namespace JUSTLockers.Service
                         cmd.Parameters.AddWithValue("@id", cabinetId);
                         await cmd.ExecuteNonQueryAsync();
                     }
+                    AdminService.ClearCache(_memoryCache, "CabinetInfo_");
+                    AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                    AdminService.ClearCache(_memoryCache, "AvailableLockers_");
                 }
-
             }
         }
-
         public async Task UpdateLockersStatus(string cabinetId, string status)
         {
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -62,36 +66,44 @@ namespace JUSTLockers.Service
                             cmd.Parameters.AddWithValue("@id", cabinetId);
                             await cmd.ExecuteNonQueryAsync();
                         }
-                            // Update student record
-                            string updateStudentQuery = @"
+                        // Update student record
+                        string updateStudentQuery = @"
                             UPDATE Students s
                             JOIN Lockers l ON s.locker_id = l.Id
                             SET s.locker_id = NULL
                             WHERE l.cabinet_id = @cabinetId";
-                            using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
-                            {
-                                studentCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
-                                await studentCmd.ExecuteNonQueryAsync();
-                            }
+                        using (var studentCmd = new MySqlCommand(updateStudentQuery, connection, transaction))
+                        {
+                            studentCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
+                            await studentCmd.ExecuteNonQueryAsync();
+                        }
 
-                            // Delete the reservation record
-                            var updateReservationQuery = "DELETE r FROM Reservations r JOIN Lockers l ON r.LockerId = l.Id WHERE l.cabinet_id = @cabinetId";
+                        // Delete the reservation record
+                        var updateReservationQuery = "DELETE r FROM Reservations r JOIN Lockers l ON r.LockerId = l.Id WHERE l.cabinet_id = @cabinetId";
 
-                            using (var reservationCmd = new MySqlCommand(updateReservationQuery, connection, transaction))
-                            {
-                                reservationCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
-                                await reservationCmd.ExecuteNonQueryAsync();
-                            }
+                        using (var reservationCmd = new MySqlCommand(updateReservationQuery, connection, transaction))
+                        {
+                            reservationCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
+                            await reservationCmd.ExecuteNonQueryAsync();
+                        }
 
-                            var updateLockerQuery = "UPDATE Lockers SET Status = @status WHERE cabinet_id = @cabinetId";
-                            using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
-                            {
-                                lockerCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
-                                lockerCmd.Parameters.AddWithValue("@status", status);
-                                await lockerCmd.ExecuteNonQueryAsync();
-                            }
-                            // Step 4: Commit transaction
-                            await transaction.CommitAsync();  
+                        var updateLockerQuery = "UPDATE Lockers SET Status = @status WHERE cabinet_id = @cabinetId";
+                        using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
+                        {
+                            lockerCmd.Parameters.AddWithValue("@cabinetId", cabinetId);
+                            lockerCmd.Parameters.AddWithValue("@status", status);
+                            await lockerCmd.ExecuteNonQueryAsync();
+                        }
+
+                        AdminService.ClearCache(_memoryCache,"CabinetInfo_");
+                        AdminService.ClearCache(_memoryCache,"AvailableWings_");
+                        AdminService.ClearCache(_memoryCache,"AvailableLockers_");
+                        AdminService.ClearCache(_memoryCache,$"CurrentReservation_"); 
+                        AdminService.ClearCache(_memoryCache,$"HasLocker-"); 
+
+
+                        // Step 4: Commit transaction
+                        await transaction.CommitAsync();
                     }
                     catch (Exception ex)
                     {
@@ -105,7 +117,6 @@ namespace JUSTLockers.Service
                 }
             }
         }
-
         public async Task<object> GetCabinetAsync(string cabinetId)
         {
             try
@@ -145,10 +156,10 @@ namespace JUSTLockers.Service
                 return null;
             }
         }
-
         public async Task<List<string>> GetDepartmentsAsync(string location)
         {
             List<string> departments = new List<string>();
+
             try
             {
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -177,7 +188,6 @@ namespace JUSTLockers.Service
                 return null;
             }
         }
-
         public async Task<object> GetSupervisorAsync(string departmentName, string location)
         {
             try
@@ -208,9 +218,9 @@ namespace JUSTLockers.Service
                 return new { status = "Error", message = "Database error occurred" };
             }
         }
-
         public async Task<object> GetSupervisorIdAsync(string departmentName, string location)
         {
+
             try
             {
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -239,7 +249,6 @@ namespace JUSTLockers.Service
                 return new { status = "Error", message = "Database error occurred" };
             }
         }
-
         public async Task<string> GetLastCabinetNumberAsync()
         {
             try
@@ -262,7 +271,6 @@ namespace JUSTLockers.Service
                 return "Error fetching last cabinet number: " + ex.Message;
             }
         }
-
         public async Task<List<string>> GetWingsAsync(string departmentName)
         {
             int totalWings = 0;

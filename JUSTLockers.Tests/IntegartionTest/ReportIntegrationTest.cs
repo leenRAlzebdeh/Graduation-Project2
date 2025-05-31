@@ -35,9 +35,9 @@ namespace JUSTLockers.Tests.IntegartionTest
                 .Build();
 
             _configuration = config;
-            _studentService = new StudentService(_configuration, memoryCache);
-            _adminService = new AdminService(_configuration);
-            _supervisorService = new SupervisorService(_configuration, _adminService);
+            _studentService = new StudentService(_configuration, memoryCache,_adminService);
+            _adminService = new AdminService(_configuration, memoryCache);
+            _supervisorService = new SupervisorService(_configuration, _adminService, memoryCache);
 
             _connection = new MySqlConnection(connectionString);
             _connection.Open();
@@ -149,7 +149,7 @@ namespace JUSTLockers.Tests.IntegartionTest
 
             // Act 3: Admin resolves
             var resolution = "Issue addressed.";
-            var resolveResult = await _adminService.ResolveReport(reportId, resolution);
+            var resolveResult = await _adminService.SolveReport(reportId, resolution);
             Assert.True(resolveResult);
 
             // Assert: Verify report status and resolution

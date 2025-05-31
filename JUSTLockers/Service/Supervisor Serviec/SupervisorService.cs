@@ -1,28 +1,29 @@
 using JUSTLockers.Classes;
 using JUSTLockers.Service;
+using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
-using static System.Net.Mime.MediaTypeNames;
 namespace JUSTLockers.Services;
 
 
 public class SupervisorService : ISupervisorService
-    {
-        private readonly IConfiguration _configuration;
+{
+    private readonly IConfiguration _configuration;
     private readonly AdminService _adminService;
-
-    public SupervisorService(IConfiguration configuration , AdminService adminService)
-        {
-            _configuration = configuration;
-            _adminService = adminService;
-        }
-        public void Login()
-        {
-            throw new NotImplementedException();
-        }
-
-   
+    private readonly IMemoryCache _memoryCache;
+    public SupervisorService(IConfiguration configuration,
+        AdminService adminService, IMemoryCache? memoryCache)
+    {
+        _configuration = configuration;
+        _adminService = adminService;
+        _memoryCache = memoryCache;
+    }
     public async Task<List<Report>> ViewReportedIssues(int? userId)
     {
+        string cacheKey = $"Reports_{userId}";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Report> cachedReports))
+        {
+            return cachedReports;
+        }
         var reports = new List<Report>();
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -66,7 +67,8 @@ WHERE
           
           ";
 
-            using (var command = new MySqlCommand(query, connection)) {
+            using (var command = new MySqlCommand(query, connection))
+            {
                 command.Parameters.AddWithValue("@userId", userId);
                 using (var reader = await command.ExecuteReaderAsync())
                 {
@@ -104,20 +106,24 @@ WHERE
                 }
             }
         }
+        // Cache the reports for 5 minutes
+        _memoryCache.Set(cacheKey, reports, TimeSpan.FromMinutes(3));
         return reports;
     }
-
     public async Task<List<Report>> TheftIssues(string filter)
     {
-        
-
         var reports = new List<Report>();
-        
-            using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                await connection.OpenAsync();
+        string cacheKey = $"TheftReports_{filter}";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Report> cachedReports))
+        {
+            return cachedReports;
+        }
 
-                var query = @"
+        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        {
+            await connection.OpenAsync();
+
+            var query = @"
         SELECT 
             r.Id AS ReportId,
             r.Subject AS ProblemDescription,
@@ -144,55 +150,56 @@ WHERE
         WHERE (@Filter IS NULL OR r.Type = @Filter)
     ";
 
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
+            using (var command = new MySqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Filter", filter?.ToLower() == "theft" ? "Theft" : null);
 
-                    using (var reader = await command.ExecuteReaderAsync())
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
                     {
-                        while (await reader.ReadAsync())
+                        reports.Add(new Report
                         {
-                            reports.Add(new Report
+                            ReportId = reader.GetInt32("ReportId"),
+                            Reporter = new Student(
+                                reader.GetInt32("ReporterId"),
+                                reader.GetString("ReporterName"),
+                                reader.GetString("ReporterEmail"),
+                                reader.GetString("DepartmentName")
+                            ),
+                            Locker = new Locker
                             {
-                                ReportId = reader.GetInt32("ReportId"),
-                                Reporter = new Student(
-                                    reader.GetInt32("ReporterId"),
-                                    reader.GetString("ReporterName"),
-                                    reader.GetString("ReporterEmail"),
-                                    reader.GetString("DepartmentName")
-                                ),
-                                Locker = new Locker
-                                {
-                                    LockerId = reader.GetString("LockerNumber"),
-                                    Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
-                                    Department = reader.GetString("DepartmentName"),
-                                },
-                                Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
-                                Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
-                                Subject = reader.GetString("ProblemDescription"),
-                                Statement = reader.GetString("DetailedDescription"),
-                                ReportDate = reader.GetDateTime("ReportDate"),
-                                ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
-                                ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
-                                ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
-                                ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
-                                SentToAdmin = reader.GetBoolean("SentToAdmin")
-                            });
-                        }
+                                LockerId = reader.GetString("LockerNumber"),
+                                Status = (LockerStatus)Enum.Parse(typeof(LockerStatus), reader.GetString("LockerStatus")),
+                                Department = reader.GetString("DepartmentName"),
+                            },
+                            Type = (ReportType)Enum.Parse(typeof(ReportType), reader.GetString("ReportType")),
+                            Status = (ReportStatus)Enum.Parse(typeof(ReportStatus), reader.GetString("ReportStatus")),
+                            Subject = reader.GetString("ProblemDescription"),
+                            Statement = reader.GetString("DetailedDescription"),
+                            ReportDate = reader.GetDateTime("ReportDate"),
+                            ResolvedDate = reader.IsDBNull(reader.GetOrdinal("ResolvedDate")) ? (DateTime?)null : reader.GetDateTime("ResolvedDate"),
+                            ResolutionDetails = reader.IsDBNull(reader.GetOrdinal("ResolutionDetails")) ? null : reader.GetString("ResolutionDetails"),
+                            ImageData = reader.IsDBNull(reader.GetOrdinal("ImageData")) ? null : (byte[])reader["ImageData"],
+                            ImageMimeType = reader.IsDBNull(reader.GetOrdinal("ImageMimeType")) ? null : reader.GetString("ImageMimeType"),
+                            SentToAdmin = reader.GetBoolean("SentToAdmin")
+                        });
                     }
                 }
             }
+        }
+        _memoryCache.Set(cacheKey, reports, TimeSpan.FromMinutes(3));
         return reports;
 
     }
-
-
-
-
-
     public async Task<List<Student>> ViewAllStudentReservations(int? userId, int? searchstu = null)
     {
         var students = new List<Student>();
+        string cacheKey = $"StudentReservation_{userId}_{searchstu}";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Student> cachedStudents))
+        {
+            return cachedStudents;
+        }
 
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -236,126 +243,9 @@ WHERE
                 }
             }
         }
-
+        _memoryCache.Set(cacheKey, students, TimeSpan.FromMinutes(3));
         return students;
     }
-
-
-
-    //public async Task<(string message , int requestId)> ReallocationRequestFormSameDep(Reallocation model)
-    //{
-    //    using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    //    {
-    //        await connection.OpenAsync();
-    //        using (var transaction = await connection.BeginTransactionAsync())
-    //        {
-    //            try
-    //            {
-    //                // Step 1: Validate Supervisor's Department and Location
-    //                string query1 = "SELECT location, supervised_department FROM Supervisors WHERE id = @SupervisorID";
-    //                string supervisorLocation = null;
-    //                string supervisorDepartment = null;
-
-    //                using (var command1 = new MySqlCommand(query1, connection, transaction))
-    //                {
-    //                    command1.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
-
-    //                    using (var reader = await command1.ExecuteReaderAsync())
-    //                    {
-    //                        if (await reader.ReadAsync())
-    //                        {
-    //                            supervisorLocation = reader["location"].ToString();
-    //                            supervisorDepartment = reader["supervised_department"].ToString();
-    //                        }
-    //                        else
-    //                        {
-    //                            return ("Supervisor not found.",0);
-    //                        }
-    //                    }
-    //                }
-
-    //                // Step 2: Check if the supervisor is authorized
-    //                if (supervisorLocation != model.CurrentLocation || supervisorDepartment != model.CurrentDepartment||
-    //                    supervisorLocation != model.RequestLocation || supervisorDepartment != model.RequestedDepartment)
-    //                {
-    //                    return ($"You are not allowed to reallocate a cabinet outside your department and location: {supervisorDepartment}/{supervisorLocation}. You need Admin approval", 0);
-    //                }
-
-    //                // Step 3: Check if the same request already exists
-    //                string validateCabinetQuery = @"
-    //                SELECT COUNT(*) 
-    //                FROM Cabinets 
-    //                WHERE department_name = @RequestedDepartment 
-    //                AND wing = @RequestWing 
-    //                AND level = @RequestLevel 
-    //                AND number_cab = @NumberCab 
-    //                AND location = @RequestLocation";
-    //                using (var validateCmd = new MySqlCommand(validateCabinetQuery, connection, transaction))
-    //                {
-    //                    validateCmd.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment);
-    //                    validateCmd.Parameters.AddWithValue("@RequestWing", model.RequestWing);
-    //                    validateCmd.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
-    //                    validateCmd.Parameters.AddWithValue("@NumberCab", model.NumberCab);
-    //                    validateCmd.Parameters.AddWithValue("@RequestLocation", model.RequestLocation);
-
-    //                    var cabinetExists = Convert.ToInt32(await validateCmd.ExecuteScalarAsync());
-    //                    if (cabinetExists > 0)
-    //                    {
-    //                        return ("The requested cabinet already exists at the specified location.", 0);
-    //                    }
-    //                }
-
-
-
-    //                // inserte this reallocation request 
-    //                string insertQuery = @"
-    //                INSERT INTO Reallocation
-    //                (SupervisorID, CurrentDepartment, RequestedDepartment, 
-    //                RequestLocation, CurrentLocation, RequestWing, RequestLevel, 
-    //                number_cab, CurrentCabinetID)
-    //                VALUES
-    //                (@SupervisorID, @CurrentDepartment, @RequestedDepartment, 
-    //                @RequestLocation, @CurrentLocation, @RequestWing, @RequestLevel,
-    //                @NumberCab, @CurrentCabinetID);
-    //                SELECT LAST_INSERT_ID();"; // Retrieve the last inserted ID
-
-    //                using (var command = new MySqlCommand(insertQuery, connection, transaction))
-    //                {
-    //                    command.Parameters.AddWithValue("@SupervisorID", model.SupervisorID);
-    //                    command.Parameters.AddWithValue("@CurrentDepartment", model.CurrentDepartment ?? (object)DBNull.Value);
-    //                    command.Parameters.AddWithValue("@RequestedDepartment", model.RequestedDepartment ?? (object)DBNull.Value);
-    //                    command.Parameters.AddWithValue("@CurrentLocation", model.CurrentLocation ?? (object)DBNull.Value);
-    //                    command.Parameters.AddWithValue("@RequestLocation", model.RequestLocation ?? (object)DBNull.Value);
-    //                    command.Parameters.AddWithValue("@RequestWing", model.RequestWing ?? (object)DBNull.Value);
-    //                    command.Parameters.AddWithValue("@RequestLevel", model.RequestLevel);
-    //                    command.Parameters.AddWithValue("@NumberCab", model.NumberCab);
-    //                    command.Parameters.AddWithValue("@CurrentCabinetID", model.CurrentCabinetID ?? (object)DBNull.Value);
-
-
-    //                    var reallocationId = Convert.ToInt32(await command.ExecuteScalarAsync()); // Get the inserted ID
-    //                    if (reallocationId > 0)
-    //                    {
-    //                        await transaction.CommitAsync();
-    //                        var what =await _adminService.ApproveRequestReallocation(reallocationId);
-    //                        if(what)
-    //                        return ($"Cabinet reallocation was successful.",reallocationId);
-    //                        else
-    //                        { 
-    //                            return ($"Cabinet reallocation was not successful.", 0);
-    //                        }
-    //                    }
-    //                }
-    //               return ($"Cabinet reallocation was successful.", 0);
-
-    //            }
-    //            catch (Exception ex)
-    //            {
-    //                await transaction.RollbackAsync();
-    //                return ($"Error processing reallocation request: {ex.Message}",0);
-    //            }
-    //        }
-    //    }
-    //}
     public async Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -569,6 +459,11 @@ WHERE
                         await approveCmd.ExecuteNonQueryAsync();
                     }
 
+                    AdminService.ClearCache(_memoryCache, "CabinetInfo_");
+                    AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                    AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+                    AdminService.ClearCache(_memoryCache, $"CurrentReservation_");
+
                     // Step 6: Commit the transaction
                     await transaction.CommitAsync();
                     return ($"Cabinet reallocation was successful.", reallocationId);
@@ -581,21 +476,13 @@ WHERE
                     }
                     catch (Exception rollbackEx)
                     {
-                      return ("Error during transaction rollback.",0);
+                        return ("Error during transaction rollback.", 0);
                     }
                     return ($"Error processing reallocation request: {ex.Message}", 0);
                 }
             }
         }
     }
-
-
-    public void Notify()
-        {
-            throw new NotImplementedException();
-        }
-    //here 
-
     public async Task<string> ReallocationRequest(Reallocation model)
     {
         try
@@ -624,7 +511,7 @@ WHERE
                             if (supervisorLocation == model.RequestLocation && supervisorDepartment == model.RequestedDepartment)
                             {
                                 return "You Don't have  Admin's Approve To Reallcoate a cabinet inside your Convenant of Department " + supervisorDepartment + "/" + supervisorLocation + ".";
-                            }     
+                            }
                         }
                         else
                         {
@@ -643,7 +530,8 @@ WHERE
                                         RequestWing = @RequestWing AND
                                         RequestLevel = @RequestLevel AND
                                         number_cab = @NumberCab AND
-                                        CurrentCabinetID = @CurrentCabinetID";
+                                        CurrentCabinetID = @CurrentCabinetID AND
+                                        RequestStatus='Pending'";
 
                 using (var checkCommand = new MySqlCommand(checkQuery, connection))
                 {
@@ -688,6 +576,9 @@ WHERE
 
                     int rowsAffected = await command.ExecuteNonQueryAsync();
 
+                    AdminService.ClearCache(_memoryCache, "ReallocationRequests_");
+                    AdminService.ClearCache(_memoryCache, "ReallocationResponse"); 
+
                     return rowsAffected > 0 ? "Request sent successfully! Wait Admin Response" : "Failed to send request.";
                 }
             }
@@ -697,7 +588,6 @@ WHERE
             return $"Error sending request: {ex.Message}";
         }
     }
-
     public async Task SendToAdmin(int reportId)
     {
         try
@@ -710,7 +600,8 @@ WHERE
                 command.Parameters.AddWithValue("@Id", reportId);
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
-       }
+                AdminService.ClearCache(_memoryCache, "Reports");
+            }
         }
         catch (Exception ex)
         {
@@ -721,6 +612,11 @@ WHERE
     {
         string? location = null;
         string? department = null;
+        string cacheKey = $"SupervisorLocationDepartment_{userId}";
+        if (_memoryCache.TryGetValue(cacheKey, out (string? Location, string? Department) cachedValues))
+        {
+            return cachedValues;
+        }
 
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -741,14 +637,17 @@ WHERE
                 }
             }
         }
-
+        _memoryCache.Set(cacheKey, (location, department), TimeSpan.FromMinutes(3));
         return (location, department);
     }
-
-    public async Task<List<Reallocation>> ReallocationReqestsInfo(int? id, string? filter, string?location ,string? department)
+    public async Task<List<Reallocation>> ReallocationRequestsInfo(int? id, string? filter, string? location, string? department)
     {
         var reallocations = new List<Reallocation>();
-
+        string cacheKey = $"ReallocationRequests_{id}_{filter}_{location}_{department}";
+        if (_memoryCache.TryGetValue(cacheKey, out List<Reallocation> cachedReallocations))
+        {
+            return cachedReallocations;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -804,20 +703,18 @@ WHERE
                 }
             }
         }
-
+        _memoryCache.Set(cacheKey, reallocations, TimeSpan.FromMinutes(3));
         return reallocations;
     }
-
-
-
-
-
-
     public async Task<List<BlockedStudent>> BlockedStudents()
     {
-
-
         var blockedStudents = new List<BlockedStudent>();
+        string cacheKey = "BlockedStudents";
+        if (_memoryCache.TryGetValue(cacheKey, out List<BlockedStudent> cachedBlockedStudents))
+        {
+            return cachedBlockedStudents;
+        }
+
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             string query = @"
@@ -858,12 +755,10 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 }
             }
         }
+        _memoryCache.Set(cacheKey, blockedStudents, TimeSpan.FromMinutes(3));
         return blockedStudents;
 
     }
-
-  
-
     public Student GetStudentById(int id)
     {
         Student student = null;
@@ -887,7 +782,7 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                    reader["Location"]?.ToString() ?? ""
                 )
                 {
-                    LockerId = reader["locker_id"].ToString() ,
+                    LockerId = reader["locker_id"].ToString(),
                     IsBlocked = IsStudentBlocked(id)
                 };
             }
@@ -895,7 +790,6 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
         return student;
     }
-
     public bool IsStudentBlocked(int id)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -909,8 +803,6 @@ JOIN Supervisors su ON bs.blocked_by = su.id
             return result > 0;
         }
     }
-
-   
     public string BlockStudent(int id, int? userId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -939,8 +831,13 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
                 insertCommand.ExecuteNonQuery();
 
+                AdminService.ClearCache(_memoryCache, "BlockedStudents");
+                AdminService.ClearCache(_memoryCache, "IsStudentBlocked");
+                AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}"); 
+                AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+                AdminService.ClearCache(_memoryCache, $"HasLocker-{id}");
 
-               
                 return "Student successfully blocked.";
             }
             else
@@ -949,7 +846,6 @@ JOIN Supervisors su ON bs.blocked_by = su.id
             }
         }
     }
-
     public string UnblockStudent(int id, int? userId)
     {
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -982,6 +878,13 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 insertCommand.Parameters.AddWithValue("@id", id);
                 insertCommand.Parameters.AddWithValue("@userId", userId);
 
+                AdminService.ClearCache(_memoryCache, "BlockedStudents");
+                AdminService.ClearCache(_memoryCache, "IsStudentBlocked");
+                AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}");
+                AdminService.ClearCache(_memoryCache, "AvailableWings_");
+                AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+                AdminService.ClearCache(_memoryCache, $"HasLocker-{id}");
+
                 insertCommand.ExecuteNonQuery();
                 return "Student successfully Unblocked.";
             }
@@ -991,10 +894,10 @@ JOIN Supervisors su ON bs.blocked_by = su.id
             }
         }
     }
-
     public async Task<List<Cabinet>> ViewCabinetInfo(int? userId, string? searchCab = null, string? location = null, int? level = null, string? department = null, string? status = null, string? wing = null)
     {
         var cabinets = new List<Cabinet>();
+        string cacheKey = $"CabinetInfo_{userId}_{searchCab}_{location}_{level}_{department}_{status}_{wing}";
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -1069,11 +972,16 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 }
             }
         }
+        _memoryCache.Set(cacheKey, cabinets, TimeSpan.FromMinutes(3));
         return cabinets;
     }
-
     public async Task<DepartmentInfo> GetDepartmentInfo(int userId)
     {
+        string cacheKey = $"DepartmentInfo_{userId}";
+        if (_memoryCache.TryGetValue(cacheKey, out DepartmentInfo cachedInfo))
+        {
+            return cachedInfo;
+        }
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -1086,6 +994,12 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 {
                     if (await reader.ReadAsync())
                     {
+                        _memoryCache.Set(cacheKey, new DepartmentInfo
+                        {
+                            DepartmentName = reader.GetString("supervised_department"),
+                            Location = reader.GetString("location")
+                        }, TimeSpan.FromMinutes(3));
+
                         return new DepartmentInfo
                         {
                             DepartmentName = reader.GetString("supervised_department"),
@@ -1095,12 +1009,16 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 }
             }
         }
+        
         return null;
     }
-
-
-    public async Task<bool> HasCovenant(int? userId)
+    public bool HasCovenant(int? userId)
     {
+        string cacheKey = $"HasCovenant_{userId}";
+        if (_memoryCache.TryGetValue(cacheKey, out bool hasCovenant))
+        {
+            return hasCovenant;
+        }
         try
 
         {
@@ -1119,11 +1037,12 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                     cmd.Parameters.AddWithValue("@userId", userId);
 
                     count = Convert.ToInt32(cmd.ExecuteScalar());
+                    _memoryCache.Set(cacheKey, count > 0, TimeSpan.FromMinutes(3));
                     return count > 0;
 
                 }
             }
-            
+
         }
         catch (Exception ex)
         {
@@ -1131,6 +1050,4 @@ JOIN Supervisors su ON bs.blocked_by = su.id
         }
 
     }
-
-
 }

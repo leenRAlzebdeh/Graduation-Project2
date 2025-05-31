@@ -1,4 +1,5 @@
 ﻿using JUSTLockers.Service;
+using JUSTLockers.Services;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
@@ -17,6 +18,7 @@ namespace JUSTLockers.Tests.IntegartionTest
         private readonly StudentService _studentService;
         private MySqlConnection _connection;
         private MySqlTransaction _transaction;
+        private readonly AdminService _adminService;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
         private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
 
@@ -31,7 +33,7 @@ namespace JUSTLockers.Tests.IntegartionTest
                 .Build();
 
             _configuration = config;
-            _studentService = new StudentService(_configuration, memoryCache);
+            _studentService = new StudentService(_configuration, memoryCache, _adminService);
 
             // Start a transaction for test isolation
             _connection = new MySqlConnection(connectionString);

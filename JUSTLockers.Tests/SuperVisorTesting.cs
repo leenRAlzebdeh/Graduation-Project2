@@ -1,5 +1,6 @@
 ﻿using JUSTLockers.Classes;
 using JUSTLockers.Services;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using MySqlConnector;
@@ -11,9 +12,11 @@ namespace JUSTLockers.Testing
     {
         private readonly SupervisorService _service;
         private readonly Mock<IConfiguration> _configurationMock;
-        private readonly Mock<AdminService> _adminServiceMock;
+        private readonly AdminService _serviceAdmin;
         private readonly IConfiguration _configuration;
         private readonly string connectionString = "Server=localhost;Database=testing;User=root;Password=1234;";
+        private readonly IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+
         public SupervisorServiceTest()
         {
 
@@ -27,9 +30,9 @@ namespace JUSTLockers.Testing
                 .Build();
 
             _configuration = config;
-            _adminServiceMock = new Mock<AdminService>(config);
+            _serviceAdmin = new AdminService(_configuration, memoryCache);
 
-            _service = new SupervisorService(config, _adminServiceMock.Object);
+            _service = new SupervisorService(config, _serviceAdmin, memoryCache);
         }
 
         #region Helper Methods
@@ -515,7 +518,7 @@ namespace JUSTLockers.Testing
             );
             Assert.NotNull(supervisor);
 
-            var hasCovenant = await _service.HasCovenant(supervisor.Id);
+            var hasCovenant = _service.HasCovenant(supervisor.Id);
             Assert.True(hasCovenant);
         }
         #endregion

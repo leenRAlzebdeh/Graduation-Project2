@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<DbConnectionFactory>(optons => optons.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new Version(8, 0, 36))));
@@ -16,22 +15,21 @@ builder.Services.AddScoped<UserActions>();
 builder.Services.AddScoped<CabinetService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
-//builder.Services.AddHostedService<SemesterEndService>();
+builder.Services.AddHostedService<SemesterEndService>();
 builder.Services.AddSession(
     options =>
     {
         options.IdleTimeout = TimeSpan.FromMinutes(10); 
         options.Cookie.HttpOnly = true; 
-        options.Cookie.IsEssential = true; 
-       
+        options.Cookie.IsEssential = true;   
     }
     );
 builder.Services.AddAuthentication("MyCookieAuth")
     .AddCookie("MyCookieAuth", options =>
     {
         options.LoginPath = "/Home/Login";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(10); // optional
-        //options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10); 
+        options.SlidingExpiration = true;
         options.Cookie.IsEssential = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.None;
@@ -42,11 +40,9 @@ builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
