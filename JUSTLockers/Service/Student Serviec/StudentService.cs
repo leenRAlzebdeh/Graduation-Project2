@@ -401,7 +401,7 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(3)); // Cache for 3 minutes
+          //  _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(3)); // Cache for 3 minutes
             return wings;
         }
         public async Task<Reservation> GetCurrentReservationAsync(int studentId)
