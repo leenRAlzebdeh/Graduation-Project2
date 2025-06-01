@@ -591,16 +591,32 @@ public class AdminService : IAdminService
                     SET RequestStatus = 'Approved'    
                     WHERE RequestID = @RequestID";
 
+                    string approveQuery2 = @"
+                    UPDATE Reallocation 
+                    SET RequestStatus = 'Rejected'    
+                    WHERE RequestID != @RequestID and CurrentCabinetID=@oldCabinetId and RequestStatus='Pending'";
+
+
                     using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
                     {
                         approveCmd.Parameters.AddWithValue("@RequestID", requestId);
                         await approveCmd.ExecuteNonQueryAsync();
                     }
+                    using (var approveCmd = new MySqlCommand(approveQuery2, connection, transaction))
+                    {
+                        approveCmd.Parameters.AddWithValue("@RequestID", requestId);
+                        approveCmd.Parameters.AddWithValue("@oldCabinetId", oldCabinetId);
+                        await approveCmd.ExecuteNonQueryAsync();
+                    }
+
 
                     await transaction.CommitAsync();
                     Console.WriteLine($"Reallocation request {requestId} approved successfully.");
                     AdminService.ClearCache(_memoryCache, "ReallocationResponse");
                     AdminService.ClearCache(_memoryCache, $"ReallocationRequests_{requestId}");
+
+
+
                     return true;
                 }
                 catch (Exception ex)
