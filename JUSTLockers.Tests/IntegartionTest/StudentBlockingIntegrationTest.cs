@@ -262,7 +262,7 @@ namespace JUSTLockers.Tests.IntegartionTest
 
             // Try to block again
             var blockMessage2 = _supervisorService.BlockStudent(student.Id, supervisor.Id);
-            Assert.NotEqual("Student successfully blocked.", blockMessage2);
+            Assert.Equal("Student is already blocked.", blockMessage2);
         }
 
         [Fact]

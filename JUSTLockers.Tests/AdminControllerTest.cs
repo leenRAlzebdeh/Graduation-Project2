@@ -421,6 +421,49 @@ namespace JUSTLockers.Testing
         }
         #endregion
 
+        #region IsDepartmentAssigned Tests
+        [Fact]
+        public async Task IsDepartmentAssigned_ShouldReturnId_IfAssigned_Random()
+        {
+            // Get a random department that is assigned to a supervisor
+            var assigned = await GetRandomEntityAsync(
+                "Departments d JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
+                r => new
+                {
+                    DepartmentName = r.GetString(r.GetOrdinal("Name")).Trim(),
+                    Location = r.GetString(r.GetOrdinal("Location")).Trim(),
+                    SupervisorId = r.GetInt32(r.GetOrdinal("Id"))
+                }
+            );
+            if (assigned == null)
+            {
+                AddSupervisor_ShouldSucceed_WhenValidEmployee_Random();
+            }
+            Assert.NotNull(assigned);
+            var id = await _service.IsDepartmentAssigned(assigned.DepartmentName, assigned.Location);
+            Console.WriteLine($"Expected: {assigned.SupervisorId}, Actual: {id}, Dept: '{assigned.DepartmentName}', Loc: '{assigned.Location}'");
+            Assert.Equal(assigned.SupervisorId, id);
+        }
+
+        [Fact]
+        public async Task IsDepartmentAssigned_ShouldReturnZero_IfNotAssigned_Random()
+        {
+            var unassigned = await GetRandomEntityAsync(
+                "Departments d LEFT JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
+                r => new { DepartmentName = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) },
+                "s.Id IS NULL"
+            );
+            if (unassigned == null)
+            {
+                DeleteSupervisor_ShouldSucceed_WhenValid();
+            }
+            Assert.NotNull(unassigned);
+
+            var id = await _service.IsDepartmentAssigned(unassigned.DepartmentName, unassigned.Location);
+            Assert.Equal(0, id);
+        }
+        #endregion
+
         #region DeleteSupervisor Tests
         [Fact]
         public async Task DeleteSupervisor_ShouldSucceed_WhenValid()
@@ -545,42 +588,6 @@ namespace JUSTLockers.Testing
 
             var supervisor = await _service.GetSupervisorById(nonExistingId);
             Assert.Null(supervisor);
-        }
-        #endregion
-
-        #region IsDepartmentAssigned Tests
-        [Fact]
-        public async Task IsDepartmentAssigned_ShouldReturnId_IfAssigned_Random()
-        {
-            // Get a random department that is assigned to a supervisor
-            var assigned = await GetRandomEntityAsync(
-                "Departments d JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
-                r => new
-                {
-                    DepartmentName = r.GetString(r.GetOrdinal("Name")).Trim(),
-                    Location = r.GetString(r.GetOrdinal("Location")).Trim(),
-                    SupervisorId = r.GetInt32(r.GetOrdinal("Id"))
-                }
-            );
-            Assert.NotNull(assigned);
-            var id = await _service.IsDepartmentAssigned(assigned.DepartmentName, assigned.Location);
-            Console.WriteLine($"Expected: {assigned.SupervisorId}, Actual: {id}, Dept: '{assigned.DepartmentName}', Loc: '{assigned.Location}'");
-            Assert.Equal(assigned.SupervisorId, id);
-        }
-
-        [Fact]
-        public async Task IsDepartmentAssigned_ShouldReturnZero_IfNotAssigned_Random()
-        {
-            // Get a random department/location that is NOT assigned to any supervisor
-            var unassigned = await GetRandomEntityAsync(
-                "Departments d LEFT JOIN Supervisors s ON d.Name = s.supervised_department AND d.Location = s.Location",
-                r => new { DepartmentName = r.GetString(r.GetOrdinal("Name")), Location = r.GetString(r.GetOrdinal("Location")) },
-                "s.Id IS NULL"
-            );
-            Assert.NotNull(unassigned);
-
-            var id = await _service.IsDepartmentAssigned(unassigned.DepartmentName, unassigned.Location);
-            Assert.Equal(0, id);
         }
         #endregion
 

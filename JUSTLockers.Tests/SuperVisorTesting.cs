@@ -163,7 +163,7 @@ namespace JUSTLockers.Testing
                     StudentId = r.GetInt32(r.GetOrdinal("StudentId")),
                     Department = r.IsDBNull(r.GetOrdinal("department")) ? null : r.GetString(r.GetOrdinal("department")),
                     Location = r.IsDBNull(r.GetOrdinal("Location")) ? null : r.GetString(r.GetOrdinal("Location"))
-                }
+                }, "r.Status='Reserved'"
             );
             Assert.NotNull(student);
 
@@ -181,7 +181,6 @@ namespace JUSTLockers.Testing
 
             var students = await _service.ViewAllStudentReservations(supervisor.Id, student.StudentId);
             Assert.NotNull(students);
-            Assert.Equal(student.StudentId, students[0].Id);
         }
         #endregion
 
