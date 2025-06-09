@@ -13,22 +13,20 @@ namespace WebApplication5.Controllers
 
         private readonly IConfiguration _configuration;
         private readonly UserActions _userActions;
-        //  private readonly IDbConnectionFactory _connectionFactory;
-        public AccountController(IConfiguration configuration, UserActions userActions)
+        private readonly IMemoryCache _memoryCache;
+        public AccountController(IConfiguration configuration, UserActions userActions, IMemoryCache memoryCache)
         {
             _configuration = configuration;
             _userActions = userActions;
-
+            _memoryCache = memoryCache;
         }
 
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            // Clear the session or authentication cookie
             HttpContext.Session.Clear();
-            MemoryCache cache = null; // Assuming you have a MemoryCache instance set up
             await HttpContext.SignOutAsync("MyCookieAuth");
-
+            AdminService.ClearCache(_memoryCache, "");
             return RedirectToAction("Login", "Home");
         }
 
@@ -38,7 +36,7 @@ namespace WebApplication5.Controllers
         public async Task<IActionResult> Login(int id, string password)
         {
             await HttpContext.SignOutAsync("MyCookieAuth");
-
+            AdminService.ClearCache(_memoryCache,"");
             string role = IsValidUser(id, password);
             HttpContext.Session.SetInt32("UserId", id);
             

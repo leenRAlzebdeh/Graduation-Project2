@@ -1016,8 +1016,14 @@ where r.Type='THEFT' and r.SentToAdmin=1
     {
         var memoryCache = _memoryCache as MemoryCache;
 
-        if (memoryCache == null || string.IsNullOrEmpty(substring))
+        if (memoryCache == null)
             return;
+        if (string.IsNullOrEmpty(substring))
+{
+            memoryCache.Clear();
+            Console.WriteLine("Cleared all cache entries.");
+            return;
+        }
 
         var keysToRemove = new List<object>();
 
