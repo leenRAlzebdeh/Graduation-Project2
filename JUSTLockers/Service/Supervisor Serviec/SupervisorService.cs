@@ -1,6 +1,7 @@
 using JUSTLockers.Classes;
 using JUSTLockers.Service;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using MySqlConnector;
 using System;
 namespace JUSTLockers.Services;
@@ -467,9 +468,20 @@ WHERE
                     UPDATE Reallocation 
                     SET RequestStatus = 'Approved'
                     WHERE RequestID = @RequestID";
+
+                    string approveQuery2 = @"
+                     UPDATE Reallocation 
+                     SET RequestStatus = 'Rejected'    
+                     WHERE RequestID != @RequestID and CurrentCabinetID=@oldCabinetId and RequestStatus='Pending'";
                     using (var approveCmd = new MySqlCommand(approveQuery, connection, transaction))
                     {
                         approveCmd.Parameters.AddWithValue("@RequestID", reallocationId);
+                        await approveCmd.ExecuteNonQueryAsync();
+                    }
+                    using (var approveCmd = new MySqlCommand(approveQuery2, connection, transaction))
+                    {
+                        approveCmd.Parameters.AddWithValue("@RequestID", reallocationId);
+                        approveCmd.Parameters.AddWithValue("@oldCabinetId", model.CurrentCabinetID);  
                         await approveCmd.ExecuteNonQueryAsync();
                     }
 
