@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace JUSTLockers.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Student")]
     public class StudentController : Controller
     {
         private readonly IStudentService _studentService;
@@ -26,9 +26,6 @@ namespace JUSTLockers.Controllers
         {
             return View();
         }
-
-        
-
         [HttpGet]
         public async Task<IActionResult> ReservationView()
         {
@@ -75,18 +72,11 @@ namespace JUSTLockers.Controllers
 
             return View(wingsInfo);
         }
-
-        
-
         [HttpGet]
         public IActionResult ReserveLocker()
         {
             return View("~/Views/Student/ReservationView.cshtml");
         }
-       
-
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReserveLocker([FromBody] ReservationRequest request)

@@ -10,14 +10,11 @@ using static Dapper.SqlMapper;
 
 namespace JUSTLockers.Controllers
 {
-   
-    [Authorize]
+    [Authorize(Roles = "Admin")]
+
     public class AdminController : Controller
     {
-
         private readonly IConfiguration _configuration;
-
-
         private readonly AdminService _adminService;
         private readonly IEmailService _emailService;
         private readonly NotificationService _notificationService;

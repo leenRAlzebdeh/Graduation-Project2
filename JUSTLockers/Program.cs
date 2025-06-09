@@ -28,7 +28,7 @@ builder.Services.AddAuthentication("MyCookieAuth")
     .AddCookie("MyCookieAuth", options =>
     {
         options.LoginPath = "/Home/Login";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(10); 
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.SlidingExpiration = true;
         options.Cookie.IsEssential = true;
         options.Cookie.HttpOnly = true;

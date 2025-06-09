@@ -9,7 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JUSTLockers.Controllers
 {
-    [Authorize]
+    [Authorize (Roles = "Supervisor")]
     public class SupervisorController : Controller
     {
         
