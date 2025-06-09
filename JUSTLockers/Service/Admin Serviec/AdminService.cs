@@ -565,14 +565,13 @@ public class AdminService : IAdminService
                         string updateLockerQuery = @"
                             UPDATE Lockers 
                             SET 
-                                Id = @NewLockerId
+                                Id = @NewLockerId, DepartmentName= @NewDepartment
                             WHERE Id = @OldLockerId";
 
                         using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))
                         {
                             lockerCmd.Parameters.AddWithValue("@NewLockerId", newLockerId);
                             lockerCmd.Parameters.AddWithValue("@NewDepartment", newDepartment);
-                            lockerCmd.Parameters.AddWithValue("@NewCabinetId", newCabinetId);
                             lockerCmd.Parameters.AddWithValue("@OldLockerId", oldLockerId);
                             int rowsAffected = await lockerCmd.ExecuteNonQueryAsync();
                             if (rowsAffected == 0)
@@ -1037,7 +1036,6 @@ where r.Type='THEFT' and r.SentToAdmin=1
         if (string.IsNullOrEmpty(substring))
 {
             memoryCache.Clear();
-            Console.WriteLine("Cleared all cache entries.");
             return;
         }
 

@@ -31,7 +31,6 @@ namespace JUSTLockers.Controllers
             _memoryCache = memoryCache;
         }
 
-        //}
         [HttpGet]
         public async Task<IActionResult> SupervisorDashboard()
         {
@@ -200,7 +199,7 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
-    public JsonResult SearchStudent(int id)
+        public JsonResult SearchStudent(int id)
     {
         var student = _superService.GetStudentById(id);
         if (student == null)
@@ -312,7 +311,6 @@ namespace JUSTLockers.Controllers
             }
 
 
-            // Get department info
             var departmentInfo = await _superService.GetDepartmentInfo(userId.Value);
             if (departmentInfo == null)
             {
@@ -343,8 +341,6 @@ namespace JUSTLockers.Controllers
 
             return View("~/Views/Supervisor/ReservationView.cshtml",wingsInfo);
         }
-
-
         public async Task<bool> HasCovenant(int? userId)
         {
 
