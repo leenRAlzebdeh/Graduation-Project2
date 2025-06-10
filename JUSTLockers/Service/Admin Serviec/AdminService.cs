@@ -1016,8 +1016,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                     command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
 
-                    AdminService.ClearCache(_memoryCache, "ForwardedReports");
-                    AdminService.ClearCache(_memoryCache, "Reports");
+                   // AdminService.ClearCache(_memoryCache, "ForwardedReports");
+                  //  AdminService.ClearCache(_memoryCache, "Reports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }
@@ -1069,8 +1069,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
             using (var command = new MySqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@ReportId", reportId);
-                AdminService.ClearCache(_memoryCache, "Reports");
-                AdminService.ClearCache(_memoryCache, "ForwardedReports");
+              //  AdminService.ClearCache(_memoryCache, "Reports");
+              //  AdminService.ClearCache(_memoryCache, "ForwardedReports");
                 return await command.ExecuteNonQueryAsync() > 0;
             }
         }
@@ -1092,8 +1092,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
                 {
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
-                    AdminService.ClearCache(_memoryCache, "Reports");
-                    AdminService.ClearCache(_memoryCache, "ForwardedReports");
+                  //  AdminService.ClearCache(_memoryCache, "Reports");
+                 //   AdminService.ClearCache(_memoryCache, "ForwardedReports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }

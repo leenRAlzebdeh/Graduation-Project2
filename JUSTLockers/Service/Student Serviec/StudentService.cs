@@ -49,8 +49,8 @@ namespace JUSTLockers.Service
                 // Save the report data including image data and MIME type
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ImageData, ImageMimeType) 
-                             VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ImageFile, @ImageMimeType)";
+                    string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ReportDate,ImageData, ImageMimeType) 
+                             VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ReportDate, @ImageFile, @ImageMimeType)";
 
                     using (var command = new MySqlCommand(query, connection))
                     {
@@ -60,6 +60,7 @@ namespace JUSTLockers.Service
                         command.Parameters.AddWithValue("@ProblemType", problemType);
                         command.Parameters.AddWithValue("@Subject", Subject);
                         command.Parameters.AddWithValue("@Description", description);
+                        command.Parameters.AddWithValue("@ReportDate", DateTime.Now);
 
                         command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData;
                         command.Parameters.AddWithValue("@ImageMimeType", mimeType);

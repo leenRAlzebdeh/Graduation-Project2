@@ -29,7 +29,7 @@ public class SupervisorService : ISupervisorService
         {
             connection.Open();
             var query = @"
-           SELECT 
+           SELECT DISTINCT 
     r.Id AS ReportId,
     r.Subject AS ProblemDescription,
     r.Statement AS DetailedDescription,
@@ -722,6 +722,7 @@ WHERE
         return reallocations;
     }
     public async Task<List<BlockedStudent>> BlockedStudents()
+
     {
         var blockedStudents = new List<BlockedStudent>();
         string cacheKey = "BlockedStudents";
@@ -845,9 +846,10 @@ JOIN Supervisors su ON bs.blocked_by = su.id
 
             if (matchCount > 0)
             {
-                string insertQuery = "INSERT INTO BlockList (student_id, blocked_by) VALUES (@id, @userId)";
+                string insertQuery = "INSERT INTO BlockList (student_id,block_time, blocked_by) VALUES (@id,@block_time, @userId)";
                 var insertCommand = new MySqlCommand(insertQuery, connection);
                 insertCommand.Parameters.AddWithValue("@id", id);
+                insertCommand.Parameters.AddWithValue("@block_time", DateTime.Now);
                 insertCommand.Parameters.AddWithValue("@userId", userId);
 
                 insertCommand.ExecuteNonQuery();
