@@ -304,7 +304,7 @@
             <!-- Expiration Countdown -->
             <div class="card countdown">
                 <h3>Locker Expiration</h3>
-                <div class="countdown-timer" id="countdown">Loading...</div>
+                <div class="countdown-timer" id="countdown">@(days) days left</div>
             </div>
         </div>
 
@@ -395,39 +395,39 @@
     <!-- JavaScript for Countdown -->
     
         <script>
-            function fetchSemesterEndDate() {
-                fetch('/Dashboard/GetSemesterSettings').then(response => response.json())
-                    .then(data => {
-                        const lockerExpiration = document.getElementById("countdown");
-                        if (data === "Semester not found" || !data) {
-                            console.error("No semester end date found");
-                            lockerExpiration.innerText = "No semester date set";
-                            return;
-                        }
-                        const semesterEnd = new Date(data).getTime();
-                        if (isNaN(semesterEnd)) {
-                            console.error("Invalid date format:", data);
-                            lockerExpiration.innerText = "No End date";
-                            return;
-                        }
-                        const countdown = () => {
-                            const now = new Date().getTime();
-                            const distance = semesterEnd - now;
-                            if (distance < 0) {
-                                lockerExpiration.innerText = "Semester ended";
-                                return;
-                            }
-                            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                            lockerExpiration.innerText = `${days} days left`;
-                        };
-                        setInterval(countdown, 1000);
-                        countdown();
-                    })
-                    .catch(error => {
-                        console.error("Fetch error:", error.message);
-                    });
-            }
-            fetchSemesterEndDate();
+            // function fetchSemesterEndDate() {
+            //     fetch('/Dashboard/GetSemesterSettings').then(response => response.json())
+            //         .then(data => {
+            //             const lockerExpiration = document.getElementById("countdown");
+            //             if (data === "Semester not found" || !data) {
+            //                 console.error("No semester end date found");
+            //                 lockerExpiration.innerText = "No semester date set";
+            //                 return;
+            //             }
+            //             const semesterEnd = new Date(data).getTime();
+            //             if (isNaN(semesterEnd)) {
+            //                 console.error("Invalid date format:", data);
+            //                 lockerExpiration.innerText = "No End date";
+            //                 return;
+            //             }
+            //             const countdown = () => {
+            //                 const now = new Date().getTime();
+            //                 const distance = semesterEnd - now;
+            //                 if (distance < 0) {
+            //                     lockerExpiration.innerText = "Semester ended";
+            //                     return;
+            //                 }
+            //                 const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            //                 lockerExpiration.innerText = `${days} days left`;
+            //             };
+            //             setInterval(countdown, 1000);
+            //             countdown();
+            //         })
+            //         .catch(error => {
+            //             console.error("Fetch error:", error.message);
+            //         });
+            // }
+            // fetchSemesterEndDate();
         </script>
     <script src="~/js/DashbordAdmin.js"></script>
     <script>
