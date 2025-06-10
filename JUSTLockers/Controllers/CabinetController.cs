@@ -30,6 +30,7 @@ namespace JUSTLockers.Controllers
             _adminService = adminService;
         }
         [HttpPost]
+        [Authorize(Roles = "Admin,Supervisor")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(string cabinetId, string status)
         {
@@ -55,6 +56,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Supervisor")]
+
         public async Task<JsonResult> GetCabinet(string cabinet_id)
         {
             try
@@ -80,6 +83,8 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Supervisor")]
+
         public async Task<JsonResult> GetDepartments(string location)
         {
             try
@@ -127,6 +132,8 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
+
         public JsonResult GetLastCabinetNumberJson()
         {
             try
@@ -151,6 +158,8 @@ namespace JUSTLockers.Controllers
        
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Supervisor")]
+
         public JsonResult GetWings(string departmentName)
         {
             int totalWings = 0;

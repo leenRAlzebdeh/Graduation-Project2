@@ -10,7 +10,7 @@ using static Dapper.SqlMapper;
 
 namespace JUSTLockers.Controllers
 {
-   // [Authorize(Roles = "Admin")]
+  
 
     public class AdminController : Controller
     {
@@ -32,6 +32,7 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SignCovenant()
         {
             var supervisors = await _adminService.ViewAllSupervisorInfo();
@@ -42,25 +43,26 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult DeleteCovenant()
         {
             return View();
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult AddSupervisor()
         {
             return View();
         }
 
         [HttpPost]
-       [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSupervisor(Supervisor supervisor)
         {
             try
             {
-
-                // Check if employee exists
                 var employeeExists = await _adminService.CheckEmployeeExists(supervisor.Id);
                 if (!employeeExists)
                 {
@@ -104,6 +106,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteSupervisor([FromBody] int supervisorId)
         {
@@ -148,6 +152,8 @@ namespace JUSTLockers.Controllers
             return View("~/Views/Home/AdminDashboard.cshtml");
         }
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public IActionResult AssignCabinet(Cabinet model)
         {
 
@@ -176,6 +182,8 @@ namespace JUSTLockers.Controllers
             return View();
         }
         [HttpGet]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> ViewSupervisorInfo(string filter = "All")
         {
             //sorry emas 
@@ -185,6 +193,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Supervisor")]
+
         public async Task<IActionResult> ViewCabinetInfo(string? searchCab, string? location, string? wing, int? level, string? department, string? status)
         {
 
@@ -194,6 +204,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> ReallocationResponse()
         {
             var requests = await _adminService.ReallocationResponse();
@@ -208,6 +220,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> ApproveRequestReallocation(int requestId, int SupervisorID, string RequestedDepartment, string RequestLocation, string CurrentCabinetID)
         {
             var student = await _adminService.GetAffectedStudentAsync(CurrentCabinetID);
@@ -234,6 +248,8 @@ namespace JUSTLockers.Controllers
             return RedirectToAction("ReallocationResponse", "Admin");
         }
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> RejectRequestReallocation(int requestId, int SupervisorID)
         {
             bool success = await _adminService.RejectRequestReallocation(requestId);
@@ -253,6 +269,8 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> LockerIssues()
         {
             var reports = await _adminService.ViewForwardedReports();
@@ -260,6 +278,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> AssignCovenant(int supervisorId, string departmentName, string location)
         {
 
@@ -318,6 +338,8 @@ namespace JUSTLockers.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> DeleteCovenant(int supervisorId)
         {
             var supervisor = await _adminService.GetSupervisorById(supervisorId);
@@ -337,6 +359,7 @@ namespace JUSTLockers.Controllers
 
         }
         [HttpPost]
+        [Authorize(Roles = "Admin,Supervisor")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeReportStatus(int reportId)
         {
@@ -359,6 +382,7 @@ namespace JUSTLockers.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Supervisor")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SolveReport(int reportId, string? resolutionDetails)
         {
@@ -380,6 +404,7 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Supervisor")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectReport(int reportId)
         {
@@ -401,6 +426,7 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Supervisor")]
         public async Task<IActionResult> GetReportDetails(int reportId)
         {
             try
@@ -450,6 +476,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Student")]
+
         public async Task<IActionResult> SemesterSettings()
         {
             var settings = await _adminService.GetSemesterSettings();
@@ -457,6 +485,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ScheduleSemesterEnd(DateTime? endDate, int? settingsId)
         {
@@ -493,6 +523,8 @@ namespace JUSTLockers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManualSemesterEnd()
         {

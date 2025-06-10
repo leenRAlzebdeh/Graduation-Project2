@@ -19,11 +19,7 @@ public class SupervisorService : ISupervisorService
     }
     public async Task<List<Report>> ViewReportedIssues(int? userId)
     {
-        string cacheKey = $"Reports_{userId}";
-        if (_memoryCache.TryGetValue(cacheKey, out List<Report> cachedReports))
-        {
-            return cachedReports;
-        }
+        
         var reports = new List<Report>();
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -106,8 +102,7 @@ WHERE
                 }
             }
         }
-        // Cache the reports for 5 minutes
-        _memoryCache.Set(cacheKey, reports, TimeSpan.FromMinutes(3));
+        
         return reports;
     }
     public async Task<List<Report>> TheftIssues(string filter)
