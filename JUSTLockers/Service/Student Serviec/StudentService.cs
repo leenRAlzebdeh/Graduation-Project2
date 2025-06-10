@@ -686,14 +686,8 @@ namespace JUSTLockers.Service
         public bool HasLocker(int? userId)
         {
 
-            bool hasLocker = false;
-            string cached = $"HasLocker-{userId}";
-            if(_memoryCache.TryGetValue(cached, out bool cachedHasLocker))
-            {
-                return cachedHasLocker;
-            }
+            bool hasLocker = false; 
             try
-
             {
                 int count;
 
@@ -724,17 +718,11 @@ namespace JUSTLockers.Service
                 //TempData["ErrorMessage"] = "An error occurred while checking locker status: " + ex.Message;
                 throw ex;
             }
-
-            _memoryCache.Set(cached, hasLocker, TimeSpan.FromMinutes(3));
             return hasLocker;
         }
         public async Task<bool> IsStudentBlocked(int studentId)
         {
-            string cached = $"IsStudentBlocked-{studentId}";
-            if(_memoryCache.TryGetValue(cached,out bool cachedHasStudentBlocked))
-            {
-                return cachedHasStudentBlocked;
-            }
+            
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -743,7 +731,6 @@ namespace JUSTLockers.Service
                 {
                     command.Parameters.AddWithValue("@StudentId", studentId);
                     var count = Convert.ToInt32(await command.ExecuteScalarAsync());
-                    _memoryCache.Set(cached, count > 0, TimeSpan.FromMinutes(3));
                     return count > 0;
                 }
             }
@@ -844,8 +831,6 @@ namespace JUSTLockers.Service
             {
                 await connection.OpenAsync();
 
-                // Get all locations
-                
                 var locationQuery = "SELECT DISTINCT location FROM Departments";
                 using (var cmd = new MySqlCommand(locationQuery, connection))
                 {
@@ -858,7 +843,6 @@ namespace JUSTLockers.Service
                     }
                 }
 
-                // Get departments by location
                 var deptQuery = "SELECT DISTINCT name, location FROM Departments";
                 using (var cmd = new MySqlCommand(deptQuery, connection))
                 {
@@ -877,7 +861,6 @@ namespace JUSTLockers.Service
                     }
                 }
 
-                // Get wings by department and location
                 var wingQuery = "SELECT DISTINCT wing, department_name, location FROM Cabinets";
                 using (var cmd = new MySqlCommand(wingQuery, connection))
                 {
@@ -924,7 +907,6 @@ namespace JUSTLockers.Service
             }
             return options;
         }
-
         public string GetSemesterSettings()
         {
             try

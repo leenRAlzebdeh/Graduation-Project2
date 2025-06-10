@@ -406,8 +406,8 @@ public class AdminService : IAdminService
             {
                 rejectCmd.Parameters.AddWithValue("@RequestID", requestId);
                 int rowsAffected = await rejectCmd.ExecuteNonQueryAsync();
-                AdminService.ClearCache(_memoryCache, "ReallocationResponse");
-                AdminService.ClearCache(_memoryCache, $"ReallocationRequests_{requestId}"); 
+                AdminService.ClearCache(_memoryCache, "");
+
                 return rowsAffected > 0;
             }
 
@@ -608,14 +608,9 @@ public class AdminService : IAdminService
                         await approveCmd.ExecuteNonQueryAsync();
                     }
 
-
+                    AdminService.ClearCache(_memoryCache,"");
                     await transaction.CommitAsync();
                     Console.WriteLine($"Reallocation request {requestId} approved successfully.");
-                    AdminService.ClearCache(_memoryCache, "ReallocationResponse");
-                    AdminService.ClearCache(_memoryCache, $"ReallocationRequests_{requestId}");
-
-
-
                     return true;
                 }
                 catch (Exception ex)
@@ -1015,9 +1010,8 @@ where r.Type='THEFT' and r.SentToAdmin=1
                     command.Parameters.AddWithValue("@ReportId", reportId);
                     command.Parameters.AddWithValue("@ResolvedDate", DateTime.Now);
                     command.Parameters.AddWithValue("@ResolutionDetails", resolutionDetails);
-
-                   // AdminService.ClearCache(_memoryCache, "ForwardedReports");
-                  //  AdminService.ClearCache(_memoryCache, "Reports");
+                    AdminService.ClearCache(_memoryCache, "ForwardedReports");
+                    AdminService.ClearCache(_memoryCache, "Reports");
                     return await command.ExecuteNonQueryAsync() > 0;
                 }
             }
@@ -1321,7 +1315,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
     }
     public async Task<List<string>> GetAllStudentsEmails()
     {
-        string cacheKey = "AllStudentsEmails";
+        string cacheKey = "AllStudentsEmails"; 
         if (_memoryCache.TryGetValue(cacheKey, out List<string> cachedEmails))
         {
             return cachedEmails;

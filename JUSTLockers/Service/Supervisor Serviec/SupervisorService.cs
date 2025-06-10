@@ -847,15 +847,12 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 insertCommand.Parameters.AddWithValue("@id", id);
                 insertCommand.Parameters.AddWithValue("@block_time", DateTime.Now);
                 insertCommand.Parameters.AddWithValue("@userId", userId);
-
                 insertCommand.ExecuteNonQuery();
 
                 AdminService.ClearCache(_memoryCache, "BlockedStudents");
-                AdminService.ClearCache(_memoryCache, "IsStudentBlocked");
                 AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}");
                 AdminService.ClearCache(_memoryCache, "AvailableWings_");
                 AdminService.ClearCache(_memoryCache, "AvailableLockers_");
-                AdminService.ClearCache(_memoryCache, $"HasLocker-{id}");
 
                 return "Student successfully blocked.";
             }
@@ -898,11 +895,9 @@ JOIN Supervisors su ON bs.blocked_by = su.id
                 insertCommand.Parameters.AddWithValue("@userId", userId);
 
                 AdminService.ClearCache(_memoryCache, "BlockedStudents");
-                AdminService.ClearCache(_memoryCache, "IsStudentBlocked");
                 AdminService.ClearCache(_memoryCache, $"CurrentReservation_{id}");
                 AdminService.ClearCache(_memoryCache, "AvailableWings_");
                 AdminService.ClearCache(_memoryCache, "AvailableLockers_");
-                AdminService.ClearCache(_memoryCache, $"HasLocker-{id}");
 
                 insertCommand.ExecuteNonQuery();
                 return "Student successfully Unblocked.";
