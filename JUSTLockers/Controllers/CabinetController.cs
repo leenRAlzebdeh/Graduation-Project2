@@ -83,7 +83,6 @@ namespace JUSTLockers.Controllers
 
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Supervisor")]
 
         public async Task<JsonResult> GetDepartments(string location)
         {
@@ -158,7 +157,6 @@ namespace JUSTLockers.Controllers
        
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Supervisor")]
 
         public JsonResult GetWings(string departmentName)
         {
