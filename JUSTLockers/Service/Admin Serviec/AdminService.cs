@@ -1272,15 +1272,7 @@ where r.Type='THEFT' and r.SentToAdmin=1
     }
     public async Task<bool> ClearReservationsAndReports()
     {
-        AdminService.ClearCache(_memoryCache, "ForwardedReports");
-        AdminService.ClearCache(_memoryCache, "ReallocationResponse");
-        AdminService.ClearCache(_memoryCache, "SemesterSettings"); 
-        AdminService.ClearCache(_memoryCache, "StudentReservation_");
-        AdminService.ClearCache(_memoryCache, "CabinetInfo_");
-        AdminService.ClearCache(_memoryCache, "AvailableWings_");
-        AdminService.ClearCache(_memoryCache, "AvailableLockers_");
-        AdminService.ClearCache(_memoryCache, $"CurrentReservation_");
-        AdminService.ClearCache(_memoryCache, $"HasLocker-");
+        AdminService.ClearCache(_memoryCache, "");
 
         using var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync();

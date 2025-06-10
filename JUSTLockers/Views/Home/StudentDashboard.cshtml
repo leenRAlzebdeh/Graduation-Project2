@@ -297,7 +297,7 @@
                     <div class="progress-step @(hasLocker ? "" : "active")">No Reservation</div>
                     <div class="progress-step @(hasLocker ? "active" : "")">Reserved</div>
                     <div class="progress-step @(hasLocker ? "active" : "")">Active</div>
-                    <div class="progress-step @(int.TryParse(days, out var d) && d < 10 ? "active" : "")">Expiring Soon</div>
+                    <div class="progress-step @(int.TryParse(days, out var d) && d < 10 && hasLocker ? "active" : "")">Expiring Soon</div>
                 </div>
             </div>
 
