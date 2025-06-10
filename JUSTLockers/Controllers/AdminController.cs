@@ -10,7 +10,7 @@ using static Dapper.SqlMapper;
 
 namespace JUSTLockers.Controllers
 {
-    [Authorize(Roles = "Admin")]
+   // [Authorize(Roles = "Admin")]
 
     public class AdminController : Controller
     {
