@@ -77,7 +77,10 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Student/ReservationView.cshtml");
         }
+        //make the supervisor able to reserve a locker for the student using this endpoint
+
         [HttpPost]
+        [AllowAnonymous] 
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReserveLocker([FromBody] ReservationRequest request)
         {
@@ -105,7 +108,6 @@ namespace JUSTLockers.Controllers
                 {
                     return Ok(new { success = true, lockerId });
                 }
-
                 return BadRequest(new { success = false, message = "No available lockers" });
             }
             catch (Exception ex)
