@@ -17,6 +17,12 @@
 }
 
 /* Form Section Styling */
+.sidebar {
+    /* background: #0072ff !important;*/
+    background: #0b55b0 !important;
+}
+
+
 .form-section {
     background: #fff;
     margin: 25px;
