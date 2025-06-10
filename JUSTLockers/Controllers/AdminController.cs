@@ -30,7 +30,6 @@ namespace JUSTLockers.Controllers
         }
 
 
-
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SignCovenant()

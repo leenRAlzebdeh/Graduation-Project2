@@ -191,11 +191,7 @@ WHERE
     public async Task<List<Student>> ViewAllStudentReservations(int? userId, int? searchstu = null)
     {
         var students = new List<Student>();
-        string cacheKey = $"StudentReservation_{userId}_{searchstu}";
-        if (_memoryCache.TryGetValue(cacheKey, out List<Student> cachedStudents))
-        {
-            return cachedStudents;
-        }
+        
 
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
@@ -243,7 +239,6 @@ WHERE
                 }
             }
         }
-        _memoryCache.Set(cacheKey, students, TimeSpan.FromMinutes(3));
         return students;
     }
     public async Task<(string message, int requestId)> ReallocationRequestFormSameDep(Reallocation model)

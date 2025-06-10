@@ -557,7 +557,7 @@ public class AdminService : IAdminService
                             }
                         }
                     }
-
+                    
 
                     // Update lockers
                     foreach (var (oldLockerId, newLockerId) in lockerIds)
@@ -565,7 +565,8 @@ public class AdminService : IAdminService
                         string updateLockerQuery = @"
                             UPDATE Lockers 
                             SET 
-                                Id = @NewLockerId, DepartmentName= @NewDepartment
+                                Id = @NewLockerId,
+                                DepartmentName= @NewDepartment
                             WHERE Id = @OldLockerId";
 
                         using (var lockerCmd = new MySqlCommand(updateLockerQuery, connection, transaction))

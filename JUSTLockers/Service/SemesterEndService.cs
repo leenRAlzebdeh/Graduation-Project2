@@ -75,6 +75,8 @@ namespace JUSTLockers.Service
                                 var query = "DELETE FROM SemesterSettings WHERE Id = (SELECT MAX(Id) FROM SemesterSettings)";
                                 using var command = new MySqlCommand(query, connection);
                                 await command.ExecuteNonQueryAsync();
+                                //How shutdown the application ? 
+                                // Environment.Exit(0); // Uncomment to stop the application after clearing settings
 
                             }
                         }

@@ -79,7 +79,6 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Student/ReservationView.cshtml");
         }
-        //make the supervisor able to reserve a locker for the student using this endpoint
 
         [HttpPost]
         [AllowAnonymous] 
