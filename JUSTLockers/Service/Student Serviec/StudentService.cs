@@ -738,11 +738,7 @@ namespace JUSTLockers.Service
         public async Task<List<WingInfo>> GetAllAvailableLockerCounts(string location = null, string department = null, string wing = null, int? level = null)
         {
             var wings = new List<WingInfo>();
-            string cacheKey = $"AvailableLockers_{location ?? "null"}_{department ?? "null"}_{wing ?? "null"}_{level?.ToString() ?? "null"}";
-            if (_memoryCache.TryGetValue(cacheKey, out List<WingInfo> cachedWings))
-            {
-                return cachedWings;
-            }
+            
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -820,7 +816,6 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-            _memoryCache.Set(cacheKey, wings, TimeSpan.FromMinutes(5));
             return wings;
         }
         public async Task<FilterOptions> GetFilterOptions()

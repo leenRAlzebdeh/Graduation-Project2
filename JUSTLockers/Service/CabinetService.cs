@@ -46,6 +46,7 @@ namespace JUSTLockers.Service
                     AdminService.ClearCache(_memoryCache, "CabinetInfo_");
                     AdminService.ClearCache(_memoryCache, "AvailableWings_");
                     AdminService.ClearCache(_memoryCache, "AvailableLockers_");
+                    
                 }
             }
         }

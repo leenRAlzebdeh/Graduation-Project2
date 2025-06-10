@@ -223,7 +223,6 @@ namespace JUSTLockers.Controllers
             }
         }
 
-
         [HttpGet]
         public async Task<IActionResult> ReportProblem()
         {
@@ -257,9 +256,6 @@ namespace JUSTLockers.Controllers
                 return Json("Error fetching last Report id: " + ex.Message); // Return error message if an exception occurs
             }
         }
-
-
-
         [HttpGet]
         public JsonResult GetLockerIDJson(int ReporterId)
         {
@@ -291,7 +287,6 @@ namespace JUSTLockers.Controllers
                 return Json("Error fetching locker ID: " + ex.Message);
             }
         }
-
         [HttpGet]
         public async Task<IActionResult> AllAvailableLockers(string location = null, string department = null, string wing = null, int? level = null)
         {
@@ -334,11 +329,6 @@ namespace JUSTLockers.Controllers
 
             return View("~/Views/Student/ViewAllAvailableLockers.cshtml", wingsInfo);
         }
-
-
-
-
-
         [HttpGet]
         public async Task<JsonResult> GetDepartments(string location)
         {
