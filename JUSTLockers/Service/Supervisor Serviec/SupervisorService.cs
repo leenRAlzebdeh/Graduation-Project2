@@ -1,9 +1,7 @@
 using JUSTLockers.Classes;
 using JUSTLockers.Service;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using MySqlConnector;
-using System;
 namespace JUSTLockers.Services;
 
 
@@ -207,14 +205,6 @@ WHERE
         {
             await connection.OpenAsync();
 
-            //var query = @"
-            //SELECT s.id, s.name, s.email, s.Major, s.locker_id
-            //FROM Students s
-            //JOIN Supervisors su 
-            //  ON s.department = su.supervised_department 
-            //  AND s.Location = su.location
-            //WHERE su.id = @userId and s.locker_id is not null";
-
             var query = @"
             SELECT s.id, s.name, s.email, s.Major, s.locker_id
             FROM Students s
@@ -222,9 +212,8 @@ WHERE
             JOIN Reservations r
             on r.StudentId= s.id
             AND r.Status='Reserved'
-            AND su.location = s.Location
             WHERE su.id =@userId and s.locker_id is not NULL 
-            AND r.LockerId LIKE CONCAT(@supervised_department, '%')";
+            AND r.LockerId REGEXP CONCAT('^', @supervised_department, '([0-9]+)?-')";
 
 
             if (searchstu.HasValue)
@@ -481,7 +470,7 @@ WHERE
                     using (var approveCmd = new MySqlCommand(approveQuery2, connection, transaction))
                     {
                         approveCmd.Parameters.AddWithValue("@RequestID", reallocationId);
-                        approveCmd.Parameters.AddWithValue("@oldCabinetId", model.CurrentCabinetID);  
+                        approveCmd.Parameters.AddWithValue("@oldCabinetId", model.CurrentCabinetID);
                         await approveCmd.ExecuteNonQueryAsync();
                     }
 
