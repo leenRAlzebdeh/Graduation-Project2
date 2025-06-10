@@ -22,5 +22,5 @@ public interface IStudentService
     public Task<FilterOptions> GetFilterOptions();
     public  Task<(string email, Report report)> GetReportByAsync(int reportId);
     public Task<List<WingInfo>> GetAllAvailableLockerCounts(string location = null, string department = null, string wing = null, int? level = null);
-
+    public string GetSemesterSettings();
 }

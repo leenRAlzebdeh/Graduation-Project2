@@ -15,11 +15,13 @@ namespace JUSTLockers.Controllers
     {
         private readonly IStudentService _studentService;
         private readonly IConfiguration _configuration;
+        private readonly AdminService adminService;
 
-        public StudentController(IStudentService studentService , IConfiguration configuration)
+        public StudentController(IStudentService studentService , IConfiguration configuration, AdminService admin)
         {
             _studentService = studentService;
             _configuration = configuration;
+            adminService = admin;
         }
        
         public IActionResult Index()
@@ -189,6 +191,7 @@ namespace JUSTLockers.Controllers
             var reports = await _studentService.ViewAllReports(studentId);
 
             ViewBag.HasLocker = _studentService.HasLocker(studentId);
+            ViewBag.Days = _studentService.GetSemesterSettings();
             return View("~/Views/Home/StudentDashboard.cshtml",reports);
         }
 

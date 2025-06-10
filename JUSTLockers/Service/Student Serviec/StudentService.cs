@@ -1,5 +1,6 @@
 ﻿using JUSTLockers.Classes;
 using JUSTLockers.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
@@ -922,6 +923,29 @@ namespace JUSTLockers.Service
                 }
             }
             return options;
+        }
+
+        public string GetSemesterSettings()
+        {
+            try
+            {
+                string query = "SELECT SemesterEndDate FROM SemesterSettings"; // Assuming there's only one row in SemesterSettings
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    connection.Open();
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        var date = Convert.ToDateTime(result)-DateTime.Now;
+                        var day= date.Days.ToString();
+                        return day;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return "Error fetching semester settings:" ;
+            }
         }
     }
     public class FilterOptions
