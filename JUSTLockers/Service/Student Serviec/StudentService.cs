@@ -155,7 +155,7 @@ namespace JUSTLockers.Service
             {
                 await connection.OpenAsync();
 
-                var query = "SELECT * FROM Reports where ReporterId=@studentId";
+                var query = "SELECT * FROM Reports where ReporterId=@studentId AND LockerId = (SELECT locker_id FROM Students WHERE id = @studentId)";
 
 
                 using (var command = new MySqlCommand(query, connection))

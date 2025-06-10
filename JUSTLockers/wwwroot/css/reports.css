@@ -89,7 +89,7 @@ body.dark-mode .form-section {
         background-color: lightcoral;
     }
     .status-badge.in_review {
-        background-color: #ffc107;
+        background-color: rgb(0, 148, 255);
         color: #000;
     }
 

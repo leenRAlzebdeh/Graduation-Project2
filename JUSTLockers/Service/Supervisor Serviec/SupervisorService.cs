@@ -41,6 +41,7 @@ public class SupervisorService : ISupervisorService
     l.Status AS LockerStatus,
     u.id AS ReporterId,
     u.name AS ReporterName,
+    u.department As UserDepartment,
     u.email AS ReporterEmail,
     d.name AS DepartmentName
 
@@ -77,7 +78,7 @@ WHERE
                                 reader.GetInt32("ReporterId"),
                                 reader.GetString("ReporterName"),
                                 reader.GetString("ReporterEmail"),
-                                reader.GetString("DepartmentName")
+                                reader.GetString("UserDepartment")
                             // Department is fetched from Lockers
                             ),
                             Locker = new Locker
