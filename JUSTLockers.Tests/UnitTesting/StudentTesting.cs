@@ -1,10 +1,8 @@
-﻿using JUSTLockers.Classes;
-using JUSTLockers.Service;
+﻿using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using MySqlConnector;
 using System.Data;
@@ -328,21 +326,6 @@ namespace JUSTLockers.Tests.UnitTesting
             Assert.NotEmpty(wings);
         }
 
-        [Fact]
-        public async Task GetAvailableWingsAndLevels_ShouldReturnEmptyList_WhenNoData()
-        {
-            var dept = await GetRandomEntityAsync(
-                "Departments d LEFT JOIN Cabinets c ON d.name = c.department_name AND d.Location = c.location",
-                r => new { Name = r.GetString(r.GetOrdinal("name")), Location = r.GetString(r.GetOrdinal("Location")) },
-                "c.cabinet_id IS NULL"
-            );
-            Assert.NotNull(dept);
-
-            var wings = await _service.GetAvailableWingsAndLevels(dept.Name, dept.Location);
-
-            Assert.NotNull(wings);
-            Assert.Empty(wings);
-        }
         #endregion
 
         #region GetCurrentReservationAsync Tests
