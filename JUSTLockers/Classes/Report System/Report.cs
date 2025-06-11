@@ -20,6 +20,7 @@ public class Report
     public byte[]? ImageData { get; set; } // nullable (BLOB)
     public string? ImageMimeType { get; set; } // nullable
     public bool SentToAdmin { get; set; }
+    public string ErrorMessage { get; set; }
 }
 
 public enum ReportType

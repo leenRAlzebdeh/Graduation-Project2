@@ -13,7 +13,7 @@ using MySqlConnector;
 using System.Data;
 
 
-namespace JUSTLockers.Testing
+namespace JUSTLockers.Tests.UnitTesting
 {
     public class AdminControllerTest
     {
@@ -108,7 +108,7 @@ namespace JUSTLockers.Testing
         public async Task CheckEmployeeExists_ShouldReturnFalse_ForNonExistingEmployee()
         {
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -170,7 +170,7 @@ namespace JUSTLockers.Testing
             // Find a random employee ID that does NOT exist in the Employees table
             // 1. Get the max ID in Employees
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -262,7 +262,7 @@ namespace JUSTLockers.Testing
         {
             // Get the max supervisor ID to generate a non-existing ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -381,7 +381,7 @@ namespace JUSTLockers.Testing
         {
             // Find a random supervisor ID that does NOT exist in the Supervisors table
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -482,7 +482,7 @@ namespace JUSTLockers.Testing
         {
             // Use a random non-existing supervisor ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -534,7 +534,7 @@ namespace JUSTLockers.Testing
         public async Task DeleteCovenant_ShouldFail_WhenSupervisorNotFound()
         {
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -573,7 +573,7 @@ namespace JUSTLockers.Testing
         {
             // Get the max supervisor ID to generate a non-existing ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -611,7 +611,7 @@ namespace JUSTLockers.Testing
         {
             // Get a non-existing report ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -647,7 +647,7 @@ namespace JUSTLockers.Testing
         {
             // Get a non-existing report ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -683,7 +683,7 @@ namespace JUSTLockers.Testing
         {
             // Get a non-existing report ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -720,7 +720,7 @@ namespace JUSTLockers.Testing
         {
             // Get a non-existing report ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())
@@ -759,7 +759,7 @@ namespace JUSTLockers.Testing
         {
             // Get the max RequestID to generate a non-existing ID
             int maxId = 0;
-            using (var connection = new MySqlConnector.MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 using (var cmd = connection.CreateCommand())

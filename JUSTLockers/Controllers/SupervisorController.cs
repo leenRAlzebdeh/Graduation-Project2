@@ -4,7 +4,6 @@ using MySqlConnector;
 using JUSTLockers.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace JUSTLockers.Controllers

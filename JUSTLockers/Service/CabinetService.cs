@@ -269,8 +269,7 @@ namespace JUSTLockers.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Database error: {ex.Message}");
-                return "Error fetching last cabinet number: " + ex.Message;
+                return "Error fetching last cabinet number: " + ex.Message; // Return error message if an exception occurs
             }
         }
         public async Task<List<string>> GetWingsAsync(string departmentName)

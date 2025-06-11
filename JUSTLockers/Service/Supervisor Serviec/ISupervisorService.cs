@@ -1,5 +1,5 @@
 using JUSTLockers.Classes;
-using JUSTLockers.Service;
+using JUSTLockers.Classes.Helper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JUSTLockers.Services;

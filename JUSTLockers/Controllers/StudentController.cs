@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using JUSTLockers.Service;
 using JUSTLockers.Classes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using JUSTLockers.Services;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using Microsoft.AspNetCore.Authorization;
+using JUSTLockers.Classes.Helper;
 
 namespace JUSTLockers.Controllers
 {
@@ -79,7 +79,6 @@ namespace JUSTLockers.Controllers
         {
             return View("~/Views/Student/ReservationView.cshtml");
         }
-        //make the supervisor able to reserve a locker for the student using this endpoint
 
         [HttpPost]
         [AllowAnonymous] 
@@ -211,6 +210,7 @@ namespace JUSTLockers.Controllers
 
             var result = await _studentService.SaveReportAsync(ReportID, reporterId.Value, LockerId, ProblemType, Subject, Description, ImageFile);
 
+
             if (result)
             {
                 TempData["SuccessMessage"] = "Report Sent Successfully"; 
@@ -218,7 +218,7 @@ namespace JUSTLockers.Controllers
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed! Make Sure You are filled all Data Required. Please try again!.";
+                TempData["ErrorMessage"] = "You Can not  have 3 reports in progress for one locker.";
                 return RedirectToAction("ReportProblem", "Student");
             }
         }

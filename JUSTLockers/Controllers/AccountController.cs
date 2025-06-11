@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace WebApplication5.Controllers
 {

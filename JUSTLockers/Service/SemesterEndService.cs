@@ -1,13 +1,6 @@
 ﻿using JUSTLockers.Services;
-using Microsoft.Extensions.Configuration;
 using MySqlConnector;
-using JUSTLockers.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using MySqlConnector;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+
 
 namespace JUSTLockers.Service
 {
@@ -34,16 +27,16 @@ namespace JUSTLockers.Service
                     {
                         var endDate = settings.GetType().GetProperty("SemesterEndDate")?.GetValue(settings) as DateTime?;
                         Console.WriteLine(endDate);
-                        var users = await _adminService.GetAllStudentsEmails();
                         if (endDate.HasValue)
                         {
                             var now = DateTime.Now;
-                            var daysUntilEnd = (endDate.Value - now).TotalDays;
+                            var daysUntilEnd =(int)(endDate.Value - now).TotalDays;
 
                             // Send notifications 14 days before scheduled end
                             if (daysUntilEnd <= 14 && daysUntilEnd>0)
                             {
-                                    await _emailService.SemesterEndNotificationAsync(
+                                var users = await _adminService.GetAllStudentsEmails();
+                                await _emailService.SemesterEndNotificationAsync(
                                         users, "StudentSemesterEndNotification",new Dictionary<string, DateTime>
                                         {
                                             { "EndDate", endDate.Value }
@@ -56,6 +49,7 @@ namespace JUSTLockers.Service
                             if (now >= endDate.Value)
                             {
                                 // Send final notification
+                                var users = await _adminService.GetAllStudentsEmails();
 
                                 await _emailService.SemesterEndNotificationAsync(
                                     users, "StudentSemesterEndFinalNotification", new Dictionary<string, DateTime>
@@ -75,6 +69,7 @@ namespace JUSTLockers.Service
                                 var query = "DELETE FROM SemesterSettings WHERE Id = (SELECT MAX(Id) FROM SemesterSettings)";
                                 using var command = new MySqlCommand(query, connection);
                                 await command.ExecuteNonQueryAsync();
+                                // Environment.Exit(0); 
 
                             }
                         }
@@ -82,11 +77,8 @@ namespace JUSTLockers.Service
                 }
                 catch (Exception ex)
                 {
-                    // Log error (implement logging as needed)
                     Console.WriteLine($"SemesterEndService error: {ex.Message}");
                 }
-
-                // Check every 24 hours
                  await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
 
             }
