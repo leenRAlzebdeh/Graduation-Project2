@@ -1,18 +1,10 @@
 ﻿using JUSTLockers.Classes;
+using JUSTLockers.Classes.Helper;
 using JUSTLockers.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
 
 namespace JUSTLockers.Service
 {
@@ -28,63 +20,7 @@ namespace JUSTLockers.Service
             _memoryCache = memoryCache;
             this.adminService = adminService;
         }
-        //public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
-        //{
-        //    try
-        //    {
-        //        byte[] imageData = null;
-        //        string mimeType = null; // To store the MIME type
-
-        //        if (imageFile != null && imageFile.Length > 0)
-        //        {
-        //            // Capture the MIME type
-        //            mimeType = imageFile.ContentType;
-
-        //            // Convert image to byte array
-        //            using (var ms = new MemoryStream())
-        //            {
-        //                await imageFile.CopyToAsync(ms);
-        //                imageData = ms.ToArray();
-        //            }
-        //        }
-
-        //        // Save the report data including image data and MIME type
-        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-        //        {
-        //          
-
-        //                string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ReportDate,ImageData, ImageMimeType) 
-        //                     VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ReportDate, @ImageFile, @ImageMimeType)";
-
-        //            using (var command = new MySqlCommand(query, connection))
-        //            {
-        //                command.Parameters.AddWithValue("@ReportID", ReportID);
-        //                command.Parameters.AddWithValue("@ReporterId", reporterId);
-        //                command.Parameters.AddWithValue("@LockerId", LockerId);
-        //                command.Parameters.AddWithValue("@ProblemType", problemType);
-        //                command.Parameters.AddWithValue("@Subject", Subject);
-        //                command.Parameters.AddWithValue("@Description", description);
-        //                command.Parameters.AddWithValue("@ReportDate", DateTime.Now);
-
-        //                command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData;
-        //                command.Parameters.AddWithValue("@ImageMimeType", mimeType);
-
-        //                await connection.OpenAsync();
-        //                int rowsAffected = await command.ExecuteNonQueryAsync();
-
-        //                AdminService.ClearCache(_memoryCache, "Reports");
-
-        //                return rowsAffected > 0;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Error saving report: {ex.Message}");
-        //        return false;
-        //    }
-        //}
-
+        
         public async Task<bool> SaveReportAsync(int ReportID,int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
         {
             try
@@ -154,8 +90,6 @@ namespace JUSTLockers.Service
                 return false;
             }
         }
-
-
         public async Task DeleteReport(int reportId)
         {
             var query = "DELETE FROM Reports WHERE Id = @Id";
@@ -1006,27 +940,6 @@ namespace JUSTLockers.Service
         public Dictionary<string, List<string>> DepartmentsByLocation { get; set; } = new Dictionary<string, List<string>>();
         public Dictionary<string, List<string>> WingsByDeptLocation { get; set; } = new Dictionary<string, List<string>>();
         public Dictionary<string, List<int>> LevelsByWingDeptLocation { get; set; } = new Dictionary<string, List<int>>();
-    }
-    public class DepartmentInfo
-    {
-        public string DepartmentName { get; set; }
-        public string Location { get; set; }
-    }
-    public class WingInfo
-    {
-        public string Location { get; set; }
-        public string Wing { get; set; }
-        public int Level { get; set; }
-        public string Department { get; set; }
-        public int AvailableLockers { get; set; }
-    }
-    public class ReservationRequest
-    {
-        public int StudentId { get; set; }
-        public string DepartmentName { get; set; }
-        public string Location { get; set; }
-        public string Wing { get; set; }
-        public int Level { get; set; }
     }
     public class LockerInfo
     {

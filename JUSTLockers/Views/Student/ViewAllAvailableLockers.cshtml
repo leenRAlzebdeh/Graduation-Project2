@@ -1,5 +1,6 @@
-﻿
-@model List<JUSTLockers.Service.WingInfo>
+﻿@using JUSTLockers.Classes.Helper
+
+@model List<WingInfo>
 @{
     ViewData["Title"] = "Available Lockers";
     var filterOptions = ViewBag.FilterOptions as JUSTLockers.Service.FilterOptions;

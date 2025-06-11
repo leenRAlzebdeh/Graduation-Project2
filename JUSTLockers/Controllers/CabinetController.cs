@@ -1,22 +1,15 @@
 ﻿using JUSTLockers.Classes;
-using JUSTLockers.DataBase;
 using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using System.Data;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+
 
 namespace JUSTLockers.Controllers
 {
     [Authorize]
     public class CabinetController : Controller
     {
-       // private readonly DbConnectionFactory _context;
 
         private readonly IConfiguration _configuration;
         private readonly NotificationService _notificationService;
@@ -54,10 +47,8 @@ namespace JUSTLockers.Controllers
             
             return Ok();
         }
-
         [HttpGet]
         [Authorize(Roles = "Admin,Supervisor")]
-
         public async Task<JsonResult> GetCabinet(string cabinet_id)
         {
             try
@@ -80,10 +71,7 @@ namespace JUSTLockers.Controllers
                 return Json(null);
             }
         }
-
-
         [HttpGet]
-
         public async Task<JsonResult> GetDepartments(string location)
         {
             try
@@ -97,7 +85,6 @@ namespace JUSTLockers.Controllers
                 return Json("Not Found");
             }
         }
-
         public JsonResult GetSupervisor(string departmentName, string location)
         {
             try
@@ -111,9 +98,6 @@ namespace JUSTLockers.Controllers
                 return Json(new { status = "Error", message = "Database error occurred" });
             }
         }
-
-
-
         public JsonResult GetID(string departmentName, string location)
         {
             try
@@ -127,62 +111,31 @@ namespace JUSTLockers.Controllers
                 return Json(new { status = "Error", message = "Database error occurred" });
             }
         }
-       
-
-
         [HttpGet]
         [Authorize(Roles = "Admin")]
-
-        public JsonResult GetLastCabinetNumberJson()
+        public async Task<JsonResult> GetLastCabinetNumberJson()
         {
+            
             try
             {
-                string query = "SELECT MAX(number_cab) AS LastCabinetNumber FROM Cabinets";
+                string lastCabinetNumber =await _cabinetService.GetLastCabinetNumberAsync();
 
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    connection.Open();
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        var result = command.ExecuteScalar();
-                        return Json(result.ToString()); // Return the last cabinet number as a string
-                    }
-                }
+                Console.WriteLine($"Last Cabinet Number: {lastCabinetNumber}");
+                return Json(lastCabinetNumber);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Database error: {ex.Message}");
                 return Json("Error fetching last cabinet number: " + ex.Message); // Return error message if an exception occurs
             }
         }
-       
-
         [HttpGet]
-
-        public JsonResult GetWings(string departmentName)
+        public async Task<JsonResult> GetWings(string departmentName)
         {
-            int totalWings = 0;
             try
             {
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    string query = "SELECT total_wings FROM Departments WHERE name = @DepartmentName";
-
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@DepartmentName", departmentName);
-                        connection.Open();
-
-                        totalWings = Convert.ToInt32(command.ExecuteScalar());
-                    }
-                }
-
-                var wings = Enumerable.Range(1, totalWings)
-                                      .Select(w => w.ToString())
-                                      .ToList();
-
+                var wings =await _cabinetService.GetWingsAsync(departmentName);
                 return Json(wings);
-                
-
             }
             catch (Exception ex)
             {

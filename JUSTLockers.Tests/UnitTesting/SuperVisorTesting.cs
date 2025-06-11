@@ -6,7 +6,7 @@ using Moq;
 using MySqlConnector;
 using System.Data;
 
-namespace JUSTLockers.Testing
+namespace JUSTLockers.Tests.UnitTesting
 {
     public class SupervisorServiceTest
     {

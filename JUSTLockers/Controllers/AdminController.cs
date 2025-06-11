@@ -1,12 +1,8 @@
 ﻿using JUSTLockers.Classes;
-using JUSTLockers.Service;
 using JUSTLockers.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
-using System;
-using static Dapper.SqlMapper;
 
 namespace JUSTLockers.Controllers
 {

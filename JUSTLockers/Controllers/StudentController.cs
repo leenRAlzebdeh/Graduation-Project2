@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using JUSTLockers.Service;
 using JUSTLockers.Classes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using JUSTLockers.Services;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using Microsoft.AspNetCore.Authorization;
+using JUSTLockers.Classes.Helper;
 
 namespace JUSTLockers.Controllers
 {

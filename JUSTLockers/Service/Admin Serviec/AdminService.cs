@@ -1,6 +1,5 @@
 using Dapper;
 using JUSTLockers.Classes;
-using JUSTLockers.Service;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using System.Data;

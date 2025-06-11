@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 
 namespace JUSTLockers.Services;
@@ -12,12 +11,6 @@ public class UserActions
         _configuration = configuration;
     }
 
-
-
-
-
-
-
     public string Login(int id , string password)
     {
         try
@@ -30,12 +23,12 @@ public class UserActions
                 SELECT 'Supervisor' AS role FROM Supervisors WHERE id = @ID AND password = @Password
                 UNION
                 SELECT 'Student' AS role FROM Students WHERE id = @ID AND password = @Password
-                LIMIT 1"; // To ensure only one role is returned if duplicates exist
+                LIMIT 1"; 
 
                 using (var command = new MySqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@ID", id);
-                    command.Parameters.AddWithValue("@Password", password); // Consider using hashed passwords
+                    command.Parameters.AddWithValue("@ID", id); 
+                    command.Parameters.AddWithValue("@Password", password); 
 
                     connection.Open();
                     var result = command.ExecuteScalar();
