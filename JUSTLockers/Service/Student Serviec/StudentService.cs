@@ -156,11 +156,7 @@ namespace JUSTLockers.Service
         public async Task<List<Report>> ViewAllReports(int? studentId)
         {
             var reports = new List<Report>();
-            //string cached = $"ViewAllReports_{studentId}"; // Unique key per student
-            //if (_memoryCache.TryGetValue(cached, out List<Report> cachedReports))
-            //{
-            //    return cachedReports;
-            //}
+          
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -200,7 +196,6 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-          //  _memoryCache.Set(cached, reports, TimeSpan.FromMinutes(3));
             return reports;
         }
         public async Task<bool> CancelReservation(int studentId , string status)
@@ -417,13 +412,7 @@ namespace JUSTLockers.Service
         }
         public async Task<Reservation> GetCurrentReservationAsync(int studentId)
         {
-            //use inMemoryCache to store the reservation data for 5 minutes
-            string cacheKey = $"CurrentReservation_{studentId}";
-            if (_memoryCache.TryGetValue(cacheKey, out Reservation cachedReservation))
-            {
-                return cachedReservation;
-            }
-
+            
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -458,7 +447,6 @@ namespace JUSTLockers.Service
                                 Wing = reader.GetString("wing"),
                                 Level = reader.GetInt32("level")
                             };
-                            _memoryCache.Set(cacheKey, reservation, TimeSpan.FromMinutes(5)); // Cache for 5 minutes
                             return reservation;
 
                         }

@@ -649,11 +649,7 @@ WHERE
     public async Task<List<Reallocation>> ReallocationRequestsInfo(int? id, string? filter, string? location, string? department)
     {
         var reallocations = new List<Reallocation>();
-        string cacheKey = $"ReallocationRequests_{id}_{filter}_{location}_{department}";
-        if (_memoryCache.TryGetValue(cacheKey, out List<Reallocation> cachedReallocations))
-        {
-            return cachedReallocations;
-        }
+        
         using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
         {
             await connection.OpenAsync();
@@ -709,7 +705,6 @@ WHERE
                 }
             }
         }
-        _memoryCache.Set(cacheKey, reallocations, TimeSpan.FromMinutes(3));
         return reallocations;
     }
     public async Task<List<BlockedStudent>> BlockedStudents()
