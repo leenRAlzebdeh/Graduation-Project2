@@ -12,6 +12,7 @@ using System.IO;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace JUSTLockers.Service
 {
@@ -27,19 +28,73 @@ namespace JUSTLockers.Service
             _memoryCache = memoryCache;
             this.adminService = adminService;
         }
-        public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
+        //public async Task<bool> SaveReportAsync(int ReportID, int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
+        //{
+        //    try
+        //    {
+        //        byte[] imageData = null;
+        //        string mimeType = null; // To store the MIME type
+
+        //        if (imageFile != null && imageFile.Length > 0)
+        //        {
+        //            // Capture the MIME type
+        //            mimeType = imageFile.ContentType;
+
+        //            // Convert image to byte array
+        //            using (var ms = new MemoryStream())
+        //            {
+        //                await imageFile.CopyToAsync(ms);
+        //                imageData = ms.ToArray();
+        //            }
+        //        }
+
+        //        // Save the report data including image data and MIME type
+        //        using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //        {
+        //          
+
+        //                string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ReportDate,ImageData, ImageMimeType) 
+        //                     VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ReportDate, @ImageFile, @ImageMimeType)";
+
+        //            using (var command = new MySqlCommand(query, connection))
+        //            {
+        //                command.Parameters.AddWithValue("@ReportID", ReportID);
+        //                command.Parameters.AddWithValue("@ReporterId", reporterId);
+        //                command.Parameters.AddWithValue("@LockerId", LockerId);
+        //                command.Parameters.AddWithValue("@ProblemType", problemType);
+        //                command.Parameters.AddWithValue("@Subject", Subject);
+        //                command.Parameters.AddWithValue("@Description", description);
+        //                command.Parameters.AddWithValue("@ReportDate", DateTime.Now);
+
+        //                command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData;
+        //                command.Parameters.AddWithValue("@ImageMimeType", mimeType);
+
+        //                await connection.OpenAsync();
+        //                int rowsAffected = await command.ExecuteNonQueryAsync();
+
+        //                AdminService.ClearCache(_memoryCache, "Reports");
+
+        //                return rowsAffected > 0;
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Error saving report: {ex.Message}");
+        //        return false;
+        //    }
+        //}
+
+        public async Task<bool> SaveReportAsync(int ReportID,int reporterId, string LockerId, string problemType, string Subject, string description, IFormFile imageFile)
         {
             try
             {
                 byte[] imageData = null;
-                string mimeType = null; // To store the MIME type
+                string mimeType = null;
 
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // Capture the MIME type
                     mimeType = imageFile.ContentType;
-
-                    // Convert image to byte array
                     using (var ms = new MemoryStream())
                     {
                         await imageFile.CopyToAsync(ms);
@@ -47,13 +102,35 @@ namespace JUSTLockers.Service
                     }
                 }
 
-                // Save the report data including image data and MIME type
                 using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    string query = @"INSERT INTO Reports (Id, ReporterId, LockerId, Type,Subject, Statement, ReportDate,ImageData, ImageMimeType) 
-                             VALUES (@ReportID, @ReporterId, @LockerId, @ProblemType,@Subject, @Description, @ReportDate, @ImageFile, @ImageMimeType)";
+                    await connection.OpenAsync(); // Open connection once
 
-                    using (var command = new MySqlCommand(query, connection))
+                    // 1️⃣ Check report count
+                    string query1 = @"
+                SELECT COUNT(*) 
+                FROM Reports 
+                WHERE ReporterId = @ReporterId 
+                  AND LockerId = (SELECT locker_id FROM Students WHERE id = @ReporterId) 
+                  AND (STATUS = 'REPORTED' OR STATUS = 'IN_REVIEW')";
+                    using (var command = new MySqlCommand(query1, connection))
+                    {
+                        command.Parameters.AddWithValue("@ReporterId", reporterId);
+                        int count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                        if (count >= 3)
+                        {
+                            Console.WriteLine($"You already have 3 reports in progress for this locker. Count: {count}");
+                            return false;
+                        }
+                    }
+
+                    // 2️⃣ Insert new report
+                    string query2 = @"
+                INSERT INTO Reports 
+                (Id, ReporterId, LockerId, Type, Subject, Statement, ReportDate, ImageData, ImageMimeType)
+                VALUES 
+                (@ReportID, @ReporterId, @LockerId, @ProblemType, @Subject, @Description, @ReportDate, @ImageFile, @ImageMimeType)";
+                    using (var command = new MySqlCommand(query2, connection))
                     {
                         command.Parameters.AddWithValue("@ReportID", ReportID);
                         command.Parameters.AddWithValue("@ReporterId", reporterId);
@@ -62,15 +139,11 @@ namespace JUSTLockers.Service
                         command.Parameters.AddWithValue("@Subject", Subject);
                         command.Parameters.AddWithValue("@Description", description);
                         command.Parameters.AddWithValue("@ReportDate", DateTime.Now);
+                        command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData ?? (object)DBNull.Value;
+                        command.Parameters.AddWithValue("@ImageMimeType", mimeType ?? (object)DBNull.Value);
 
-                        command.Parameters.Add("@ImageFile", MySqlDbType.Blob).Value = imageData;
-                        command.Parameters.AddWithValue("@ImageMimeType", mimeType);
-
-                        await connection.OpenAsync();
                         int rowsAffected = await command.ExecuteNonQueryAsync();
-
                         AdminService.ClearCache(_memoryCache, "Reports");
-
                         return rowsAffected > 0;
                     }
                 }
@@ -81,6 +154,8 @@ namespace JUSTLockers.Service
                 return false;
             }
         }
+
+
         public async Task DeleteReport(int reportId)
         {
             var query = "DELETE FROM Reports WHERE Id = @Id";
@@ -147,11 +222,11 @@ namespace JUSTLockers.Service
         public async Task<List<Report>> ViewAllReports(int? studentId)
         {
             var reports = new List<Report>();
-            string cached = $"ViewAllReports_{studentId}"; // Unique key per student
-            if (_memoryCache.TryGetValue(cached, out List<Report> cachedReports))
-            {
-                return cachedReports;
-            }
+            //string cached = $"ViewAllReports_{studentId}"; // Unique key per student
+            //if (_memoryCache.TryGetValue(cached, out List<Report> cachedReports))
+            //{
+            //    return cachedReports;
+            //}
             using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 await connection.OpenAsync();
@@ -191,7 +266,7 @@ namespace JUSTLockers.Service
                     }
                 }
             }
-            _memoryCache.Set(cached, reports, TimeSpan.FromMinutes(3));
+          //  _memoryCache.Set(cached, reports, TimeSpan.FromMinutes(3));
             return reports;
         }
         public async Task<bool> CancelReservation(int studentId , string status)

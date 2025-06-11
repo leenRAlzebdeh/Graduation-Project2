@@ -210,6 +210,7 @@ namespace JUSTLockers.Controllers
 
             var result = await _studentService.SaveReportAsync(ReportID, reporterId.Value, LockerId, ProblemType, Subject, Description, ImageFile);
 
+
             if (result)
             {
                 TempData["SuccessMessage"] = "Report Sent Successfully"; 
@@ -217,7 +218,7 @@ namespace JUSTLockers.Controllers
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed! Make Sure You are filled all Data Required. Please try again!.";
+                TempData["ErrorMessage"] = "You Can not  have 3 reports in progress for one locker.";
                 return RedirectToAction("ReportProblem", "Student");
             }
         }
